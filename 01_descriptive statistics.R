@@ -31,7 +31,8 @@ CsvDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 #_______________________________ Load pre-clustered data:
 clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria.csv"), 
                          header = T, sep = ',') 
-
+clu_df_10_18$housing_2000_2000m <- clu_df_10_18$housing_2000_2000m *100
+clu_df_10_18$housing_2015_2000m <- clu_df_10_18$housing_2015_2000m *100
 # Binarize response:
 clu_df_10_18$y <- ifelse(clu_df_10_18$p_test < 0.1, 0,1)
 
@@ -123,15 +124,21 @@ ggsave(paste0(HisDir, '/', Sys.Date(),  'combined_urban_malaria_clusters_percent
 clu_df_cont <- clu_df_10_18[ , -which(names(clu_df_10_18) %in% c("shstate", "region", "X"))]
 clu_df_cont$y <- ifelse(clu_df_cont$p_test < 0.1, 0,1) %>% (as.numeric)
 
-labels_data <- list("Education", "Floor type", "Household size", "Housing q", "Mean age", 
+labels_data <- list("Education", "Floor type", "Household size", "Housing quality", "Mean age", 
                     "Median age", "Net Use", "Roof type", "U5 population" ,"Wall type",
                     "Wealth", "Fever", "Pregnant women", "% of female", "U5 Female", 
                     "U5 net Use", "Malaria pevalence", "Fever treatment", "U5 ACT use","Time to city", 
-                    "Building density", "Dominant vector", "Elevation", "1m travel 2015","Housing q 2000", 
-                    "Housing q 2015", "1m travel 2019","Travel to healthcare", "U5 pop den (FB)", "Pop density",
+                    "Building density", "Dominant vector", "Elevation", "1m travel 2015","Housing percent 2000", 
+                    "Housing percent 2015", "1m travel 2019","Travel to healthcare", "U5 pop. den (FB)", "Pop. density",
                     "Sec vector", "Temperature", "1m walk time")
 
-
+xlab_data <- list("percent", "percent", "number", "percent", "number", 
+                  "number", "percent", "percent","percent" ,"percent", 
+                  "percent", "percent", "percent", "percent", "percent",
+                  "percent", "percent", "percent", "percent","Mean minutes", 
+                  "Mean", "Mean", "Mean", "Mean minutes", "percent",
+                  "percent", "Mean minutes","Mean minutes", "Mean", "Mean",
+                  "Mean", "Mean", "Mean minutes")
 
 var_list <- c(4:37)
 label_list <- c(1:33)
@@ -141,10 +148,11 @@ for (i in 1:33) {
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
     geom_histogram(fill = "hotpink4")+
     theme_minimal()+
-    theme(plot.background = element_rect(colour = "black", fill=NA, size=0.3), 
-          axis.title.x = element_text(size=12))+
+    theme(plot.background = element_rect(colour = "black", fill=NA, size=0.2), 
+          axis.title.x = element_text(size=8, hjust = 0.5),
+          title = element_text(size=8, hjust = 0.5)) +
     labs (title = labels_data[label_list[[i]]], x = "values") +
-    xlab("")
+    xlab(xlab_data[label_list[[i]]])
   plot_list[[i]]<-p
   variables <- ggarrange(plotlist=plot_list, nrow =7, ncol=6)
   ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
