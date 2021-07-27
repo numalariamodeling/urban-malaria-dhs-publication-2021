@@ -1,6 +1,6 @@
 
 x <- c("tidyverse","INLA", "ggplot2", "ggpubr", "inlabru", "rgdal", "sp", "sf", "tmap", 
-       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2')
+       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "rebus")
 
 
 
@@ -40,13 +40,14 @@ clu_df_10_18$y <- ifelse(clu_df_10_18$p_test < 0.1, 0,1)
 missing_values <- sapply(clu_df_10_18, function(x) sum(is.na(x)))
 
 
-#__________________________________maps
+#__________________________________Loading Spactial pointd
 
 # urban cluster points
 
-dhs18_sf <- st_read(file.path(DHSData, "Downloads", "NG_2018_DHS_11072019_1720_86355/NGGE7BFL/NGGE7BFL.shp"),) 
-mis15_sf <- st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NGGE71FL.shp"),)
-mis10_sf <- st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),)
+dhs18_sf <- st_read(file.path(DHSData, "Downloads", 
+                              "NG_2018_DHS_11072019_1720_86355/NGGE7BFL/NGGE7BFL.shp"),) 
+mis15_sf <- st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NGGE71FL.shp"),) 
+mis10_sf <- st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),) 
 sf_10_18 <- rbind(dhs18_sf, mis15_sf, mis10_sf)
 
 
@@ -55,43 +56,7 @@ df_10_18_fin <- left_join(sf_10_18, clu_df_10_18, by =
                             c("DHSCLUST" = "v001", "DHSYEAR" = "dhs_year"))%>% filter(URBAN_RURA == "U")
 
 
-
-#make an urban map of all cluster values 
-
-u_df_18_fin <- df_10_18_fin %>% filter(DHSYEAR == 2018) 
-u_df_15_fin <- df_10_18_fin %>% filter(DHSYEAR == 2015) 
-u_df_10_fin <- df_10_18_fin %>% filter(DHSYEAR == 2010)
-
-#read in state shape file 
-stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1", use_iconv=TRUE, encoding= "UTF-8")
-state_sf <- st_as_sf(stateshp)
-
-#make cluster maps 
-
-clustermap<-function(cluster_shp, title){
-  tm_shape(state_sf) + #this is the health district shapfile with DS estimates info
-    tm_polygons()+
-    tm_shape(cluster_shp)+ #this is the points shape file with LLIN and number of kids info by cluster 
-    tm_bubbles(size =0.2, col = "p_test", 
-               border.col= "black", palette="seq",textNA = "Missing",
-               breaks=c(0, 20, 30, 40, 50, 60, 70, 80, 90, 100), legend.col.show=T)+
-    tm_layout(aes.palette = list(seq ="-RdYlBu"), title = title)+
-    tm_legend(legend.title.size = 0.8, legend.just="top")
-}
-
-map_18<-clustermap(u_df_18_fin, "2018 malaria prevalence by cluster (DHS)")
-map_15 <-clustermap(u_df_15_fin, "2015 malaria prevalence by cluster (DHS)")
-map_10 <-clustermap(u_df_10_fin, "2010 malaria prevalence by cluster (DHS)")
-
-
-urban_map<-tmap_arrange(map_18, map_15, map_10)
-
-
-tmap_save(tm =urban_map, filename = file.path(ResultDir, "maps", "urban_malaria_maps.pdf"), 
-          width=13, height=13, units ="in", asp=0,
-          paper ="A4r", useDingbats=FALSE)
-
-
+#
 ###################################################################################
 ##_______________________________________urban barplots ___________________________
 ###################################################################################
@@ -130,7 +95,7 @@ labels_data <- list("Education", "Floor type", "Household size", "Housing qualit
                     "U5 net Use", "Malaria pevalence", "Fever treatment", "U5 ACT use","Time to city", 
                     "Building density", "Dominant vector", "Elevation", "1m travel 2015","Housing percent 2000", 
                     "Housing percent 2015", "1m travel 2019","Travel to healthcare", "U5 pop. den (FB)", "Pop. density",
-                    "Sec vector", "Temperature", "1m walk time")
+                    "Sec vector", "Temperature", "1m walk time", "Walk to healthcare")
 
 xlab_data <- list("percent", "percent", "number", "percent", "number", 
                   "number", "percent", "percent","percent" ,"percent", 
@@ -138,23 +103,81 @@ xlab_data <- list("percent", "percent", "number", "percent", "number",
                   "percent", "percent", "percent", "percent","Mean minutes", 
                   "Mean", "Mean", "Mean", "Mean minutes", "percent",
                   "percent", "Mean minutes","Mean minutes", "Mean", "Mean",
-                  "Mean", "Mean", "Mean minutes")
+                  "Mean", "Mean", "Mean minutes", "Mean minutes")
 
-var_list <- c(4:37)
-label_list <- c(1:33)
+colr_data <- replicate(6, list("hotpink4", "violetred", "yellow4", "tan4", "darkcyan", "mediumblue"))
+
+
+
+var_list <- c(4:38)
+label_list <- c(1:34)
 plot_list = list()
 
-for (i in 1:33) { 
+for (i in 1:34) { 
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
-    geom_histogram(fill = "hotpink4")+
+    geom_histogram(fill = colr_data[label_list[[i]]])+
     theme_minimal()+
     theme(plot.background = element_rect(colour = "black", fill=NA, size=0.2), 
           axis.title.x = element_text(size=8, hjust = 0.5),
-          title = element_text(size=8, hjust = 0.5)) +
+          title = element_text(size=8),
+          plot.title = element_text(hjust = 0.5)) +
     labs (title = labels_data[label_list[[i]]], x = "values") +
-    xlab(xlab_data[label_list[[i]]])
+    xlab(xlab_data[label_list[[i]]]) +
+    ylab("")
   plot_list[[i]]<-p
-  variables <- ggarrange(plotlist=plot_list, nrow =7, ncol=6)
+  variables <- ggarrange(plotlist=plot_list, nrow =6, ncol=6)
+  variables <- annotate_figure(variables, top = text_grob("Destribution of covariates", color = "Black", face = "bold", size = 14),
+                               left = text_grob("Count", color = "Black", size = 14,  rot = 90))
   ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
 }
+
+
+#________________________________ geospatial coveriates plots______________________________
+
+#make an urban map of all cluster values 
+
+u_df_18_fin <- df_10_18_fin %>% filter(DHSYEAR == 2018) 
+u_df_15_fin <- df_10_18_fin %>% filter(DHSYEAR == 2015) 
+u_df_10_fin <- df_10_18_fin %>% filter(DHSYEAR == 2010)
+
+#read in state shape file 
+stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_2",
+                    use_iconv=TRUE, encoding= "UTF-8")
+state_sf <- st_as_sf(stateshp)
+
+#p_test cluster points destribution 
+
+clustermap<-function(cluster_shp, title){
+  tm_shape(state_sf) + #this is the health district shapfile with DS estimates info
+    tm_polygons("p_test")+
+    tm_shape(cluster_shp)+ #this is the points shape file with LLIN and number of kids info by cluster 
+    tm_bubbles(size =0.2, col = "p_test", 
+               border.col= "black", palette="seq",textNA = "Missing",
+               breaks=c(0, 20, 30, 40, 50, 60, 70, 80, 90, 100), legend.col.show=T)+
+    tm_layout(aes.palette = list(seq ="-RdYlBu"), title = title)+
+    tm_legend(legend.title.size = 0.8, legend.just="top")
+}
+
+map_18<-clustermap(u_df_18_fin, "2018 malaria prevalence by cluster (DHS)")
+map_15 <-clustermap(u_df_15_fin, "2015 malaria prevalence by cluster (DHS)")
+map_10 <-clustermap(u_df_10_fin, "2010 malaria prevalence by cluster (DHS)")
+
+urban_map <-tmap_arrange(map_18, map_15, map_10)
+
+tmap_save(tm =urban_map, filename = file.path(ResultDir, "maps", "urban_malaria_maps.pdf"), 
+          width=13, height=13, units ="in", asp=0,
+          paper ="A4r", useDingbats=FALSE)
+
+
+#________________________ plotting goespatials averages per state
+
+state_sf <- state_sf %>% mutate(NAME_1 = case_when(NAME_1 == "Federal Capital Territory" ~ "Fct Abuja",
+                                                     NAME_1 == "Nassarawa" ~ "Nasarawa",
+                                                     TRUE ~ as.character(NAME_1)))%>% mutate(NAME_1 = tolower(NAME_1))
+
+
+
+sf <- left_join(clu_df_10_18, state_sf, by =c("shstate" = "NAME_1"))
+
+
 
