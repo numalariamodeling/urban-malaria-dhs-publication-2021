@@ -12,7 +12,7 @@ options(repr.plot.width = 14, repr.plot.height = 8)
 
 #_________________________________Directories
 
-user <- Sys.getenv("USERNAME")
+user <- Sys.getenv("useRNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
 ProjectDir <- file.path(NuDir, 'data', 'nigeria_dhs' , 'data_analysis')
@@ -90,12 +90,12 @@ clu_df_cont <- clu_df_10_18[ , -which(names(clu_df_10_18) %in% c("shstate", "reg
 clu_df_cont$y <- ifelse(clu_df_cont$p_test < 0.1, 0,1) %>% (as.numeric)
 
 labels_data <- list("Education", "Floor type", "Household size", "Housing quality", "Mean age", 
-                    "Median age", "Net Use", "Roof type", "U5 population" ,"Wall type",
-                    "Wealth", "Fever", "Pregnant women", "Female population", "U5 Female population", 
-                    "U5 net Use", "Malaria prevalence", "Fever treatment", "U5 ACT use","Travel time to city", 
-                    "Building density", "Dominant vector", "Elevation", "Time to travel 1m 2015","Housing quality 2000", 
-                    "Housing quality 2015", "Time to travel 1m 2019","Travel time to healthcare", "U5 population density (FB)", "Population density",
-                    "Secondary vector", "Temperature", "Time to walk 1m", "Walk time to healthcare")
+                    "Median age", "Net use", "Roof type", "Under five population" ,"Wall type",
+                    "Wealth", "Fever", "Pregnant women", "Female population", "Under five Female population", 
+                    "Under five net use", "Malaria prevalence", "Fever treatment", "Under five ACT use","Travel time to city", 
+                    "Building density", "Dominant vector", "Elevation", "Time to travel one metre 2015","Housing quality 2000", 
+                    "Housing quality 2015", "Time to travel one metre 2019","Travel time to healthcare", "Under five population density (FB)", "Population density",
+                    "Secondary vector", "Temperature", "Time to walk one metre", "Walk time to healthcare")
 
 xlab_data <- list("percent", "percent", "number", "percent", "number", 
                   "number", "percent", "percent","percent" ,"percent", 
@@ -131,8 +131,21 @@ for (i in 1:34) {
     xlab(xlab_data[label_list[[i]]]) +
     ylab("")
   plot_list[[i]]<-p
-  variables <- ggarrange(plotlist=plot_list, nrow =6, ncol=6)
-  variables <- annotate_figure(variables, top = text_grob("Distribution of covariates", color = "Black", face = "bold", size = 14),
+  text1 <- ggparagraph(text = "Socioeconomic factors", face = "italic", size = 15, color = '#1075BC')
+  text2 <- ggparagraph(text = "Demographic factors", face = "italic", size = 15, color = '#EE332E')
+  text3 <- ggparagraph(text = "Behavioral factors", face = "italic", size = 15, color = '#27B460')
+  text4 <- ggparagraph(text = "Environmental factors", face = "italic", size = 15, color = '#27B460')
+  text5 <- ggparagraph(text = "Accessibility factors", face = "italic", size = 15, color = '#1075BC')
+  text3 <- ggparagraph(text = "Entomological factors", face = "italic", size = 15, color = '#27B460')
+  variable1 <- ggarrange(plot_list[[1]],ncol = 6)
+  varaibel2 <-  annotate_figure(ggarrange(plot_list[[3]], plot_list[[4]], plot_list[[5]],plot_list[[6]],plot_list[[7]],
+                          plot_list[[8]],plot_list[[9]]),top = text_grob("Distribution of covariates"))
+                         
+  
+  
+  variables <- ggarrange(variable1,varaibel2)
+  variables <- annotate_figure(variables, top = text_grob("Distribution of covariates", 
+                                                          color = "Black", face = "bold", size = 14),
                                left = text_grob("Count", color = "Black", size = 14,  rot = 90))
   ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
 }
