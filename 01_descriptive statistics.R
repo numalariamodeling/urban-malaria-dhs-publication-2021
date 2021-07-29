@@ -91,11 +91,11 @@ clu_df_cont$y <- ifelse(clu_df_cont$p_test < 0.1, 0,1) %>% (as.numeric)
 
 labels_data <- list("Education", "Floor type", "Household size", "Housing quality", "Mean age", 
                     "Median age", "Net Use", "Roof type", "U5 population" ,"Wall type",
-                    "Wealth", "Fever", "Pregnant women", "% of female", "U5 Female", 
-                    "U5 net Use", "Malaria pevalence", "Fever treatment", "U5 ACT use","Time to city", 
-                    "Building density", "Dominant vector", "Elevation", "1m travel 2015","Housing percent 2000", 
-                    "Housing percent 2015", "1m travel 2019","Travel to healthcare", "U5 pop. den (FB)", "Pop. density",
-                    "Sec vector", "Temperature", "1m walk time", "Walk to healthcare")
+                    "Wealth", "Fever", "Pregnant women", "Female population", "U5 Female population", 
+                    "U5 net Use", "Malaria prevalence", "Fever treatment", "U5 ACT use","Travel time to city", 
+                    "Building density", "Dominant vector", "Elevation", "Time to travel 1m 2015","Housing quality 2000", 
+                    "Housing quality 2015", "Time to travel 1m 2019","Travel time to healthcare", "U5 population density (FB)", "Population density",
+                    "Secondary vector", "Temperature", "Time to walk 1m", "Walk time to healthcare")
 
 xlab_data <- list("percent", "percent", "number", "percent", "number", 
                   "number", "percent", "percent","percent" ,"percent", 
@@ -105,28 +105,34 @@ xlab_data <- list("percent", "percent", "number", "percent", "number",
                   "percent", "Mean minutes","Mean minutes", "Mean", "Mean",
                   "Mean", "Mean", "Mean minutes", "Mean minutes")
 
-colr_data <- replicate(6, list("hotpink4", "violetred", "yellow4", "tan4", "darkcyan", "mediumblue"))
+colr_data <- rep(c("orangered", "dodgerblue", "darkorchid","green4","tan4","dimgrey"), times =c(1,9,8,5,8,3))
 
 
+label_list <- c(17,1,11,4,25,26,2,8,10,21,
+                3,5,6,9,15,14,13,30,
+                12,7,16,18,19,
+                23,20,24,27,33,28,29,34,
+                22,31,32)
 
-var_list <- c(4:38)
-label_list <- c(1:34)
+var_list <- c(label_list+3)
+colr_list <- c(1:34)
 plot_list = list()
 
 for (i in 1:34) { 
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
-    geom_histogram(fill = colr_data[label_list[[i]]])+
+    geom_histogram(fill = colr_data[colr_list[[i]]])+
     theme_minimal()+
-    theme(plot.background = element_rect(colour = "black", fill=NA, size=0.2), 
-          axis.title.x = element_text(size=8, hjust = 0.5),
-          title = element_text(size=8),
+    theme(plot.background = element_rect(colour = "black", fill=NA, size=0.2),
+          text=element_text(size=7), 
+          axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
+          title = element_text(size=7),
           plot.title = element_text(hjust = 0.5)) +
     labs (title = labels_data[label_list[[i]]], x = "values") +
     xlab(xlab_data[label_list[[i]]]) +
     ylab("")
   plot_list[[i]]<-p
   variables <- ggarrange(plotlist=plot_list, nrow =6, ncol=6)
-  variables <- annotate_figure(variables, top = text_grob("Destribution of covariates", color = "Black", face = "bold", size = 14),
+  variables <- annotate_figure(variables, top = text_grob("Distribution of covariates", color = "Black", face = "bold", size = 14),
                                left = text_grob("Count", color = "Black", size = 14,  rot = 90))
   ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
 }
@@ -176,8 +182,10 @@ state_sf <- state_sf %>% mutate(NAME_1 = case_when(NAME_1 == "Federal Capital Te
                                                      TRUE ~ as.character(NAME_1)))%>% mutate(NAME_1 = tolower(NAME_1))
 
 
+state_mean <- clu_df_10_18 %>% group_by(names(clu_df_cont[3:38])) %>% summarise(Mean_sales = mean(Sales))
 
-sf <- left_join(clu_df_10_18, state_sf, by =c("shstate" = "NAME_1"))
+  
+sf <- left_join(state_mean, state_sf, by =c("shstate" = "NAME_1"))
 
 
 
