@@ -105,13 +105,13 @@ xlab_data <- list("percent", "percent", "number", "percent", "number",
                   "percent", "Mean minutes","Mean minutes", "Mean", "Mean",
                   "Mean", "Mean", "Mean minutes", "Mean minutes")
 
-colr_data <- rep(c("orangered", "dodgerblue", "darkorchid","green4","tan4","turquoise"), times =c(1,9,8,5,8,3))
+colr_data <- rep(c("orangered", "dodgerblue", "darkorchid","green4","tan4","turquoise"), times =c(1,9,9,5,7,3))
 
 
 label_list <- c(17,1,11,4,25,26,2,8,10,21,
-                3,5,6,9,15,14,13,30,
+                3,5,6,9,29,15,14,13,30,
                 12,7,16,18,19,
-                23,20,24,27,33,28,29,34,
+                23,20,24,27,33,28,34,
                 22,31,32)
 
 var_list <- c(label_list+3)
@@ -131,35 +131,35 @@ for (i in 1:34) {
     xlab(xlab_data[label_list[[i]]]) +
     ylab("")
   plot_list[[i]]<-p
-  text1 <- ggparagraph(text = "Socioeconomic factors", face = "italic", size = 9, color = "dodgerblue")
-  text2 <- ggparagraph(text = "Demographic factors", face = "italic", size = 9, color = "darkorchid")
-  text3 <- ggparagraph(text = "Behavioral factors", face = "italic", size = 9, color = "green4")
-  text4 <- ggparagraph(text = "Accessibility factors", face = "italic", size = 9, color = "tan4")
-  text5 <- ggparagraph(text = "Environmental factors", face = "italic", size = 95, color = 'turquoise')
-  text6 <- ggparagraph(text = "Entomological factors", face = "italic", size = 9, color = '#27B460')
-  
-  variable1 <- ggarrange(NULL,NULL,NULL,plot_list[[1]],NULL,NULL, 
-                         NULL,NULL,NULL,text1,NULL,NULL,
-                         plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
-                         plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,NULL,NULL,
-                         NULL,NULL,NULL,text2,NULL,NULL,
-                         plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                         plot_list[[17]],plot_list[[18]],NULL,NULL,NULL,NULL,
-                         NULL,NULL,NULL,text3,NULL,NULL,
-                         plot_list[[19]],plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],NULL,
-                         NULL,NULL,NULL,text4,NULL,NULL,
-                         plot_list[[24]],plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[28]],
-                         plot_list[[30]],plot_list[[31]],NULL,NULL,NULL,NULL,
-                         NULL,NULL,NULL,text5,NULL,NULL,
-                         plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,NULL,NULL,
-                         nrow = 14, ncol= 6, heights = c(1,0.07,1,1,0.07, 1,1,0.07,1,0.07,1,1,0.07,1), 
-                         align = "v")
-     
-  variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
-                                                          color = "Black", face = "bold", size = 14),
-                               left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-  ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
 }
+
+text1 <- ggparagraph(text = "Socioeconomic factors", face = "italic", size = 10, color = "dodgerblue")
+text2 <- ggparagraph(text = "Demographic factors", face = "italic", size = 10, color = "darkorchid")
+text3 <- ggparagraph(text = "Behavioral factors", face = "italic", size = 10, color = "green4")
+text4 <- ggparagraph(text = "Accessibility factors", face = "italic", size = 10, color = "tan4")
+text5 <- ggparagraph(text = "Environmental factors", face = "italic", size = 10, color = 'turquoise')
+text6 <- ggparagraph(text = "Entomological factors", face = "italic", size = 10, color = '#27B460')
+
+variable1 <- ggarrange(plot_list[[1]],NULL,NULL,NULL,NULL,NULL, 
+                       text1,NULL,NULL,NULL,NULL,NULL,
+                       plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
+                       plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,NULL,NULL,
+                       text2,NULL,NULL,NULL,NULL,NULL,
+                       plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
+                       plot_list[[17]],plot_list[[18]],plot_list[[19]],NULL,NULL,NULL,
+                       text3,NULL,NULL,NULL,NULL,NULL,
+                       plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],NULL,
+                       text4,NULL,NULL,NULL,NULL,NULL,
+                       plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
+                       plot_list[[31]],NULL,NULL,NULL,NULL,NULL,
+                       text5,NULL,NULL,NULL,NULL,NULL,
+                       plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,NULL,NULL,
+                       nrow = 14, ncol= 6, heights = c(1,0.15,1,1,0.15, 1,1,0.15,1,0.15,1,1,0.15,1))
+
+variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
+                                                        color = "Black", face = "bold", size = 14),
+                             left = text_grob("Count", color = "Black", size = 14,  rot = 90))
+ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
 
 #________________________________ geospatial coveriates plots______________________________
 
