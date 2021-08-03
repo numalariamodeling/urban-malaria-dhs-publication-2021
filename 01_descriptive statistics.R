@@ -1,6 +1,6 @@
 
 x <- c("tidyverse","INLA", "ggplot2", "ggpubr", "inlabru", "rgdal", "sp", "sf", "tmap", 
-       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "rebus")
+       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "rebus", "patchwork")
 
 
 
@@ -122,7 +122,7 @@ for (i in 1:34) {
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
     geom_histogram(fill = colr_data[colr_list[[i]]])+
     theme_minimal()+
-    theme(plot.background = element_rect(colour = "black", fill=NA, size=0.2),
+    theme(
           text=element_text(size=7), 
           axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
           title = element_text(size=7),
@@ -140,25 +140,54 @@ text4 <- ggparagraph(text = "Accessibility factors", face = "italic", size = 10,
 text5 <- ggparagraph(text = "Environmental factors", face = "italic", size = 10, color = 'turquoise')
 text6 <- ggparagraph(text = "Entomological factors", face = "italic", size = 10, color = '#27B460')
 
-variable1 <- ggarrange(plot_list[[1]],NULL,NULL,NULL,NULL,NULL, 
-                       text1,NULL,NULL,NULL,NULL,NULL,
+#plot.background = element_rect(colour = "black", fill=NA, size=0.2),
+
+variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+                       NULL,NULL,text1,NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
-                       plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,NULL,NULL,
-                       text2,NULL,NULL,NULL,NULL,NULL,
+                       plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
+                       NULL,NULL,text2,NULL,NULL,
                        plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                       plot_list[[17]],plot_list[[18]],plot_list[[19]],NULL,NULL,NULL,
-                       text3,NULL,NULL,NULL,NULL,NULL,
-                       plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],NULL,
-                       text4,NULL,NULL,NULL,NULL,NULL,
+                       plot_list[[17]],plot_list[[18]],plot_list[[19]],NULL,
+                       NULL,NULL,text3,NULL,NULL,
+                       plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
+                       NULL,NULL,text4,NULL,NULL,
                        plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
-                       plot_list[[31]],NULL,NULL,NULL,NULL,NULL,
-                       text5,NULL,NULL,NULL,NULL,NULL,
-                       plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,NULL,NULL,
-                       nrow = 14, ncol= 6, heights = c(1,0.15,1,1,0.15, 1,1,0.15,1,0.15,1,1,0.15,1))
+                       plot_list[[31]],NULL,NULL,NULL,
+                       NULL,NULL,text5,NULL,NULL,
+                       NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
+                       nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1))
+
+variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, nrow = 1, ncol= 5) + 
+  plot_annotation(title = "Socioeconomic factors", theme = theme( plot.title = element_text(hjust = 0.5)))
+
+variable2 <- ggarrange(plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
+                       plot_list[[8]],plot_list[[9]],plot_list[[10]], nrow = 2, ncol= 5) + 
+  plot_annotation(title = "Socioeconomic factors", theme = theme( plot.title = element_text(hjust = 0.5)))
+  
+variable3 <- ggarrange(plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
+                       plot_list[[17]],plot_list[[18]],plot_list[[19]], nrow = 2, ncol= 5) + 
+  plot_annotation(title = "Demographic factors", theme = theme( plot.title = element_text(hjust = 0.5)))
+
+variable4 <- ggarrange(plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],NULL, nrow = 2, ncol= 5) + 
+  plot_annotation(title = "Behavioral factors", theme = theme( plot.title = element_text(hjust = 0.5)))
+
+variable5 <- ggarrange(plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
+                       plot_list[[31]], nrow = 2, ncol= 5) + 
+  plot_annotation(title = "Accessibility factors", theme = theme( plot.title = element_text(hjust = 0.5)))
+
+variable6 <- ggarrange(NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL, nrow = 1, ncol= 5) + 
+  plot_annotation(title = "Environmental factors", theme = theme( plot.title = element_text(hjust = 0.5)))
+
+
+
+variables <-  ggpubr::ggarrange(variable1, variable2, variable3, variable4, variable5, variable6, nrow = 6, ncol= 1)
+
+
 
 variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
-                                                        color = "Black", face = "bold", size = 14),
-                             left = text_grob("Count", color = "Black", size = 14,  rot = 90))
+                                                          color = "Black", face = "bold", size = 14),
+                               left = text_grob("Count", color = "Black", size = 14,  rot = 90))
 ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
 
 #________________________________ geospatial coveriates plots______________________________
