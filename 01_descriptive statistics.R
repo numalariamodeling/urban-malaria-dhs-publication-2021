@@ -31,6 +31,10 @@ CsvDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 #_______________________________ Load pre-clustered data:
 clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria.csv"), 
                          header = T, sep = ',') 
+
+clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria_all_buffers.csv"), 
+                         header = T, sep = ',')
+
 clu_df_10_18$housing_2000_2000m <- clu_df_10_18$housing_2000_2000m *100
 clu_df_10_18$housing_2015_2000m <- clu_df_10_18$housing_2015_2000m *100
 # Binarize response:
@@ -146,7 +150,7 @@ variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL,
                        plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
                        NULL,NULL,text_grob("Accessibility factors", face = "italic", size = 10, color = "tan4"),NULL,NULL,
                        plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
-                       plot_list[[31]],NULL,NULL,NULL,
+                       NULL,NULL,NULL,plot_list[[31]],
                        NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
                        NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
                        nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
@@ -155,6 +159,62 @@ variables <- annotate_figure(variable1, top = text_grob("Distribution of covaria
                                                           color = "Black", face = "bold", size = 14),
                                left = text_grob("Count", color = "Black", size = 14,  rot = 90))
 ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
+
+
+
+#All buffers plot
+
+name_list <- c("test",
+               "edu","wealth","housing_q","housing_2000","housing_2015",
+               "floor", "roof_type","wall","building",
+               "household_size","mean_age","median_age","U5_pop","U5_FB",
+               "female_child_sex","all_female_sex","preg_women","pop_density",
+               "fever","net_use","net_use_child","med_treat_fever","ACT_use_U5",
+               "elev_","minutes_to_city","travel_metre_2015","travel_metre_2019","walking_metre",
+               "travel_healthcare","walking_healthcare",
+               "dominant","secondary_vector","temp_all_yrs", "v001")
+
+for (i in 1:34) { 
+  melteddf <- melt(dplyr::select(clu_df_cont, "v001", matches(name_list[[i]])), id="v001", na.rm=T)
+  p<- ggplot(melteddf, aes_string(x= "value", fill = "variable", color = "variable")) +
+    geom_freqpoly(size = 0.7) +
+    theme_minimal()+
+    theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
+          text=element_text(size=7), 
+          axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
+          title = element_text(size=7),
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(margin = margin(r = -1.7)),
+          axis.text.y = element_text(margin = margin(r = -1.7)),
+          legend.position = "none") +
+    labs (title = labels_data[label_list[[i]]], x = "values") +
+    xlab(xlab_data[label_list[[i]]]) +
+    ylab("")
+  plot_list[[i]]<-p
+  
+}
+
+
+variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+                       NULL,NULL,text_grob("Distribution of covariates", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
+                       plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
+                       plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
+                       NULL,NULL,text_grob("Demographic factors", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
+                       plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
+                       plot_list[[17]],plot_list[[18]],plot_list[[19]],NULL,
+                       NULL,NULL,text_grob("Behavioral factors", face = "italic", size = 10, color = "green4"),NULL,NULL,
+                       plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
+                       NULL,NULL,text_grob("Accessibility factors", face = "italic", size = 10, color = "tan4"),NULL,NULL,
+                       plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
+                       NULL,NULL,NULL,plot_list[[31]],
+                       NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
+                       NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
+                       nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)), 
+                       common.legend = TRUE, legend="bottom")
+variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
+                                                        color = "Black", face = "bold", size = 14),
+                             left = text_grob("Count", color = "Black", size = 14,  rot = 90))
+ggsave(paste0(HisDir, '/', Sys.Date(),  'freqpoly.pdf'), variables, width=13, height=13)
 
 #________________________________ geospatial coveriates plots______________________________
 
