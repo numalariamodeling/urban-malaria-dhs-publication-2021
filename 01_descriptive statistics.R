@@ -188,6 +188,9 @@ for (i in 1:34) {
           axis.text.y = element_text(margin = margin(r = -1.7)),
           legend.position = "none") +
     labs (title = labels_data[label_list[[i]]], x = "values") +
+    scale_color_manual(labels = c("0m", "1000m", "2000m", "3000m","4000m"), 
+                       values = c("orangered3", "darkorchid","green4", "yellow",'mediumblue', "orangered3", "darkorchid","green4", "yellow",'mediumblue'))+
+    guides(color=guide_legend("Legend/Buffers")) +
     xlab(xlab_data[label_list[[i]]]) +
     ylab("")
   plot_list[[i]]<-p
@@ -195,7 +198,7 @@ for (i in 1:34) {
 }
 
 
-variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+variable1 <- ggarrange(get_legend(plot_list[[34]] + theme(legend.position="left")),NULL,plot_list[[1]],NULL,NULL, 
                        NULL,NULL,text_grob("Distribution of covariates", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
                        plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
@@ -209,8 +212,8 @@ variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL,
                        NULL,NULL,NULL,plot_list[[31]],
                        NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
                        NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
-                       nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)), 
-                       common.legend = TRUE, legend="bottom")
+                       nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
+
 variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
                                                         color = "Black", face = "bold", size = 14),
                              left = text_grob("Count", color = "Black", size = 14,  rot = 90))
