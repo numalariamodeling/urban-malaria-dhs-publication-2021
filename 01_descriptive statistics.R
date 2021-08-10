@@ -1,6 +1,6 @@
 
 x <- c("tidyverse","INLA", "ggplot2", "ggpubr", "inlabru", "rgdal", "sp", "sf", "tmap", 
-       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "rebus", "patchwork")
+       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "rebus", "patchwork", "gdata")
 
 
 
@@ -93,6 +93,9 @@ ggsave(paste0(HisDir, '/', Sys.Date(),  'combined_urban_malaria_clusters_percent
 clu_df_cont <- clu_df_10_18[ , -which(names(clu_df_10_18) %in% c("shstate", "region", "X"))]
 clu_df_cont$y <- ifelse(clu_df_cont$p_test < 0.1, 0,1) %>% (as.numeric)
 
+clu_df_cont <- rename.vars(clu_df_cont, from = c("net_use", "fever"), 
+                         to = c("nfever_cases", "net_use_all"))
+
 labels_data <- list("Education", "Floor type", "Household size", "Housing quality", "Mean age", 
                     "Median age", "Net use", "Roof type", "Under five population" ,"Wall type",
                     "Wealth", "Fever", "Pregnant women", "Female population", "Under five Female population", 
@@ -140,7 +143,7 @@ for (i in 1:34) {
 }
 
 variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
-                       NULL,NULL,text_grob("Distribution of covariates", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
+                       NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
                        plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
                        NULL,NULL,text_grob("Demographic factors", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
@@ -162,20 +165,33 @@ ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, 
 
 
 
-#All buffers plot
+#All buffers plot - according to theme
+
+fill0 <-  c("orangered", "dodgerblue", "darkorchid","green4","tan4", "turquoise", "orangered", "dodgerblue", "darkorchid","green4","tan4", "turquoise")
+fill1 <- c("dodgerblue", "darkorchid","green4","tan4", "turquoise", "orangered", "dodgerblue", "darkorchid","green4","tan4", "turquoise")
+fill2 <- c("darkorchid", "darkgoldenrod1", "gold","cornflowerblue","hotpink","darkorchid", "darkgoldenrod1", "gold","cornflowerblue","hotpink")
+fill3 <- c("green4", "chocolate2", "chocolate3","gold","cornflowerblue","chocolate1", "chocolate2", "chocolate3","chocolate4","chocolate")
+fill4 <- c("magenta", "limegreen", "gold2","gray48","tan4","magenta", "limegreen", "gold2","gray48","tan4")
+fill5 <- c("lightcoral", "darkgoldenrod", "brown1","darkslategray4","turquoise","lightcoral", "darkgoldenrod", "brown1","darkslategray4","turquoise")
+
+fill_list <- rep(list(fill0, fill1, fill2, fill3, fill4, fill5), times =c(1,9,9,5,7,3))
 
 name_list <- c("test",
                "edu","wealth","housing_q","housing_2000","housing_2015",
                "floor", "roof_type","wall","building",
                "household_size","mean_age","median_age","U5_pop","U5_FB",
                "female_child_sex","all_female_sex","preg_women","pop_density",
-               "fever","net_use","net_use_child","med_treat_fever","ACT_use_U5",
+               "fever_cases","net_use_all","net_use_child","med_treat_fever","ACT_use_U5",
                "elev_","minutes_to_city","travel_metre_2015","travel_metre_2019","walking_metre",
                "travel_healthcare","walking_healthcare",
                "dominant","secondary_vector","temp_all_yrs", "v001")
 
+
+
+
 for (i in 1:34) { 
   melteddf <- melt(dplyr::select(clu_df_cont, "v001", matches(name_list[[i]])), id="v001", na.rm=T)
+  fill_select <- colr_list[i]
   p<- ggplot(melteddf, aes_string(x= "value", fill = "variable", color = "variable")) +
     geom_freqpoly(size = 0.7) +
     theme_minimal()+
@@ -189,17 +205,16 @@ for (i in 1:34) {
           legend.position = "none") +
     labs (title = labels_data[label_list[[i]]], x = "values") +
     scale_color_manual(labels = c("0m", "1000m", "2000m", "3000m","4000m"), 
-                       values = c("orangered3", "darkorchid","green4", "yellow",'mediumblue', "orangered3", "darkorchid","green4", "yellow",'mediumblue'))+
+                       values = fill_list[[i]]) +
     guides(color=guide_legend("Legend/Buffers")) +
     xlab(xlab_data[label_list[[i]]]) +
     ylab("")
-  plot_list[[i]]<-p
+  plot_list[[i]]<-p  
   
 }
 
-
-variable1 <- ggarrange(get_legend(plot_list[[34]] + theme(legend.position="left")),NULL,plot_list[[1]],NULL,NULL, 
-                       NULL,NULL,text_grob("Distribution of covariates", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
+variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+                       NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
                        plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
                        NULL,NULL,text_grob("Demographic factors", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
@@ -218,6 +233,34 @@ variables <- annotate_figure(variable1, top = text_grob("Distribution of covaria
                                                         color = "Black", face = "bold", size = 14),
                              left = text_grob("Count", color = "Black", size = 14,  rot = 90))
 ggsave(paste0(HisDir, '/', Sys.Date(),  'freqpoly.pdf'), variables, width=13, height=13)
+
+
+#All buffers plot - according to data source
+
+
+variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+                       NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
+                       plot_list[[2]],plot_list[[3]],plot_list[[6]],plot_list[[7]],plot_list[[8]],plot_list[[11]],
+                       plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
+                       NULL,NULL,text_grob("Demographic factors", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
+                       plot_list[[12]],plot_list[[13]],plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],
+                       plot_list[[24]],NULL,NULL,NULL,
+                       NULL,NULL,text_grob("Behavioral factors", face = "italic", size = 10, color = "green4"),NULL,NULL,
+                       plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[14]],plot_list[[15]],
+                       NULL,NULL,text_grob("Accessibility factors", face = "italic", size = 10, color = "tan4"),NULL,NULL,
+                       plot_list[[16]],plot_list[[17]],plot_list[[18]],plot_list[[19]],plot_list[[25]],plot_list[[26]],
+                       plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],plot_list[[31]],
+                       NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
+                       NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
+                       nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
+
+variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
+                                                        color = "Black", face = "bold", size = 14),
+                             left = text_grob("Count", color = "Black", size = 14,  rot = 90))
+ggsave(paste0(HisDir, '/', Sys.Date(),  'freqpoly_durce.pdf'), variables, width=13, height=13)
+
+
+
 
 #________________________________ geospatial coveriates plots______________________________
 
