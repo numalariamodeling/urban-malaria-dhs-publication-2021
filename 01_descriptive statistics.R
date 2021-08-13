@@ -146,12 +146,11 @@ for (i in 1:34) {
 
 
 #__________________________
-z <- c("1"=="red", "0"=="green")
 
 for (i in 1:34) { 
-  clu_df_cont$colors <- ifelse(clu_df_cont$p_test < 0.1, colr_data[i], "green")
+  clu_df_cont$colors <- ifelse(clu_df_cont$p_test < 0.1, colr_data[[2]], "green")
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
-    geom_histogram(aes(position="stack", group = y, fill=colors))+
+    geom_histogram(aes(position="stack", group = y, fill=y))+
     theme_minimal()+
     theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
           text=element_text(size=7), 
@@ -168,7 +167,8 @@ for (i in 1:34) {
 }
 
 
-variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+variable1 <- ggarrange(NULL,NULL,get_legend(plot_list[[2]] + theme(legend.position="bottom")),NULL,NULL,
+                       NULL,NULL,plot_list[[1]],NULL,NULL, 
                        NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
                        plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
@@ -182,14 +182,14 @@ variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL,
                        NULL,NULL,NULL,plot_list[[31]],
                        NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
                        NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
-                       nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
+                       nrow = 15, ncol= 5, heights = c(0.5,1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
 
 variable1
 
 variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
                                                           color = "Black", face = "bold", size = 14),
                                left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
+ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms_stacked.pdf'), variables, width=13, height=13)
 
 
 
