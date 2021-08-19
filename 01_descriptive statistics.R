@@ -44,6 +44,8 @@ clu_df_10_18$y <- ifelse(clu_df_10_18$p_test < 0.1, 0,1)
 #na count
 missing_values <- sapply(clu_df_10_18, function(x) sum(is.na(x)))
 
+clu_df_10_18 <- rename.vars(clu_df_10_18, from = c("net_use", "fever"), 
+                           to = c("nfever_cases", "net_use_all"))
 
 #__________________________________Loading Spactial pointd
 
@@ -94,8 +96,6 @@ ggsave(paste0(HisDir, '/', Sys.Date(),  'combined_urban_malaria_clusters_percent
 clu_df_cont <- clu_df_10_18[ , -which(names(clu_df_10_18) %in% c("shstate", "region", "X"))]
 clu_df_cont$y <- ifelse(clu_df_cont$p_test < 0.1, 0,1) %>% (as.numeric)
 
-clu_df_cont <- rename.vars(clu_df_cont, from = c("net_use", "fever"), 
-                         to = c("nfever_cases", "net_use_all"))
 
 labels_data <- list("Education", "Floor type", "Household size", "Housing quality", "Mean age", 
                     "Median age", "Net use", "Roof type", "Under five population" ,"Wall type",
@@ -312,7 +312,7 @@ u_df_15_fin <- df_10_18_fin %>% filter(DHSYEAR == 2015)
 u_df_10_fin <- df_10_18_fin %>% filter(DHSYEAR == 2010)
 
 #read in state shape file 
-stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_2",
+stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",
                     use_iconv=TRUE, encoding= "UTF-8")
 state_sf <- st_as_sf(stateshp)
 
@@ -359,10 +359,13 @@ for (i in 1:19){
     
 
 }
+grid.newpage()
 
+tt <- tmap_grob(plot_list[[1]])
 
+plot_grid(, tmap_grob(plot_list[[2]]),tmap_grob(plot_list[[3]]))
 
-plot_list[[1]]+plot_list[[2]]                    
+as.ggplot(plot_list[[2]])                   
                         
 map_plpot <-tmap_arrange(plot_list[[1]],plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],
                          plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],plot_list[[11]], 
@@ -394,12 +397,13 @@ p<- ggplot() +
 p
 
 #______________________________
-
-
+df_10_18_fin <- df_10_18_fin %>% filter(LONGNUM > 0.000000)
+ 
 for (i in 1:34) { 
   p<- ggplot() + 
     geom_sf(data =state_sf)+
-    geom_point(df_10_18_fin, mapping = aes(x = LONGNUM, y = LATNUM, color = edu_a))+
+    geom_point(df_10_18_fin, mapping = aes_string(x = "LONGNUM", y = "LATNUM", 
+                                                  color = names(clu_df_cont)[var_list[[i]]]), size = 0.4)+
     theme_minimal()+
     theme(legend.position = "none", 
           panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
@@ -416,6 +420,7 @@ for (i in 1:34) {
   plot_list[[i]]<-p
 }
 
+
 variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
                        NULL,NULL,text_grob("DHS covariates", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],
@@ -430,12 +435,12 @@ variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL,
                        plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],
                        plot_list[[30]],plot_list[[31]],plot_list[[32]],plot_list[[33]],plot_list[[34]],
                        
-                       nrow = 11, ncol= 5, heights = c(1,0.2,1,1,1,1,0.2,1,1,1, widths = c(1,1,1,1,1)))
+                       nrow = 11, ncol= 5, heights = c(1,0.2,1,1,1,1,0.2,1,1,1, widths = c(2,2,2,2,2)))
 
 variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
                                                         color = "Black", face = "bold", size = 14),
                              left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(MapsDir, '/', Sys.Date(),  'maps_grouped.pdf'), variables, width=13, height=13)
+ggsave(paste0(MapsDir, '/', Sys.Date(),  'maps_grouped.pdf'), variables, width=13, height=18)
 
 
 
