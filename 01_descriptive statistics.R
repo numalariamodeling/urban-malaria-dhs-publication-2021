@@ -22,6 +22,7 @@ DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 Rdata <- file.path(DataDir, 'DHS', 'Subset_data', "urban_malaria_rdata")
 ResultDir <-file.path(ProjectDir, "results", "research_plots")
 HisDir <-file.path(ResultDir, "histograms")
+MapsDir <- file.path(ResultDir, "maps")
 BinDir <- file.path(ProjectDir, "bin")
 SrcDir <- file.path(ProjectDir, 'src', 'Research', 'urban_rural_transmission_analysis')
 RastDir <- file.path(DataDir, "Raster_files")
@@ -87,7 +88,7 @@ ggsave(paste0(HisDir, '/', Sys.Date(),  'combined_urban_malaria_clusters_percent
 
 
 
-#________________________________all coveriates histogram plots_________________________________
+#________________________________all coveriates histogram plots 200m buffer_________________________________
 
 
 clu_df_cont <- clu_df_10_18[ , -which(names(clu_df_10_18) %in% c("shstate", "region", "X"))]
@@ -143,15 +144,35 @@ for (i in 1:34) {
 }
 
 
+variable1 <- ggarrange(NULL,NULL,get_legend(plot_list[[2]] + theme(legend.position="bottom")),NULL,NULL,
+                       NULL,NULL,plot_list[[1]],NULL,NULL, 
+                       NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
+                       plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
+                       plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
+                       NULL,NULL,text_grob("Demographic factors", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
+                       plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
+                       plot_list[[17]],plot_list[[18]],plot_list[[19]],NULL,
+                       NULL,NULL,text_grob("Behavioral factors", face = "italic", size = 10, color = "green4"),NULL,NULL,
+                       plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
+                       NULL,NULL,text_grob("Accessibility factors", face = "italic", size = 10, color = "tan4"),NULL,NULL,
+                       plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
+                       NULL,NULL,NULL,plot_list[[31]],
+                       NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
+                       NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
+                       nrow = 15, ncol= 5, heights = c(0.5,1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
 
+
+variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
+                                                        color = "Black", face = "bold", size = 14),
+                             left = text_grob("Count", color = "Black", size = 14,  rot = 90))
+ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
 
 #__________________________
-z <- c("1"=="red", "0"=="green")
 
 for (i in 1:34) { 
-  clu_df_cont$colors <- ifelse(clu_df_cont$p_test < 0.1, colr_data[i], "green")
+  #clu_df_cont$colors <- ifelse(clu_df_cont$p_test < 0.1, "blue", "green")
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
-    geom_histogram(aes(position="stack", group = y, fill=colors))+
+    geom_histogram(aes(position="stack", group = y, fill=y))+
     theme_minimal()+
     theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
           text=element_text(size=7), 
@@ -167,8 +188,8 @@ for (i in 1:34) {
   plot_list[[i]]<-p
 }
 
-
-variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+variable1 <- ggarrange(NULL,NULL,get_legend(plot_list[[2]] + theme(legend.position="bottom")),NULL,NULL,
+                       NULL,NULL,plot_list[[1]],NULL,NULL, 
                        NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
                        plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
@@ -182,14 +203,13 @@ variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL,
                        NULL,NULL,NULL,plot_list[[31]],
                        NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
                        NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
-                       nrow = 14, ncol= 5, heights = c(1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
+                       nrow = 15, ncol= 5, heights = c(0.5,1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
 
-variable1
 
 variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
                                                           color = "Black", face = "bold", size = 14),
                                left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=13)
+ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms_y.pdf'), variables, width=13, height=13)
 
 
 
@@ -296,15 +316,15 @@ stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="g
                     use_iconv=TRUE, encoding= "UTF-8")
 state_sf <- st_as_sf(stateshp)
 
-#p_test cluster points destribution 
+#make cluster maps 
 
 clustermap<-function(cluster_shp, title){
   tm_shape(state_sf) + #this is the health district shapfile with DS estimates info
-    tm_polygons("p_test")+
+    tm_polygons()+
     tm_shape(cluster_shp)+ #this is the points shape file with LLIN and number of kids info by cluster 
     tm_bubbles(size =0.2, col = "p_test", 
                border.col= "black", palette="seq",textNA = "Missing",
-               breaks=c(0, 20, 30, 40, 50, 60, 70, 80, 90, 100), legend.col.show=T)+
+               breaks=c(0, 0.2, 0.3,0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0), legend.col.show=T)+
     tm_layout(aes.palette = list(seq ="-RdYlBu"), title = title)+
     tm_legend(legend.title.size = 0.8, legend.just="top")
 }
@@ -313,11 +333,113 @@ map_18<-clustermap(u_df_18_fin, "2018 malaria prevalence by cluster (DHS)")
 map_15 <-clustermap(u_df_15_fin, "2015 malaria prevalence by cluster (DHS)")
 map_10 <-clustermap(u_df_10_fin, "2010 malaria prevalence by cluster (DHS)")
 
-urban_map <-tmap_arrange(map_18, map_15, map_10)
+
+urban_map<-tmap_arrange(map_18, map_15, map_10)
+
 
 tmap_save(tm =urban_map, filename = file.path(ResultDir, "maps", "urban_malaria_maps.pdf"), 
           width=13, height=13, units ="in", asp=0,
           paper ="A4r", useDingbats=FALSE)
+
+
+
+#make maps for all variable using their cluster values 
+
+
+for (i in 1:19){ 
+  m<-tm_shape(state_sf) + #this is the health district shapfile with DS estimates info
+    tm_polygons()+
+    tm_shape(df_10_18_fin)+ #this is the points shape file with LLIN and number of kids info by cluster 
+    tm_bubbles(size=0.1, col = names(clu_df_cont)[grepl(name_list[[i]], names(clu_df_cont))], 
+               border.col= "black", palette="seq",textNA = "Missing",
+               breaks=c(0, 20, 30,40, 50, 60, 70, 80, 90, 100), legend.col.show=F)+
+    tm_layout(aes.palette = list(seq ="-RdYlBu"), main.title = labels_data[label_list[[i]]], 
+              main.title.position = "center", main.title.size =0.8)
+  plot_list[[i]]<-m
+    
+
+}
+
+
+
+plot_list[[1]]+plot_list[[2]]                    
+                        
+map_plpot <-tmap_arrange(plot_list[[1]],plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],
+                         plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],plot_list[[11]], 
+                         plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
+                         plot_list[[17]], plot_list[[18]], plot_list[[19]],nrow = 4, ncol= 5)
+
+tmap_save(tm =map_plpot, filename = file.path(ResultDir, "maps", "dependent_dhscov_maps.pdf"), 
+          width=13, height=13, units ="in", asp=0,
+          paper ="A4r", useDingbats=FALSE)
+
+
+
+p<- ggplot() + 
+  geom_sf(data =state_sf)+
+  geom_point(df_10_18_fin, mapping = aes(x = LONGNUM, y = LATNUM, color = edu_a))+
+  theme_minimal()+
+  theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
+        text=element_text(size=7), 
+        axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
+        title = element_text(size=7),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(margin = margin(r = -1.7)),
+        axis.text.y = element_text(margin = margin(r = -1.7)),
+        legend.position = "none") +
+  guides(color=guide_legend("Legend/Buffers")) +
+  xlab(xlab_data[label_list[[i]]]) +
+  ylab("")
+  
+p
+
+#______________________________
+
+
+for (i in 1:34) { 
+  p<- ggplot() + 
+    geom_sf(data =state_sf)+
+    geom_point(df_10_18_fin, mapping = aes(x = LONGNUM, y = LATNUM, color = edu_a))+
+    theme_minimal()+
+    theme(legend.position = "none", 
+          panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
+          text=element_text(size=7), 
+          axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
+          title = element_text(size=7),
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(margin = margin(r = -1.7)),
+          axis.text.y = element_text(margin = margin(r = -1.7))) +
+    
+    labs (title = labels_data[label_list[[i]]], x = "values") +
+    xlab(xlab_data[label_list[[i]]]) +
+    ylab("")
+  plot_list[[i]]<-p
+}
+
+variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
+                       NULL,NULL,text_grob("DHS covariates", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
+                       plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],
+                       plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],plot_list[[11]], 
+                       plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
+                       plot_list[[17]],plot_list[[18]], plot_list[[19]],NULL,NULL,
+                       
+                       NULL,NULL,text_grob("Geospatial covariates", face = "italic", size = 10, color = "turquoise"),NULL,NULL,
+                       plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
+                       
+                       
+                       plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],
+                       plot_list[[30]],plot_list[[31]],plot_list[[32]],plot_list[[33]],plot_list[[34]],
+                       
+                       nrow = 11, ncol= 5, heights = c(1,0.2,1,1,1,1,0.2,1,1,1, widths = c(1,1,1,1,1)))
+
+variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
+                                                        color = "Black", face = "bold", size = 14),
+                             left = text_grob("Count", color = "Black", size = 14,  rot = 90))
+ggsave(paste0(MapsDir, '/', Sys.Date(),  'maps_grouped.pdf'), variables, width=13, height=13)
+
+
+
+
 
 
 #________________________ plotting goespatials averages per state
