@@ -1,6 +1,6 @@
 
-x <- c("tidyverse","INLA", "ggplot2", "ggpubr", "inlabru", "rgdal", "sp", "sf", "tmap", 
-       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "rebus", "patchwork", "gdata")
+x <- c("tidyverse","INLA", "ggplot2", "ggpubr",  "rgdal", "sp", "sf", "tmap", 
+       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "patchwork", "gdata") #"inlabru","rebus"
 
 
 
@@ -30,7 +30,7 @@ CsvDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 
 
 #_______________________________ Load pre-clustered data:
-clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria.csv"), 
+clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria_0m_geospatial.csv"), 
                          header = T, sep = ',') 
 
 clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria_all_buffers.csv"), 
@@ -55,20 +55,85 @@ dhs18_sf <- st_read(file.path(DHSData, "Downloads",
                               "NG_2018_DHS_11072019_1720_86355/NGGE7BFL/NGGE7BFL.shp"),) 
 mis15_sf <- st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NGGE71FL.shp"),) 
 mis10_sf <- st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),) 
-sf_10_18 <- rbind(dhs18_sf, mis15_sf, mis10_sf)
+sf_10_18 <- rbind(dhs18_sf, mis15_sf, mis10_sf) %>%filter(URBAN_RURA == "U") %>%  rename(v001 = DHSCLUST)
 
 
 # join dhs variables to cluster points by year 
 df_10_18_fin <- left_join(sf_10_18, clu_df_10_18, by = 
-                            c("DHSCLUST" = "v001", "DHSYEAR" = "dhs_year"))%>% filter(URBAN_RURA == "U")
+                            c("DHSCLUST" = "v001", "DHSYEAR" = "dhs_year"))
 
 
 #
 ###################################################################################
 ##_______________________________________urban barplots ___________________________
 ###################################################################################
-
 paletteer::paletteer_d("awtools::a_palette")
+
+#figure 1
+#examine the number of children tested 
+tests=ggplot(clu_df_10_18, aes(x = child_6_59_tested_malaria))+
+  geom_histogram(bins = 25, fill = '#019875FF') + 
+  scale_x_continuous(expand = c(0.03, 0)) +
+  scale_y_continuous(expand = c(0.03, 0)) +
+  theme_bw() + 
+  labs(x = 'Children 6 - 59 months tested for malaria by microscopy per cluster', y = 'Count')+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
+        axis.text.x = element_text(size = 12, color = "black"), 
+        axis.text.y = element_text(size = 12, color = "black"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size =12))
+
+
+
+
+#examine the number of positives 
+positives=ggplot(clu_df_10_18, aes(x = positives))+
+geom_histogram(bins = 20, fill = '#FECEA8FF') + 
+  scale_x_continuous(expand = c(0.03, 0)) +
+  scale_y_continuous(expand = c(0.03, 0)) +
+  theme_bw() + 
+  labs(x = 'Positive malaria tests among children 6 - 59 months by microscopy per cluster', y = 'Count')+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
+        axis.text.x = element_text(size = 12, color = "black"), 
+        axis.text.y = element_text(size = 12, color = "black"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size =12))
+  
+  
+
+#what is their spatial distribution?
+#read in state shape file 
+stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",
+                    use_iconv=TRUE, encoding= "UTF-8")
+state_sf <- st_as_sf(stateshp)
+
+
+
+df <- clu_df_10_18 %>%  dplyr::select(v001, positives, DHSYEAR=dhs_year)
+map<- sf_10_18 %>%left_join(df, by=c('v001', 'DHSYEAR')) 
+map$positives_cut <- cut(map$positives, breaks=c(0, 2, 5, 10, 21, 22), include.lowest = TRUE)
+
+
+map_2<- sf_10_18 %>%left_join(df, by=c('v001', 'DHSYEAR')) %>%  filter(LATNUM == 0) #need to edit this 
+
+map_plot<-ggplot(state_sf) +
+  geom_sf(color='lightgrey')+
+  geom_point(data = map,
+    aes(color = positives_cut, geometry = geometry),
+    stat = "sf_coordinates"
+  ) +
+  viridis::scale_color_viridis(discrete=TRUE) +
+  ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+                 axis.text.y = ggplot2::element_blank(),
+                 axis.ticks = ggplot2::element_blank(),
+                 rect = ggplot2::element_blank(),
+                 plot.background = ggplot2::element_rect(fill = "white", colour = NA)) +
+  xlab("")+
+  ylab("")
+
+ggsave(paste0(map_plot), final_plot, width = 13, height = 9)
+
+
 
 # Binarize response:
 clu_df_10_18$y <- ifelse(clu_df_10_18$p_test < 0.1, "less than 10%", "greater than 10%") 
@@ -311,10 +376,6 @@ u_df_18_fin <- df_10_18_fin %>% filter(DHSYEAR == 2018)
 u_df_15_fin <- df_10_18_fin %>% filter(DHSYEAR == 2015) 
 u_df_10_fin <- df_10_18_fin %>% filter(DHSYEAR == 2010)
 
-#read in state shape file 
-stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",
-                    use_iconv=TRUE, encoding= "UTF-8")
-state_sf <- st_as_sf(stateshp)
 
 #make cluster maps 
 
