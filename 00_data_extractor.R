@@ -9,23 +9,19 @@ memory.limit(size = 50000)
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
-GlobDir <- file.path(NuDir, "data", 'africa_health_district_climate', 'climate', 'global')
-ProjectDir <- file.path(NuDir, 'data', 'nigeria_dhs' , 'data_analysis')
+ProjectDir <- file.path(DataDir, 'nigeria_dhs' , 'data_analysis')
 DataDir <- file.path(ProjectDir, "data")
+GlobDir <- file.path(DataDir, 'africa_health_district_climate', 'climate', 'global')
 DHSData <- file.path(DataDir, 'DHS')
-DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'DHS_survey_extract')
-Rdata <- file.path(DataDir, 'DHS', 'Subset_data', "urban_malaria_rdata")
-ResultDir <-file.path(ProjectDir, "results")
-BinDir <- file.path(ProjectDir, "bin")
-SrcDir <- file.path(ProjectDir, 'src', 'Research', 'urban_rural_transmission_analysis')
 RastDir <- file.path(DataDir, "Raster_files")
+DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'DHS_survey_extract')
 GeoDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'geospatial_covariates')
 
 
 # -----------------------------------------
 ### Required functions and settings
 ## -----------------------------------------
-source(file.path(SrcDir, "functions", "Nigeria functions.R"))
+source("./functions/data_extractor_functions.R")
 options(survey.lonely.psu="adjust") # this option allows admin units with only one cluster to be analyzed
 
 

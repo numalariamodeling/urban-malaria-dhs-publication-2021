@@ -9,28 +9,12 @@ Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
 NGDir <-file.path(NuDir, "data", "nigeria_dhs",  "data_analysis")
 DataDir <-file.path(NGDir, "data")
-SrcDir <- file.path(NGDir, 'src', 'Research', 'urban_rural_transmission_analysis')
 ResultDir <-file.path(NGDir, "results")
-BinDir <- file.path(NGDir, "bin")
 DHSData <- file.path(DataDir, 'DHS')
 DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates')
-ProjectDir <- file.path(NuDir, "projects", "urban_malaria")
-manuscript_dir <- file.path(ProjectDir,'manuscript')
-illustrations_dir <- file.path(manuscript_dir,'illustrations')
-
 ifelse(!dir.exists(file.path(DataIn, "cleaned_cluster_covariates_all")), 
        dir.create(file.path(DataIn, "cleaned_cluster_covariates_all")), FALSE)
-
 cleandatDir <- file.path(DataIn, 'cleaned_cluster_covariates_all')
-
-# ------------------------------------------
-### Required functions and settings
-## -----------------------------------------
-source(file.path(SrcDir, "functions", "model functions.R"))
-library(corrplot)
-library(Hmisc)
-library(ggcorrplot)
-library(BAS)
 
 # ------------------------------------------
 ### Data cleaning  
@@ -71,24 +55,30 @@ df_interview_month <- df_interview_month %>%  map(~mutate(., dhs_year = str_spli
 df_im <- df_interview_month[[1]] %>%  group_by(v001) %>%  mutate(first_interview_month= dplyr::first(interview_month)) %>%  dplyr::select(-c(interview_month)) %>%  distinct()
 
 df <- df %>%  left_join(df_im, by = c('dhs_year', 'v001'))
+write.csv(df, paste0(cleandatDir, '/New_082321/all_DHS_variables_urban_malaria.csv'))
 
 
 #geospatial covariates 
-files <- list.files(path = file.path(DataIn, 'geospatial_covariates') , pattern = '.csv', full.names = TRUE, recursive = FALSE)
-files<- files[-grep('_2000m_|_1000m_|_3000m_|_4000m_|pop_density_FB', files)]
-df_geo <-sapply(files, read.csv, simplify = F) #%>% map(~dplyr::select(., -.id)) 
 
-df_geo <- df_geo %>% map_if(~ all(c('hv001') %in% colnames(.x)), ~rename(., v001 = hv001)) 
+buffer <- c('_1000m_|_2000m_|_3000m_|_4000m_',  '_0m_|_2000m_|_3000m_|_4000m_', '_0m_|_1000m_|_3000m_|_4000m_','_0m_|_1000m_|_2000m_|_4000m_', '_0m_|_1000m_|_2000m_|_3000m_')
+
+df_geo<- list()
+
+for (i in 1:length(buffer)){
+  files <- list.files(path = file.path(DataIn, 'geospatial_covariates') , pattern = '.csv', full.names = TRUE, recursive = FALSE)
+  files<- files[-grep('pop_density_FB|secondary_vector_', files)]
+  files <- files[-grep(buffer[[i]], files)]
+  df<-sapply(files, read.csv, simplify = F)
+  df <- df %>% map_if(~ all(c('hv001') %in% colnames(.x)), ~rename(., v001 = hv001))
+  df<- df[order(sapply(df,nrow),decreasing = T)]
+  df<- df %>% map_if(~ all(c('.id') %in% colnames(.x)),~dplyr::select(., -.id))
+  df <- df %>%  purrr::reduce(left_join, by = c('dhs_year', 'v001')) %>%  mutate(dhs_year = as.character(dhs_year))
+  df_geo <- append(df_geo, list(df))
+}
 
 
-df_geo<- df_geo[order(sapply(df_geo,nrow),decreasing = T)]
+filenames <- c('0m', '1000m', '2000m', '3000m', '4000m')
 
-df_geo <- df_geo %>%  purrr::reduce(left_join, by = c('dhs_year', 'v001')) %>%  mutate(dhs_year = as.character(dhs_year)) %>% 
-  dplyr::select(-c(contains('.id')))
-
-
-#joining all datasets together 
-
-df_ <- df %>% left_join(df_geo, by = c('dhs_year', 'v001')) 
-
-write.csv(df, paste0(cleandatDir, '/all_cluster_variables_urban_malaria_0m_geospatial.csv'))
+for (i in 1:length(df_geo)){
+write.csv(df_geo[[i]], paste0(cleandatDir, '/New_082321/all_geospatial_variables_urban_malaria_', filenames[[i]], '.csv'))
+}
