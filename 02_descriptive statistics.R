@@ -17,7 +17,7 @@ HisDir <-file.path(ResultDir, "histograms")
 MapsDir <- file.path(ResultDir, "maps")
 CsvDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'cleaned_cluster_covariates_all', 'New_082321')
 
-
+library(ggcorrplot)
 # ----------------------------------------------------
 ### Required functions and settings
 ## ----------------------------------------------------
@@ -27,24 +27,24 @@ source("./functions/descriptive_analysis_functions.R")
 ## ----------------------------------------------------------------
 ### Read in computed DHS cluster data and generate related figures  
 ## ----------------------------------------------------------------
-df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
+dhs <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
 
 #figure 1
-p1 = igv.lm.point(df$num_child_6_59, df$child_6_59_tested_malaria,df$dhs_year,  "Survey year", 'Number of children 6 - 59 months', 'Number of children 6 - 59 months \n tested for malaria')
+p1 = igv.lm.point(dhs$num_child_6_59, dhs$child_6_59_tested_malaria,dhs$dhs_year,  "Survey year", 'Number of children 6 - 59 months', 'Number of children 6 - 59 months \n tested for malaria')
 p1= p1 +geom_smooth(method=lm, color = "black")+ theme(legend.position = 'none')
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_1_sample_overview.pdf'), p1, width = 13, height = 9)
 
 
 
 #values used in manuscript texts 
-table(df$dhs_year)
-nrow(!is.na(subset(df, dhs_year ==2010 & num_child_6_59 >=20)))
-nrow(!is.na(subset(df, dhs_year ==2015 & num_child_6_59 >=20)))
-nrow(!is.na(subset(df, dhs_year ==2018 & num_child_6_59 >=20)))
+table(dhs$dhs_year)
+nrow(!is.na(subset(dhs, dhs_year ==2010 & num_child_6_59 >=20)))
+nrow(!is.na(subset(dhs, dhs_year ==2015 & num_child_6_59 >=20)))
+nrow(!is.na(subset(dhs, dhs_year ==2018 & num_child_6_59 >=20)))
 
 #figure 2a
-df_tested = data.frame(values = df$child_6_59_tested_malaria, category = 'tested')
-df_positives = data.frame(values = df$positives, category = 'positives')
+df_tested = data.frame(values = dhs$child_6_59_tested_malaria, category = 'tested')
+df_positives = data.frame(values = dhs$positives, category = 'positives')
 df_all = rbind(df_tested, df_positives)
 p2 = hist_fun(df_all, df_all$values, df_all$category, 'Number of children 6 - 59 months', 'Count', c("Positive tests", "Tested"))
 
@@ -52,7 +52,7 @@ p2 = hist_fun(df_all, df_all$values, df_all$category, 'Number of children 6 - 59
   
 #figure 2b
 #examine the number of children tested 
-p3 = igv.lm.point(df$child_6_59_tested_malaria, df$positives, df$dhs_year, 'Survey year', 'Number of children 6 - 59 months \n tested for malaria', 'Number of positive tests' )
+p3 = igv.lm.point(dhs$child_6_59_tested_malaria, dhs$positives, dhs$dhs_year, 'Survey year', 'Number of children 6 - 59 months \n tested for malaria', 'Number of positive tests' )
 p3_ = p3 + geom_abline(slope=1, intercept=c(0,0), size = 0.9) +geom_smooth(method=lm, color = "black")
 
 
@@ -70,9 +70,8 @@ state_sf <- st_as_sf(stateshp)
 
 
 #data wrangling
-df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
-df <- df %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year)
-map <- sf_all %>% left_join(df, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
+dhs <- dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year)
+map <- sf_all %>% left_join(dhs, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
 map$positives_prop <- round(map$positives/map$child_6_59_tested_malaria, 1)
 map$positives_cut <- cut(map$positives_prop, breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
 df_count <- map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
@@ -87,24 +86,24 @@ map_big <- gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Co
 
 
 #Lagos 
-state_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
+df_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
 map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
-map_lag <- gmap_fun(state_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+map_lag <- gmap_fun(df_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
                     map_lagos$positives_cut, 'Test positivity rate')
 map_lag <- map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
 
 #Anambra 
-state_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))
+df_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))
 map_anambra = dplyr::filter(map, (ADM1NAME %in% c('ANAMBRA')))
-map_anam <- gmap_fun(state_anambra, map_anambra, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+map_anam <- gmap_fun(df_anambra, map_anambra, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
                      map_anambra$positives_cut, 'Test positivity rate')
 map_anam <- map_anam + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Anambra')
 
 
 #rivers 
-state_rivers = dplyr::filter(state_sf, (NAME_1 %in% c('Rivers')))
+df_rivers = dplyr::filter(state_sf, (NAME_1 %in% c('Rivers')))
 map_rivers = dplyr::filter(map, (ADM1NAME %in% c('RIVERS')))
-map_riv <- gmap_fun(state_rivers, map_rivers, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+map_riv <- gmap_fun(df_rivers, map_rivers, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
                     map_rivers$positives_cut, 'Test positivity rate')
 map_riv <- map_riv + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Rivers')
 
@@ -122,8 +121,7 @@ cluster <- map %>% na.omit(positives)
 
 #figure 3
 #trends by DHS year 
-df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
-trend_data<- df %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
+trend_data<- dhs %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
 table(trend_data$first_interview_month)
 
 trend_data$month_year <- paste0(trend_data$first_interview_month, "_", trend_data$dhs_year)
@@ -153,26 +151,51 @@ data_ <- data %>%  filter(pos == 0)
 ## ----------------------------------------------------------------
 ### Covariate plots for DHS and geospatial variables   
 ## ----------------------------------------------------------------
+x <- dhs %>% dplyr::select(-c(p_test,positives, first_interview_month, dhs_year, shstate, v001, region, num_child_6_59, mean_age)) #removes categorical variables and malaria prevalence 
+
+#replace nas with their means 
+for(i in 1:ncol(x)){
+  x[is.na(x[,i]), i] <- mean(x[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr <- round(cor(x), 1)
+
+# Compute a matrix of correlation p-values
+p.mat <- cor_pmat(x)
 
 
+corrPlot<- ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.9))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_DHS.pdf'), corrPlot, width = 13, height = 9)
 
+
+#examine distribution of geospatial variables, select buffers with fewer negative and NA values and run correlation coefficient 
+corrPlot<- ggcorrplot(corr, lab=TRUE, legend.title = "Correlation coefficient")+ 
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.9))
+
+#correlation coefficient for both DHS and geospatial variables combined 
 
 ## ----------------------------------------------------------------
 ### bivariate plots for DHS and geospatial variables   
 ## ----------------------------------------------------------------
 df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
 df<- df %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
-df$positives_cut <- cut(df$positives_prop, breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
+df$edu_cut <- cut(df$edu_a, breaks=c(0, 10, 20, 30, 40, 50, 60,70, 80,90, 100), include.lowest=TRUE)
+
 
 ggplot(df) +
-  geom_histogram(aes(x = edu_a), bins = 4, colour = "black", fill = "white") +
-  facet_wrap(~positives_prop)
+  geom_histogram(aes(x = positives_prop), bins = 4, colour = "black", fill = "white") +
+  facet_wrap(~edu_cut)
 
-df_check <- df %>%  group_by(edu_a) %>%  summarize(mean=mean(positives), sd=sd(positives), n=n())
+df_check <- df %>%  group_by(edu_cut) %>%  summarize(mean_positives=mean(positives, na.rm=TRUE), sd_positives=sd(positives, na.rm=TRUE),
+                                                     mean_positives_prop=mean(positives_prop, na.rm=TRUE), sd_positives_prop=sd(positives_prop, na.rm=TRUE), n = n())
 
-ggplot(df) +
-  geom_histo(aes(x = edu_a), bins = 4, colour = "black", fill = "white") +
-  facet_wrap(~positives_prop)
+ggplot(df, aes(floor_type, log(positives))) +
+  geom_point() +
+  geom_smooth()+
+  facet_wrap(~region)
+
 
 
 
