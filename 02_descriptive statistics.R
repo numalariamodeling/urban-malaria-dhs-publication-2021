@@ -1,19 +1,9 @@
+rm(list=ls())
+#memory.limit(size = 50000)
 
-x <- c("tidyverse","INLA", "ggplot2", "ggpubr",  "rgdal", "sp", "sf", "tmap", 
-       'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "patchwork", "gdata",'cowplot', 'mmtable2', 'ggsci') #"inlabru","rebus"
-
-
-
-
-lapply(x, library, character.only = TRUE) #applying the library function to packages
-
-options(repr.plot.width = 14, repr.plot.height = 8)
-
-#remotes::install_github("ianmoran11/mmtable2")
-
-
-
-#_________________________________Directories
+# ----------------------------------------------------
+### Directories
+# ----------------------------------------------------
 
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
@@ -22,349 +12,204 @@ ProjectDir <- file.path(NuDir, 'data', 'nigeria_dhs' , 'data_analysis')
 DataDir <- file.path(ProjectDir, "data")
 DHSData <- file.path(DataDir, 'DHS')
 DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'DHS_survey_extract')
-Rdata <- file.path(DataDir, 'DHS', 'Subset_data', "urban_malaria_rdata")
 ResultDir <-file.path(ProjectDir, "results", "research_plots")
 HisDir <-file.path(ResultDir, "histograms")
 MapsDir <- file.path(ResultDir, "maps")
-BinDir <- file.path(ProjectDir, "bin")
-SrcDir <- file.path(ProjectDir, 'src', 'Research', 'urban_rural_transmission_analysis')
-RastDir <- file.path(DataDir, "Raster_files")
-CsvDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'cleaned_cluster_covariates_all')
+CsvDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'cleaned_cluster_covariates_all', 'New_082321')
 
 
-#source functions 
-
-#_______________________________ Load pre-clustered data:
-df <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria_0m_geospatial.csv"), 
-                         header = T, sep = ',') 
-
-df_all <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria_all_buffers.csv"), 
-                         header = T, sep = ',')
-
-df_all$housing_2000_2000m <- clu_df_10_18$housing_2000_2000m *100
-df_all$housing_2015_2000m <- clu_df_10_18$housing_2015_2000m *100
+# ----------------------------------------------------
+### Required functions and settings
+## ----------------------------------------------------
+source("./functions/descriptive_analysis_functions.R")
 
 
-# Binarize response:
-df_all$y <- ifelse(df_all$p_test < 0.1, 0,1)
-
-#na count
-missing_values <- sapply(df_all, function(x) sum(is.na(x)))
-
-clu_df_10_18 <- rename.vars(df_all, from = c("net_use", "fever"), 
-                           to = c("nfever_cases", "net_use_all"))
-
-#__________________________________Loading Spactial pointd
-
-# urban cluster points
-
-dhs18_sf <- st_read(file.path(DHSData, "Downloads", 
-                              "NG_2018_DHS_11072019_1720_86355/NGGE7BFL/NGGE7BFL.shp"),) 
-mis15_sf <- st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NGGE71FL.shp"),) 
-mis10_sf <- st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),) 
-sf_10_18 <- rbind(dhs18_sf, mis15_sf, mis10_sf) %>%filter(URBAN_RURA == "U") %>%  rename(v001 = DHSCLUST)
-
-
-# join dhs variables to cluster points by year 
-#df_10_18_fin <- left_join(sf_10_18, clu_df_10_18, by = 
-                            #c("DHSCLUST" = "v001", "DHSYEAR" = "dhs_year"))
-
-
-#
-###################################################################################
-##_______________________________________urban barplots ___________________________
-###################################################################################
-paletteer::paletteer_d("awtools::a_palette")
+## ----------------------------------------------------------------
+### Read in computed DHS cluster data and generate related figures  
+## ----------------------------------------------------------------
+df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
 
 #figure 1
-p_all = ggplot(clu_df_10_18, aes(x=num_child_6_59, y=child_6_59_tested_malaria)) +
-  geom_point(aes(size=child_6_59_tested_malaria, fill=as.factor(dhs_year)), alpha=0.7, shape=21, color = 'transparent') + 
-  geom_smooth(method=lm)+
-  scale_fill_igv()+
-  stat_cor(method = "pearson", col='darkred') + 
-  scale_size(range = c(2, 25), name="Number of children tested for malaria", guide =FALSE)+
-  theme_bw() + 
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size =16),
-        legend.title=element_text(size=16, colour = 'black'),
-        legend.text =element_text(size = 16, colour = 'black'),
-        legend.key.height = unit(1, "cm"))+
-  guides(fill=guide_legend(title="Survey year", override.aes = list(size =5)))+
-  xlab('Number of children 6 - 59 months')+
-  ylab('Children 6 - 59 months tested for malaria')
-
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure1_number_child_compared_number_tested.pdf'), p_all, width = 13, height = 9)
-
-table(clu_df_10_18$dhs_year)
-y = clu_df_10_18$num_child_6_59[clu_df_10_18$dhs_year ==2010]
-table(y)
-y = clu_df_10_18$num_child_6_59[clu_df_10_18$dhs_year ==2015]
-table(y)
-y = clu_df_10_18$num_child_6_59[clu_df_10_18$dhs_year ==2018]
-table(y)
+p1 = igv.lm.point(df$num_child_6_59, df$child_6_59_tested_malaria,df$dhs_year,  "Survey year", 'Number of children 6 - 59 months', 'Number of children 6 - 59 months \n tested for malaria')
+p1= p1 +geom_smooth(method=lm, color = "black")+ theme(legend.position = 'none')
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_1_sample_overview.pdf'), p1, width = 13, height = 9)
 
 
-#figure 2
-#examine the number of children tested 
-tests=ggplot(clu_df_10_18, aes(x = child_6_59_tested_malaria))+
-  geom_histogram(bins = 25, fill = '#019875FF') + 
-  scale_x_continuous(expand = c(0.03, 0)) +
-  scale_y_continuous(expand = c(0.03, 0)) +
-  theme_bw() + 
-  labs(x = 'Malaria tests by microscopy', y = 'Count')+
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size =16))
 
-sum(clu_df_10_18$child_6_59_tested_malaria, na.rm = TRUE)
-summary(clu_df_10_18$child_6_59_tested_malaria)
-sd(clu_df_10_18$child_6_59_tested_malaria, na.rm = TRUE)
+#values used in manuscript texts 
+table(df$dhs_year)
+nrow(!is.na(subset(df, dhs_year ==2010 & num_child_6_59 >=20)))
+nrow(!is.na(subset(df, dhs_year ==2015 & num_child_6_59 >=20)))
+nrow(!is.na(subset(df, dhs_year ==2018 & num_child_6_59 >=20)))
 
-#examine the number of positives 
-positives=ggplot(clu_df_10_18, aes(x = positives))+
-geom_histogram(bins = 20, fill = '#FECEA8FF') + 
-  scale_x_continuous(expand = c(0.03, 0)) +
-  scale_y_continuous(expand = c(0.03, 0)) +
-  theme_bw() + 
-  labs(x = 'Number of positive malaria tests by microscopy', y = 'Count')+
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size =16))
+#figure 2a
+df_tested = data.frame(values = df$child_6_59_tested_malaria, category = 'tested')
+df_positives = data.frame(values = df$positives, category = 'positives')
+df_all = rbind(df_tested, df_positives)
+p2 = hist_fun(df_all, df_all$values, df_all$category, 'Number of children 6 - 59 months', 'Count', c("Positive tests", "Tested"))
+
+
   
-table(clu_df_10_18$positives)
-summary(clu_df_10_18$positives)
-sd(clu_df_10_18$positives, na.rm = TRUE)
+#figure 2b
+#examine the number of children tested 
+p3 = igv.lm.point(df$child_6_59_tested_malaria, df$positives, df$dhs_year, 'Survey year', 'Number of children 6 - 59 months \n tested for malaria', 'Number of positive tests' )
+p3_ = p3 + geom_abline(slope=1, intercept=c(0,0), size = 0.9) +geom_smooth(method=lm, color = "black")
 
-#what is their spatial distribution?
+
+
+#figure 2c
+#load spatial points
+sf18 <- st_read(file.path(DHSData, "Downloads", "NG_2018_DHS_11072019_1720_86355/NGGE7BFL/NGGE7BFL.shp"),) 
+sf15 <- st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NGGE71FL.shp"),) 
+sf10 <- st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),) 
+sf_all <- rbind(sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  rename(v001 = DHSCLUST)
+
 #read in state shape file 
-stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",
-                    use_iconv=TRUE, encoding= "UTF-8")
+stateshp <- readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
 state_sf <- st_as_sf(stateshp)
 
 
-
-df <- clu_df_10_18 %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year)
-map <- sf_10_18 %>% left_join(df, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
+#data wrangling
+df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
+df <- df %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year)
+map <- sf_all %>% left_join(df, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
 map$positives_prop <- round(map$positives/map$child_6_59_tested_malaria, 1)
 map$positives_cut <- cut(map$positives_prop, breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
-levels(map$positives_cut) <- c(levels(map$positives_cut),"Missing data")
-map$positives_cut[is.na(map$positives_cut)] <- "Missing data"
-
-summary(map$positives_prop)
-
-#plot(clu_df_10_18$num_child_6_59, clu_df_10_18$child_6_59_tested_malaria)# make plot and add to methods 
+df_count <- map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
 
 
-#table data 
-df <- map %>% select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())  
-st_geometry(df)<- NULL
-colnames(df)[1]<- 'Category'
+#big map 
+map_big <- gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Count[[1]], ')'), 
+          paste0('0.3 - 0.4',  ' (', df_count$Count[[2]], ')'), paste0('0.5 - 0.6',  ' (', df_count$Count[[3]], ')'), 
+          paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
+          'Missing data'),
+            map$positives_cut, 'Test positivity rate (overall count)')
 
-#map data 
-map_plot<-ggplot(state_sf) +
-  geom_sf(color='lightgrey')+
-  geom_point(data = map,
-    aes(color = positives_cut,  geometry = geometry),
-    stat = "sf_coordinates"
-  ) +
-  viridis::scale_color_viridis(option='C', discrete=TRUE, labels=c('0 - 0.2 (604)', '0.3 - 0.4 (98)', '0.5 - 0.6 (47)', '0.7 - 0.8 (17)', '0.9 - 1.0 (5)', 'Missing data')) +
-  scale_size_continuous(guide = FALSE)+
-  labs(color='Test positivity rate (count)') + 
-  ggplot2::theme(axis.text.x = ggplot2::element_blank(),
-                 axis.text.y = ggplot2::element_blank(),
-                 axis.ticks = ggplot2::element_blank(),
-                 rect = ggplot2::element_blank(),
-                 plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
-                 legend.title.align=0.5,
-                 legend.title=element_text(size=16, colour = 'black'), 
-                 legend.text =element_text(size = 16, colour = 'black'),
-                 legend.key.height = unit(0.65, "cm")) +
-  guides(color = guide_legend(override.aes = list(size = 5)))+
-  xlab("")+
-  ylab("")
 
-map_plot<- ggdraw(align_legend(map_plot))
-
+#Lagos 
 state_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
 map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
-map_lag<-ggplot(state_lagos) +
-  geom_sf(color='lightgrey')+
-  geom_point(data = map_lagos,
-             aes(color = positives_cut, geometry = geometry),
-             stat = "sf_coordinates"
-  ) +
-  viridis::scale_color_viridis(option='C', discrete=TRUE) +
-  scale_size_continuous(guide = FALSE)+
-  labs(color='Test positivity rate (count)') + 
-  ggplot2::theme(axis.text.x = ggplot2::element_blank(),
-                 axis.text.y = ggplot2::element_blank(),
-                 axis.ticks = ggplot2::element_blank(),
-                 rect = ggplot2::element_blank(),
-                 plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
-                 legend.position = 'none',
-                 panel.border = element_rect(colour = "black", fill=NA, size=0.5)) +
-  guides(color = guide_legend(override.aes = list(size = 5)))+
-  theme(plot.margin = unit(c(0,0,0,0), "pt")) +
-  xlab("Lagos")+
-  ylab("")
+map_lag <- gmap_fun(state_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                    map_lagos$positives_cut, 'Test positivity rate')
+map_lag <- map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
 
-
+#Anambra 
 state_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))
 map_anambra = dplyr::filter(map, (ADM1NAME %in% c('ANAMBRA')))
-map_anam<-ggplot(state_anambra) +
-  geom_sf(color='lightgrey')+
-  geom_point(data = map_anambra,
-             aes(color = positives_cut, geometry = geometry),
-             stat = "sf_coordinates"
-  ) +
-  viridis::scale_color_viridis(option='C', discrete=TRUE) +
-  scale_size_continuous(guide = FALSE)+
-  labs(color='Test positivity rate (count)') + 
-  ggplot2::theme(axis.text.x = ggplot2::element_blank(),
-                 axis.text.y = ggplot2::element_blank(),
-                 axis.ticks = ggplot2::element_blank(),
-                 rect = ggplot2::element_blank(),
-                 plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
-                 legend.position = 'none',
-                 panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-                 plot.title = element_text(margin=margin(0,0,0,0))) +
-  guides(color = guide_legend(override.aes = list(size = 5)))+
-  xlab("Anambra")+
-  ylab("")
+map_anam <- gmap_fun(state_anambra, map_anambra, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                     map_anambra$positives_cut, 'Test positivity rate')
+map_anam <- map_anam + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Anambra')
 
 
+#rivers 
 state_rivers = dplyr::filter(state_sf, (NAME_1 %in% c('Rivers')))
 map_rivers = dplyr::filter(map, (ADM1NAME %in% c('RIVERS')))
-map_river<-ggplot(state_rivers) +
-  geom_sf(color='lightgrey')+
-  geom_point(data = map_rivers,
-             aes(color = positives_cut, geometry = geometry),
-             stat = "sf_coordinates"
-  ) +
-  viridis::scale_color_viridis(option='C', discrete=TRUE) +
-  scale_size_continuous(guide = FALSE)+
-  labs(color='Test positivity rate (count)') + 
-  ggplot2::theme(axis.text.x = ggplot2::element_blank(),
-                 axis.text.y = ggplot2::element_blank(),
-                 axis.ticks = ggplot2::element_blank(),
-                 rect = ggplot2::element_blank(),
-                 plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
-                 legend.position = 'none',
-                 panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-                 plot.title = element_text(margin=margin(0,0,0,0))) +
-  guides(color = guide_legend(override.aes = list(size = 5)))+
-  xlab("Rivers")+
-  ylab("")
+map_riv <- gmap_fun(state_rivers, map_rivers, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                    map_rivers$positives_cut, 'Test positivity rate')
+map_riv <- map_riv + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Rivers')
 
-patch1 <- ((map_lag /(map_anam + map_river))| map_plot)+ plot_layout(ncol = 2)
-pach2 <- (tests + positives)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
-combo_figure1 <- (tests + positives) / map_plot+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure1_malaria_tests_positives.pdf'), pach2, width = 13, height = 9)
+
+patch1 <- ((map_lag /(map_anam + map_riv))| map_big)+ plot_layout(ncol = 2)
+patch2 <- (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positivity_viz.pdf'), patch2, width = 13, height = 9)
+
 
 map_low_values <- map %>% na.omit(positives) %>%  filter(positives_prop == 0) %>%  group_by(ADM1NAME) %>%  summarise(n())
 map_low <- map_low_values %>%  filter(`n()` >15)
 cluster <- map %>% na.omit(positives)
 
 
+
 #figure 3
 #trends by DHS year 
-trend_data<- clu_df_10_18 %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
+df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
+trend_data<- df %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
 table(trend_data$first_interview_month)
 
 trend_data$month_year <- paste0(trend_data$first_interview_month, "_", trend_data$dhs_year)
 table(trend_data$month_year)
 
 trend_data_10 <- trend_data[trend_data$first_interview_month ==10,]
-
-p_all_10 = ggplot(trend_data_10, aes(x=positives_prop, fill=as.factor(dhs_year))) +
-  geom_density(alpha=0.5) + 
-  scale_x_continuous(expand = c(0.03, 0)) +
-  scale_y_continuous(expand = c(0.03, 0)) +
-  theme_bw() + 
-  scale_fill_manual(values = c('#0073C2B2', "#EE4C97B2", "#E18727B2"))+
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size =16),
-      legend.position = 'none') + 
-  guides(fill=guide_legend(title="Survey year"))+
-  xlab('Test positivity rate for clusters sampled in october')+
-  ylab('Density')
-
+p_all_10 <- gdensity_fun(trend_data_10, trend_data_10$positives_prop, trend_data_10$dhs_year, "Survey year", 
+'Test positivity rate for clusters sampled in october', 'Density')
 
 trend_data_11 <- trend_data[trend_data$first_interview_month ==11,]
-
-p_all_11 = ggplot(trend_data_11, aes(x=positives_prop, fill=as.factor(dhs_year))) +
-  geom_density(alpha=0.5) + 
-  scale_x_continuous(expand = c(0.03, 0)) +
-  scale_y_continuous(expand = c(0.03, 0)) +
-  theme_bw() + 
-  scale_fill_manual(values = c('#0073C2B2', "#EE4C97B2", "#E18727B2"))+
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size =16),
-        legend.title=element_text(size=16, colour = 'black'),
-        legend.text =element_text(size = 16, colour = 'black'),
-        legend.key.height = unit(1, "cm"))+
-  guides(fill=guide_legend(title="Survey year"))+
-  xlab('Test positivity rate for clusters sampled in november')+
-  ylab('Density')
+p_all_11 <- gdensity_fun(trend_data_11, trend_data_11$positives_prop, trend_data_11$dhs_year, "Survey year", 
+                         'Test positivity rate for clusters sampled in November', 'Density')
 
 
 trend_data_12 <- trend_data[trend_data$first_interview_month ==12,]
-
-p_all_12 = ggplot(trend_data_12, aes(x=positives_prop, fill=as.factor(dhs_year))) +
-  geom_density(alpha =0.5) +
-  scale_x_continuous(expand = c(0.03, 0)) +
-  scale_y_continuous(expand = c(0.03, 0)) +
-  theme_bw() + 
-  scale_fill_manual(values = c('#0073C2B2', "#EE4C97B2", "#E18727B2"))+
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size =16),
-     legend.position = 'none')+
-  guides(fill=guide_legend(title="Survey year"))+
-  xlab('Test positivity rate for clusters sampled in december')+
-  ylab('Density')
-
+p_all_12 <- gdensity_fun(trend_data_12, trend_data_12$positives_prop, trend_data_12$dhs_year, "Survey year", 
+                         'Test positivity rate for clusters sampled in November', 'Density')
 
 all_plots <- p_all_10 / p_all_11 / p_all_12 +  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure3_malaria_tests_positivity_trends.pdf'), all_plots, width = 13, height = 9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3_malaria_tests_positivity_trends.pdf'), all_plots, width = 13, height = 9)
 data <- data.frame(pos =trend_data_12[trend_data_12$dhs_year == 2010,'positives_prop'])
 data_ <- data %>%  filter(pos == 0)
 
-#figure 4
-#something about the covariates 
-
-# Binarize response:
-clu_df_10_18$y <- ifelse(clu_df_10_18$p_test < 0.1, "less than 10%", "greater than 10%") 
 
 
-u_bar <- ggplot(clu_df_10_18, aes(x=as.factor(y), fill=as.factor(y))) + 
-  geom_bar()+ 
-  scale_fill_paletteer_d("awtools::spalette")+
-  #geom_text(stat='count', aes(label=..count..), vjust=-1)+
-  geom_text(aes(label = scales::percent(..prop..), group = 1), stat= "count", vjust =-1)+
-  theme_minimal()+
-  theme(legend.position = "none")+
-  xlab("Malaria prevalence")+
-  ylab("Number of clusters")
 
-u_bar
+## ----------------------------------------------------------------
+### Covariate plots for DHS and geospatial variables   
+## ----------------------------------------------------------------
 
-ggsave(paste0(HisDir, '/', Sys.Date(),  'combined_urban_malaria_clusters_percent.pdf'), u_bar, width=13, height=13)
+
+
+
+## ----------------------------------------------------------------
+### bivariate plots for DHS and geospatial variables   
+## ----------------------------------------------------------------
+df <- read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
+df<- df %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
+df$positives_cut <- cut(df$positives_prop, breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
+
+ggplot(df) +
+  geom_histogram(aes(x = edu_a), bins = 4, colour = "black", fill = "white") +
+  facet_wrap(~positives_prop)
+
+df_check <- df %>%  group_by(edu_a) %>%  summarize(mean=mean(positives), sd=sd(positives), n=n())
+
+ggplot(df) +
+  geom_histo(aes(x = edu_a), bins = 4, colour = "black", fill = "white") +
+  facet_wrap(~positives_prop)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

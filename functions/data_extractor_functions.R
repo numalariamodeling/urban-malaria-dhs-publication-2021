@@ -3,7 +3,7 @@
 list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "rgdal", "raster",
        "lubridate", "RColorBrewer","sf", "shinyjs", "tmap", "knitr", "labelled", "plotrix", "arules", "foreign",
        "fuzzyjoin", "splitstackshape", "magrittr", "caTools", "sjlabelled", "raster", "rlist", 'rgeos', 'INLA', 'ggpubr',
-       'cowplot', 'gridExtra', 'lme4')
+       'cowplot', 'gridExtra', 'lme4', "patchwork", 'ggsci')
 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
