@@ -33,8 +33,8 @@ CsvDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria.csv"), 
                          header = T, sep = ',') 
 
-clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria_all_buffers.csv"), 
-                         header = T, sep = ',')
+#clu_df_10_18 <- read.csv(file.path(CsvDir, "all_cluster_variables_urban_malaria_all_buffers.csv"), 
+#                         header = T, sep = ',')
 
 clu_df_10_18$housing_2000_2000m <- clu_df_10_18$housing_2000_2000m *100
 clu_df_10_18$housing_2015_2000m <- clu_df_10_18$housing_2015_2000m *100
@@ -95,7 +95,7 @@ ggsave(paste0(HisDir, '/', Sys.Date(),  'combined_urban_malaria_clusters_percent
 
 clu_df_cont <- clu_df_10_18[ , -which(names(clu_df_10_18) %in% c("shstate", "region", "X"))]
 clu_df_cont$y <- ifelse(clu_df_cont$p_test < 0.1, 0,1) %>% (as.numeric)
-
+clu_df_cont<- na.omit(clu_df_cont)
 
 labels_data <- list("Education", "Floor type", "Household size", "Housing quality", "Mean age", 
                     "Median age", "Net use", "Roof type", "Under five population" ,"Wall type",
@@ -129,14 +129,7 @@ plot_list = list()
 for (i in 1:34) { 
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
     geom_histogram(fill = colr_data[colr_list[[i]]])+
-    theme_minimal()+
-    theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
-          text=element_text(size=7), 
-          axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
-          title = element_text(size=7),
-          plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(margin = margin(r = -1.7)),
-          axis.text.y = element_text(margin = margin(r = -1.7))) +
+    theme_manuscript()+
     labs (title = labels_data[label_list[[i]]], x = "values") +
     xlab(xlab_data[label_list[[i]]]) +
     ylab("")
@@ -173,15 +166,7 @@ for (i in 1:34) {
   #clu_df_cont$colors <- ifelse(clu_df_cont$p_test < 0.1, "blue", "green")
   p<- ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
     geom_histogram(aes(position="stack", group = y, fill=y))+
-    theme_minimal()+
-    theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
-          text=element_text(size=7), 
-          axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
-          title = element_text(size=7),
-          plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(margin = margin(r = -1.7)),
-          axis.text.y = element_text(margin = margin(r = -1.7)),
-          legend.position = "none") +
+    theme_manuscript()+
     labs (title = labels_data[label_list[[i]]], x = "values") +
     xlab(xlab_data[label_list[[i]]]) +
     ylab("")
@@ -259,15 +244,7 @@ for (i in 1:34) {
   fill_select <- colr_list[i]
   p<- ggplot(melteddf, aes_string(x= "value", fill = "variable", color = "variable")) +
     geom_freqpoly(size = 0.7) +
-    theme_minimal()+
-    theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
-          text=element_text(size=7), 
-          axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
-          title = element_text(size=7),
-          plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(margin = margin(r = -1.7)),
-          axis.text.y = element_text(margin = margin(r = -1.7)),
-          legend.position = "none") +
+    theme_manuscript()+
     labs (title = labels_data[label_list[[i]]], x = "values") +
     scale_color_manual(labels = c("0m", "1000m", "2000m", "3000m","4000m"), 
                        values = fill_list[[i]]) +
@@ -346,50 +323,40 @@ tmap_save(tm =urban_map, filename = file.path(ResultDir, "maps", "urban_malaria_
 #make maps for all variable using their cluster values 
 
 
-for (i in 1:19){ 
+for (i in 1:34){ 
   m<-tm_shape(state_sf) + #this is the health district shapfile with DS estimates info
     tm_polygons()+
     tm_shape(df_10_18_fin)+ #this is the points shape file with LLIN and number of kids info by cluster 
     tm_bubbles(size=0.1, col = names(clu_df_cont)[grepl(name_list[[i]], names(clu_df_cont))], 
-               border.col= "black", palette="seq",textNA = "Missing",
-               breaks=c(0, 20, 30,40, 50, 60, 70, 80, 90, 100), legend.col.show=F)+
+               border.col= "black", palette="seq",textNA = "Missing", title.col ="     ")+
     tm_layout(aes.palette = list(seq ="-RdYlBu"), main.title = labels_data[label_list[[i]]], 
-              main.title.position = "center", main.title.size =0.8)
+              main.title.position = "center", main.title.size =0.8,
+              legend.position = c("right", "top"))
+  
   plot_list[[i]]<-m
     
 
 }
-grid.newpage()
-
-tt <- tmap_grob(plot_list[[1]])
-
-plot_grid(, tmap_grob(plot_list[[2]]),tmap_grob(plot_list[[3]]))
-
-as.ggplot(plot_list[[2]])                   
+                 
                         
-map_plpot <-tmap_arrange(plot_list[[1]],plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],
-                         plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],plot_list[[11]], 
-                         plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                         plot_list[[17]], plot_list[[18]], plot_list[[19]],nrow = 4, ncol= 5)
+map_plpot <-tmap_arrange(plot_list[[1]],plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],
+                         plot_list[[6]],plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],
+                         plot_list[[11]], plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],
+                         plot_list[[16]], plot_list[[17]], plot_list[[18]], plot_list[[19]],plot_list[[20]],
+                         plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
+                         plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],
+                         plot_list[[30]],plot_list[[31]],plot_list[[32]],plot_list[[33]],plot_list[[34]],nrow = 7, ncol= 5)
 
 tmap_save(tm =map_plpot, filename = file.path(ResultDir, "maps", "dependent_dhscov_maps.pdf"), 
-          width=13, height=13, units ="in", asp=0,
-          paper ="A4r", useDingbats=FALSE)
+          width=13, height=18, units ="in", asp=0,
+          paper ="A4r", useDingbats=FALSE, add.titles = "Distribution of Covariates")
 
 
 
 p<- ggplot() + 
   geom_sf(data =state_sf)+
   geom_point(df_10_18_fin, mapping = aes(x = LONGNUM, y = LATNUM, color = edu_a))+
-  theme_minimal()+
-  theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
-        text=element_text(size=7), 
-        axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
-        title = element_text(size=7),
-        plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(margin = margin(r = -1.7)),
-        axis.text.y = element_text(margin = margin(r = -1.7)),
-        legend.position = "none") +
+  map_theme()+
   guides(color=guide_legend("Legend/Buffers")) +
   xlab(xlab_data[label_list[[i]]]) +
   ylab("")
@@ -405,19 +372,24 @@ for (i in 1:34) {
     geom_point(df_10_18_fin, mapping = aes_string(x = "LONGNUM", y = "LATNUM", 
                                                   color = names(clu_df_cont)[var_list[[i]]]), size = 0.4)+
     theme_minimal()+
-    theme(legend.position = "none", 
-          panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
+    theme(panel.border = element_rect(fill = NA,color = "black", size=0.2, linetype = 'solid'),
           text=element_text(size=7), 
           axis.title.x = element_text(size=7, hjust = 0.5, vjust = +3),
           title = element_text(size=7),
           plot.title = element_text(hjust = 0.5),
           axis.text.x = element_text(margin = margin(r = -1.7)),
-          axis.text.y = element_text(margin = margin(r = -1.7))) +
+          axis.text.y = element_text(margin = margin(r = -1.7)),
+          legend.title = element_text(size = 6),
+          legend.text = element_text(size = 6)) +
     
-    labs (title = labels_data[label_list[[i]]], x = "values") +
+    labs (title = labels_data[label_list[[i]]], x = "values", colour = "") +
     xlab(xlab_data[label_list[[i]]]) +
-    ylab("")
-  plot_list[[i]]<-p
+    ylab("")+
+    guides(shape = guide_legend(override.aes = list(size = 1)))+
+    guides(color = guide_legend(override.aes = list(size = 1)))+
+  
+  plot_list[[i]]<-p 
+          
 }
 
 
