@@ -729,16 +729,15 @@ for (i in 1:length(vars)) {
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
+#dhs clusters by year and month of sampling 
 
-
-#Temperature/all years
 
 dhs_hh <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
 
 dhs_hh <- dhs_hh %>% map(~filter(., hv025 == 1)) %>%  map(~dplyr::select(., hv001, hv006, hv007)) %>%  map(~distinct(.,)) 
 
 dhs_2010 <- left_join(st_as_sf(dhs[[1]]), dhs_hh[[1]], by = c("DHSCLUST"="hv001")) %>% 
-  group_split(hv006) %>% setNames(paste0(unique(dhs_hh[[1]]$hv006), '_', unique(dhs_hh[[1]]$hv007)))  
+  group_split(hv006) %>% setNames(paste0(unique(dhs_hh[[1]]$hv006), '_', unique(dhs_hh[[1]]$hv007)))
 
 dhs_2015 <- left_join(st_as_sf(dhs[[2]]), dhs_hh[[2]], by = c("DHSCLUST"="hv001")) %>% 
   group_split(hv006) %>% setNames(paste0(unique(dhs_hh[[2]]$hv006), '_', unique(dhs_hh[[2]]$hv007)))
@@ -746,43 +745,31 @@ dhs_2015 <- left_join(st_as_sf(dhs[[2]]), dhs_hh[[2]], by = c("DHSCLUST"="hv001"
 dhs_2018 <- left_join(st_as_sf(dhs[[3]]), dhs_hh[[3]], by = c("DHSCLUST"="hv001")) %>% 
   group_split(hv006) %>% setNames(paste0(unique(dhs_hh[[3]]$hv006), '_', unique(dhs_hh[[3]]$hv007)))
 
-dhs_2018<- dhs_2018[order(names(dhs_2018))]
+dhs_2018_ordered<- list(`08_2018`=dhs_2018$`8_2018`, `09_2018`=dhs_2018$`9_2018`, `10_2018`=dhs_2018$`10_2018`, `11_2018`=dhs_2018$`11_2018`, `12_2018`=dhs_2018$`12_2018`)
 
-dhs <- sapply(c(dhs_2010, dhs_2015, dhs_2018), sf:::as_Spatial, simplify = F)
+dhs <- sapply(c(dhs_2010, dhs_2015, dhs_2018_ordered), sf:::as_Spatial, simplify = F)
 names(dhs)
 
 
+#EVI rasters 
+files <- list.files(path = file.path(RastDir , "EVI") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+raster <- sapply(files, raster, simplify = F)
+
+for (i in 1:length(vars)) {
+  df <- map2(dhs, raster, get_crs)
+  df <- pmap(list(raster, df, vars[i]), extract_fun)
+  df <- plyr::ldply(df)
+  var_name <- paste0('temp_', as.character(vars[i]), 'm')
+  df <- extrclean.fun(df, var_name)
+  write.csv(df, file = file.path(GeoDir, paste0('temp_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+}
+
+
+#Temperature/all years
 #loading temp rasters in months when DHIS/MIS was conducted
-
-raster_2010_oct <- raster(file.path(RastDir, "temperature_monthly", "2010", "all_years_pre_2011_temperature",
-                                    "all_years_pre_2011_temperature_month_10.tif"))
-raster_2010_dec <- raster(file.path(RastDir, "temperature_monthly", "2010", "all_years_pre_2011_temperature",
-                                    "all_years_pre_2011_temperature_month_12.tif"))
-raster_2010_nov <- raster(file.path(RastDir, "temperature_monthly", "2010", "all_years_pre_2011_temperature",
-                                    "all_years_pre_2011_temperature_month_11.tif"))
-
-
-raster_2015_oct <- raster(file.path(RastDir, "temperature_monthly", "2015", "all_years_pre_2016_temperature",
-                                    "all_years_pre_2016_temperature_month_10.tif"))
-raster_2015_nov <- raster(file.path(RastDir, "temperature_monthly", "2015", "all_years_pre_2016_temperature", "all_years_pre_2016_temperature_month_11.tif"))
-
-
-
-raster_2018_oct <- raster(file.path(RastDir, "temperature_monthly", "2018", "all_years_pre_2019_temperature",
-                                    "all_years_pre_2019_temperature_month_10.tif"))
-raster_2018_nov <- raster(file.path(RastDir, "temperature_monthly", "2018", "all_years_pre_2019_temperature",
-                                    "all_years_pre_2019_temperature_month_11.tif"))
-raster_2018_dec <- raster(file.path(RastDir, "temperature_monthly", "2018", "all_years_pre_2019_temperature",
-                                    "all_years_pre_2019_temperature_month_12.tif"))
-raster_2018_aug <- raster(file.path(RastDir, "temperature_monthly", "2018", "all_years_pre_2019_temperature",
-                                    "all_years_pre_2019_temperature_month_08.tif"))
-raster_2018_sep <- raster(file.path(RastDir, "temperature_monthly", "2018", "all_years_pre_2019_temperature",
-                                    "all_years_pre_2019_temperature_month_09.tif"))
-
-
-
-
-
+files <- list.files(path = file.path(RastDir , "EVI") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+raster <- sapply(files, raster, simplify = F)
 
 raster <- list(raster_2010_oct, raster_2010_dec, raster_2010_nov, raster_2015_oct, raster_2015_nov,
                raster_2018_oct, raster_2018_nov, raster_2018_dec,raster_2018_aug, raster_2018_sep)
@@ -808,26 +795,7 @@ for (i in 1:length(vars)) {
 
 
 #loading precip rasters in months when DHIS/MIS was conducted
-raster_2018_aug <- raster(file.path(RastDir, "rainfall_monthly", "2018", "all_years_pre_2019_rainfall",
-                                    "all_years_pre_2019_rainfall_month_08.tif"))
-raster_2018_sep <- raster(file.path(RastDir, "rainfall_monthly", "2018", "all_years_pre_2019_rainfall",
-                                    "all_years_pre_2019_rainfall_month_09.tif"))
-raster_2010_oct <- raster(file.path(RastDir, "rainfall_monthly", "2010", "all_years_pre_2011_rainfall",
-                                    "all_years_pre_2011_rainfall_month_10.tif"))
-raster_2015_oct <- raster(file.path(RastDir, "rainfall_monthly", "2015", "all_years_pre_2016_rainfall",
-                                    "all_years_pre_2016_rainfall_month_10.tif"))
-raster_2018_oct <- raster(file.path(RastDir, "rainfall_monthly", "2018", "all_years_pre_2019_rainfall",
-                                    "all_years_pre_2019_rainfall_month_10.tif"))
-raster_2010_nov <- raster(file.path(RastDir, "rainfall_monthly", "2010", "all_years_pre_2011_rainfall",
-                                    "all_years_pre_2011_rainfall_month_11.tif"))
-raster_2015_nov <- raster(file.path(RastDir, "rainfall_monthly", "2015", "all_years_pre_2016_rainfall",
-                                    "all_years_pre_2016_rainfall_month_11.tif"))
-raster_2018_nov <- raster(file.path(RastDir, "rainfall_monthly", "2018", "all_years_pre_2019_rainfall",
-                                    "all_years_pre_2019_rainfall_month_11.tif"))
-raster_2010_dec <- raster(file.path(RastDir, "rainfall_monthly", "2010", "all_years_pre_2011_rainfall",
-                                    "all_years_pre_2011_rainfall_month_12.tif"))
-raster_2018_dec <- raster(file.path(RastDir, "rainfall_monthly", "2018", "all_years_pre_2019_rainfall",
-                                    "all_years_pre_2019_rainfall_month_12.tif"))
+
 
 raster <- list(raster_2018_aug, raster_2018_sep, raster_2010_oct, raster_2015_oct, raster_2018_oct,
                raster_2010_nov, raster_2015_nov, raster_2018_nov, raster_2010_dec, raster_2018_dec)
