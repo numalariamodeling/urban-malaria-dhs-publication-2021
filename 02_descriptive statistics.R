@@ -223,15 +223,92 @@ ggplot(df, aes(floor_type, log(positives))) +
 
 
 
+#___________________________________________ Demo Plots______________________________________________________
+
+#tools
+
+labels_data <- list("Educational attainment", "Floor type", "Household size", "Housing quality", "Mean age", 
+                    "Median age", "Net use", "Roof type", "Under five population" ,"Wall type",
+                    "Wealth", "Fever", "Pregnant women", "Female population", "Under five Female population", 
+                    "Under five net use", "Malaria prevalence", "Fever treatment", "Under five ACT use","Travel time to city", 
+                    "Building density", "Dominant vector", "Elevation", "Time to travel one metre 2015","Housing quality 2000", 
+                    "Housing quality 2015", "Time to travel one metre 2019","Travel time to healthcare", "Under five population density (FB)", "Population density",
+                    "Secondary vector", "Temperature", "Time to walk one metre", "Walk time to healthcare")
+
+xlab_data <- list("percent", "Percentage of reproductive age women with secondary or higher educational attainment", "number", "percent", "number", 
+                  "number", "percent", "percent","percent" ,"percent", 
+                  "percent", "percent", "percent", "percent", "percent",
+                  "percent", "percent", "percent", "percent","Mean minutes", 
+                  "Mean", "Mean", "Mean", "Mean minutes", "percent",
+                  "percent", "Mean minutes","Mean minutes", "Mean", "Mean",
+                  "Mean", "Mean", "Mean minutes", "Mean minutes")
+
+colr_data <- rep(c("violetred", "darkorchid","green4","tan4","turquoise"), times =c(9,9,5,7,3))
 
 
+#histogram
+
+hist_fun2 <-function(df, xmin, xmax){
+  p<- ggplot(df, aes_string(x=names(df)[var_list[[2]]])) + 
+    geom_histogram(bins = 30, alpha = 0.7, position="identity", color = "violetred4", fill = colr_data[colr_list[[1]]])+
+    theme_manuscript()+ 
+    labs (title = labels_data[label_list[[2]]], x = "values") +
+    xlab(xlab_data[2]) +
+    ylab("Count")+
+    scale_y_continuous(expand = c(0.03, 0))+
+    scale_x_continuous(limits = c(xmin, xmax), expand = c(0.01, 0))
+  
+}
+
+hist_fun2(clu_df_cont, 0, 100)
 
 
+#map
+df_10_18_fin <- df_10_18_fin %>% filter(LONGNUM > 0.000000)
+
+df_10_18_fin$ed_cut <- cut(df_10_18_fin$edu_a, breaks=c(0,20, 40, 60, 80, 100, NA), include.lowest = TRUE)
+p<- ggplot() + 
+  geom_sf(data =state_sf, color='lightgrey')+
+  geom_point(df_10_18_fin, mapping = aes(x = LONGNUM, y = LATNUM, color = ed_cut), size =8, alpha =0.7)+
+  #viridis::scale_fill_viridis(option="plasma", discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,20]', '(20,40]', '(40,60]', '(60,80]', '(80,100]', NA)) +
+  theme_bw()+
+  theme(axis.text.x = ggplot2::element_blank(),
+        axis.text.y = ggplot2::element_blank(),
+        axis.ticks = ggplot2::element_blank(),
+        rect = ggplot2::element_blank(),
+        plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
+        legend.title.align=0.5,
+        legend.title=element_text(size=16, colour = 'black'), 
+        legend.text =element_text(size = 16, colour = 'black'),
+        legend.key.height = unit(0.65, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.grid.major = element_blank()) +
+  labs (title = labels_data[label_list[[2]]], x = "values", size=20) +
+  xlab("") +
+  ylab("")+
+  guides(color=guide_legend(""))+
+  scale_color_manual(values = c("#00AFBB", "burlywood4", "#FC4E07", "#E7B800", "#00AFBB", "lightgrey"), 
+                     labels = c("0 - 20", "20 - 40", "40 - 60", "60 - 80", "80 - 100", "NA"))
+
+p
 
 
+#______________________________
+df_10_18_fin <- df_10_18_fin %>% filter(LONGNUM > 0.000000)
 
-
-
+gmap_fun <- function(polygon_name, point_data, labels, fill, legend_title){
+  ggplot(polygon_name) +
+    geom_sf(color='lightgrey')+
+    geom_point(data = point_data,
+               aes(fill=fill,  geometry = geometry),
+               stat = "sf_coordinates", alpha = 0.45, size=3, shape=21
+    ) +
+    #viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,20]', '(20,40]', '(40,60]', '(60,80]', '(80,100]', NA)) +
+    map_theme() + 
+    guides(fill = guide_legend(title=legend_title, override.aes = list(size = 5)))+
+    xlab("")+
+    ylab("")
+}
 
 
 
@@ -251,7 +328,7 @@ labels_data <- list("Education", "Floor type", "Household size", "Housing qualit
                     "Housing quality 2015", "Time to travel one metre 2019","Travel time to healthcare", "Under five population density (FB)", "Population density",
                     "Secondary vector", "Temperature", "Time to walk one metre", "Walk time to healthcare")
 
-xlab_data <- list("percent", "percent", "number", "percent", "number", 
+xlab_data <- list("percent per cl", "percent", "number", "percent", "number", 
                   "number", "percent", "percent","percent" ,"percent", 
                   "percent", "percent", "percent", "percent", "percent",
                   "percent", "percent", "percent", "percent","Mean minutes", 
@@ -285,7 +362,7 @@ for (i in 1:34) {
 
 variable1 <- ggarrange(NULL,NULL,get_legend(plot_list[[2]] + theme(legend.position="bottom")),NULL,NULL,
                        NULL,NULL,plot_list[[1]],NULL,NULL, 
-                       NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 16, color = "dodgerblue"),NULL,NULL,
+                       NULL,NULL,text_grob("Socioeconmic factors", face = "italic", size = 16, color = "dodgerblue"),NULL,NULL,
                        plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
                        plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
                        NULL,NULL,text_grob("Demographic factors", face = "italic", size = 16, color = "darkorchid"),NULL,NULL,
@@ -298,13 +375,13 @@ variable1 <- ggarrange(NULL,NULL,get_legend(plot_list[[2]] + theme(legend.positi
                        NULL,NULL,NULL,plot_list[[31]],
                        NULL,NULL,text_grob("Environmental factors", face = "italic", size = 16, color = 'turquoise'),NULL,NULL,
                        NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
-                       nrow = 15, ncol= 5, heights = c(0.5,1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
+                       nrow = 15, ncol= 5, heights = c(0.2,1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
 
 
 variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
                                                         color = "Black", face = "bold", size = 14),
                              left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=25)
+ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=20)
 
 #__________________________
 
@@ -512,33 +589,6 @@ p
 #______________________________
 df_10_18_fin <- df_10_18_fin %>% filter(LONGNUM > 0.000000)
 
-for (i in 1:34) { 
-  p<- ggplot() + 
-    geom_sf(data =state_sf)+
-    geom_point(df_10_18_fin, mapping = aes_string(x = "LONGNUM", y = "LATNUM", 
-                                                  color = names(clu_df_cont)[var_list[[i]]]), size = 0.4)+
-    map_theme() +
-    
-    labs (title = labels_data[label_list[[i]]], x = "values", colour = "") +
-    xlab(xlab_data[label_list[[i]]]) +
-    ylab("")+
-    guides(shape = guide_legend(override.aes = list(size = 1)))+
-    guides(color = guide_legend(override.aes = list(size = 1)))
-  
-  plot_list[[i]]<-p 
-    
-}
-
-
-
-for (i in 1:34) { 
-  p <- gmap_fun(state_sf, df_10_18_fin, labels_data[label_list[[i]]], names(clu_df_cont)[var_list[[i]]]), "legend")
-  
-  plot_list[[i]]<-p 
-  
-}
-
-
 gmap_fun <- function(polygon_name, point_data, labels, fill, legend_title){
   ggplot(polygon_name) +
     geom_sf(color='lightgrey')+
@@ -546,7 +596,7 @@ gmap_fun <- function(polygon_name, point_data, labels, fill, legend_title){
                aes(fill=fill,  geometry = geometry),
                stat = "sf_coordinates", alpha = 0.45, size=3, shape=21
     ) +
-    viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,0.2]', '(0.2,0.4]', '(0.4,0.6]', '(0.6,0.8]', '(0.8,1]', NA)) +
+    #viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,20]', '(20,40]', '(40,60]', '(60,80]', '(80,100]', NA)) +
     map_theme() + 
     guides(fill = guide_legend(title=legend_title, override.aes = list(size = 5)))+
     xlab("")+
@@ -556,27 +606,41 @@ gmap_fun <- function(polygon_name, point_data, labels, fill, legend_title){
 
 
 
+for (i in 1:34) { 
+  p <- gmap_fun(state_sf, df_10_18_fin, labels_data[label_list[[i]]], names(clu_df_cont)[var_list[[i]]], "legend") +
+  
+  plot_list[[i]]<-p 
+  
+}
 
-variable1 <- ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
-                       NULL,NULL,text_grob("DHS covariates", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
-                       plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],
-                       plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],plot_list[[11]], 
-                       plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                       plot_list[[17]],plot_list[[18]], plot_list[[19]],NULL,NULL,
+
+
+
+variable1 <- ggarrange(NULL,plot_list[[1]],NULL,
+                       NULL,text_grob("DHS covariates", face = "italic", size = 10, color = "darkorchid"),NULL,
+                       plot_list[[2]],plot_list[[3]],plot_list[[4]],
+                       plot_list[[5]],plot_list[[6]],plot_list[[7]],
+                       plot_list[[8]],plot_list[[9]],plot_list[[10]],
+                       plot_list[[11]],plot_list[[12]],plot_list[[13]],
+                       plot_list[[14]],plot_list[[15]],plot_list[[16]],
+                       plot_list[[17]],plot_list[[18]], plot_list[[19]],
                        
-                       NULL,NULL,text_grob("Geospatial covariates", face = "italic", size = 10, color = "turquoise"),NULL,NULL,
-                       plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
+                       
+                       NULL,text_grob("Geospatial covariates", face = "italic", size = 10, color = "turquoise"),NULL,
+                       plot_list[[20]],plot_list[[21]],plot_list[[22]],
+                       plot_list[[23]],plot_list[[24]],plot_list[[25]],
                        
                        
-                       plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],
-                       plot_list[[30]],plot_list[[31]],plot_list[[32]],plot_list[[33]],plot_list[[34]],
+                       plot_list[[26]],plot_list[[27]],plot_list[[28]],
+                       plot_list[[29]],plot_list[[30]],plot_list[[31]],
+                       plot_list[[32]],plot_list[[33]],plot_list[[34]],
                        
-                       nrow = 11, ncol= 5, heights = c(1,0.2,1,1,1,1,0.2,1,1,1, widths = c(2,2,2,2,2)))
+                       nrow = 14, ncol= 3, heights = c(1,0.2,1,1,1,1,1,1,0.2,1,1,1,1,1))
 
 variables <- annotate_figure(variable1, top = text_grob("Distribution of covariates", 
                                                         color = "Black", face = "bold", size = 14),
                              left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(MapsDir, '/', Sys.Date(),  'maps_grouped.pdf'), variables, width=13, height=18)
+ggsave(paste0(MapsDir, '/', Sys.Date(),  'maps_grouped.pdf'), variables, width=13, height=30)
 
 
 

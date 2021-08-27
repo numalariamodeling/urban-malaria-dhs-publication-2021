@@ -49,6 +49,7 @@ align_legend <- function(p, hjust = 0.5)
 theme_manuscript <- function(){
   theme_bw() + 
     theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
+          plot.title = element_text(hjust = 0.5),
           axis.text.x = element_text(size = 16, color = "black"), 
           axis.text.y = element_text(size = 16, color = "black"),
           axis.title.x = element_text(size = 16),
@@ -128,6 +129,19 @@ gdensity_fun <- function(df, x, fill,legend_title, xlab, ylab){
 
 
 
+hist_fun2 <-function(df, xmin, xmax){
+  p<- ggplot(df, aes_string(x=names(df)[var_list[[2]]])) + 
+    geom_histogram(bins = 30, alpha = 0.7, position="identity", color = "violetred4", fill = colr_data[colr_list[[1]]])+
+    theme_manuscript()+ 
+    labs (title = labels_data[label_list[[2]]], x = "values") +
+    xlab(xlab_data[2]) +
+    ylab("Count")+
+    scale_y_continuous(expand = c(0.03, 0))+
+    scale_x_continuous(limits = c(xmin, xmax), expand = c(0.01, 0))
+  
+}
+
+hist_fun2(clu_df_cont, 0, 100)
 
 
 
