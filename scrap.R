@@ -1,3 +1,34 @@
+
+# for (i in 1:length(vars)) {
+#   df <- map2(dhs, raster, get_crs)
+#   df <- pmap(list(raster, df, vars[i]), extract_fun)
+#   df <- plyr::ldply(df)
+#   var_name <- paste0('pop_den_FB_', as.character(vars[i]), 'm')
+#   df <- extrclean.fun(df, var_name)
+#   write.csv(df, file =file.path(GeoDir, paste0('pop_density_FB_', as.character(vars[i]), 
+#                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+# }
+
+
+
+
+
+# for (i in 1:length(vars)) {
+#   df <- map2(dhs, raster, get_crs)
+#   df <- pmap(list(raster, df, vars[i]), extract_fun)
+#   df <- plyr::ldply(df)
+#   var_name <- paste0('pop_den_U5_FB_', as.character(vars[i]), 'm')
+#   df <- extrclean.fun(df, var_name)
+#   write.csv(df, file =file.path(GeoDir, paste0('pop_density_U5_FB_', as.character(vars[i]), 
+#                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+# }
+
+
+
+
+
+
+
 tests=ggplot(clu_df_10_18, aes(x = child_6_59_tested_malaria))+
   geom_histogram(bins = 25, fill = '#019875FF') + 
   scale_x_continuous(expand = c(0.03, 0)) +

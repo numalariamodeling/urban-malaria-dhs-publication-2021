@@ -141,7 +141,7 @@ hist_fun2 <-function(df, xmin, xmax){
   
 }
 
-hist_fun2(clu_df_cont, 0, 100)
+
 
 
 

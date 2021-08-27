@@ -9,8 +9,7 @@ memory.limit(size = 50000)
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
-ProjectDir <- file.path(DataDir, 'nigeria_dhs' , 'data_analysis')
-DataDir <- file.path(ProjectDir, "data")
+DataDir <- file.path(NuDir, "data", 'nigeria_dhs' , 'data_analysis', 'data')
 GlobDir <- file.path(DataDir, 'africa_health_district_climate', 'climate', 'global')
 DHSData <- file.path(DataDir, 'DHS')
 RastDir <- file.path(DataDir, "Raster_files")
@@ -399,7 +398,7 @@ for (i in 1:length(vars)) {
 ## ----------------------------------------------------
 
 
-dhs <- read.files(DataDir, "*FL.shp$", 'NGGE61FL|NGGE71FL|NGGE7BFL', shapefile) #read in DHS clusters 
+dhs <- read.files(DHSData, "*FL.shp$", 'NGGE61FL|NGGE71FL|NGGE7BFL', shapefile) #read in DHS clusters 
 dhs <- map(dhs, st_as_sf) %>%  map(~filter(.x, URBAN_RURA == "U")) %>% map(sf:::as_Spatial)
 
 
@@ -434,19 +433,11 @@ for (i in 1:length(vars)) {
 
 #pop density extraction with general FB data 
 
-raster_3 <- raster(file.path(DataDir, "Raster_files/facebook_pop_density/nga_general_2020.tif"))
+raster_3 <- raster(file.path(RastDir, "facebook_pop_density/nga_general_2020.tif"))
 raster <- list(raster_3)
 
 
-# for (i in 1:length(vars)) {
-#   df <- map2(dhs, raster, get_crs)
-#   df <- pmap(list(raster, df, vars[i]), extract_fun)
-#   df <- plyr::ldply(df)
-#   var_name <- paste0('pop_den_FB_', as.character(vars[i]), 'm')
-#   df <- extrclean.fun(df, var_name)
-#   write.csv(df, file =file.path(GeoDir, paste0('pop_density_FB_', as.character(vars[i]), 
-#                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-# }
+
 
 
 for (i in 1:length(vars)) {
@@ -463,19 +454,9 @@ for (i in 1:length(vars)) {
 
 #pop density extraction with U5 FB data 
 
-raster <- raster(file.path(DataDir, "Raster_files/facebook_pop_density/nga_children_under_five_2020.tif"))
+raster <- raster(file.path(RastDir, "facebook_pop_density/nga_children_under_five_2020.tif"))
 raster <- list(raster)
 
-
-# for (i in 1:length(vars)) {
-#   df <- map2(dhs, raster, get_crs)
-#   df <- pmap(list(raster, df, vars[i]), extract_fun)
-#   df <- plyr::ldply(df)
-#   var_name <- paste0('pop_den_U5_FB_', as.character(vars[i]), 'm')
-#   df <- extrclean.fun(df, var_name)
-#   write.csv(df, file =file.path(GeoDir, paste0('pop_density_U5_FB_', as.character(vars[i]), 
-#                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-# }
 
 
 
@@ -486,6 +467,22 @@ for (i in 1:length(vars)) {
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('nga')))
   df <- plyr::ldply(df) %>% select(-c(ID))
   write.csv(df, file =file.path(GeoDir, paste0('pop_density_U5_FB_', as.character(vars[i]), 
+                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+}
+
+
+#distance to water bodies  
+
+raster <- raster(file.path(RastDir, "distance_to_water_bodies/distance_to_water.tif"))
+raster <- list(raster)
+
+for (i in 1:length(vars)) {
+  var_name <- paste0('dist_water_bodies', as.character(vars[i]), 'm')
+  df <- map2(dhs, raster, get_crs)
+  df <- pmap(list(raster, df, vars[i]), extract_fun)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('nga')))
+  df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
+  write.csv(df, file =file.path(GeoDir, paste0('dist_water_bodies', as.character(vars[i]), 
                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
