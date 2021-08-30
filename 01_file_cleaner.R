@@ -69,7 +69,7 @@ df_geo<- list()
 for (i in 1:length(buffer)){
   files <- list.files(path = file.path(DataIn, 'geospatial_covariates') , pattern = '.csv', full.names = TRUE, recursive = FALSE)
   files<- files[-grep('pop_density_FB|secondary_vector', files)]
-  files <- files[-grep(buffer[[1]], files)]
+  files <- files[-grep(buffer[[i]], files)]
   df<-sapply(files, read.csv, simplify = F)
   df <- df %>% map_if(~ all(c('hv001') %in% colnames(.x)), ~rename(., v001 = hv001))
   df<- df[order(sapply(df,nrow),decreasing = T)]

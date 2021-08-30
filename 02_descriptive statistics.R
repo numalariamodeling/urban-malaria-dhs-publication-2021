@@ -17,7 +17,6 @@ HisDir =file.path(ResultDir, "histograms")
 MapsDir = file.path(ResultDir, "maps")
 CsvDir = file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'cleaned_cluster_covariates_all', 'New_082321')
 
-library(ggcorrplot)
 # ----------------------------------------------------
 ### Required functions and settings
 ## ----------------------------------------------------
@@ -89,23 +88,29 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
          minutes_walking_metre_2000m = df_geo[[3]]$minutes_walking_metre_2000m, motorized_travel_healthcare_2019_2000m = df_geo[[3]]$motorized_travel_healthcare_2019_2000m,
          pop_den_U5_FB_4000m = df_geo[[5]]$pop_den_U5_FB_4000m, pop_density_0m = df_geo[[1]]$pop_density_0m, precipitation_all_yrs_0m = df_geo[[1]]$prec_all_yrs_0m,
          precipitation_0m = df_geo[[1]]$prec_0m, soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, temp_all_years_0m = df_geo[[1]]$temp_all_yrs_0m,
-         temperature_0m = df_geo[[1]]$temp_all_yrs_0m) 
+         temperature_0m = df_geo[[1]]$temp_all_yrs_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
+
+df_sp = df_sp %>% dplyr::select(-c(dhs_year, v001)) #removes categorical variables and malaria prevalence 
 
 
+#replace nas with their means 
+for(i in 1:ncol(df_sp)){
+  df_sp[is.na(df_sp[,i]), i] = mean(df_sp[,i], na.rm = TRUE)
+}
 
+#correlation matrix 
+corr = round(cor(df_sp), 1)
 
-
-
-dhs_g = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',')
-
-
-
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(df_sp)
 
 
 corrPlot= ggcorrplot(corr, lab=TRUE, legend.title = "Correlation coefficient")+ 
   theme(panel.border = element_rect(colour = "black", fill=NA, size=0.9))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_geospatial.pdf'), corrPlot, width = 13, height = 9)
+#investigate temperature all years and temperature monthly extraction. Same for precipitation.
 
-#correlation coefficient for both DHS and geospatial variables combined 
+#based on the correlation coefficient plot, we drop variables from the DHS and geospatial dataframes seperately 
 
 
 
