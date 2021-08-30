@@ -477,12 +477,12 @@ raster <- raster(file.path(RastDir, "distance_to_water_bodies/distance_to_water.
 raster <- list(raster)
 
 for (i in 1:length(vars)) {
-  var_name <- paste0('dist_water_bodies', as.character(vars[i]), 'm')
+  var_name <- paste0('dist_water_bodies_', as.character(vars[i]), 'm')
   df <- map2(dhs, raster, get_crs)
   df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('nga')))
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('distance')))
   df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
-  write.csv(df, file =file.path(GeoDir, paste0('dist_water_bodies', as.character(vars[i]), 
+  write.csv(df, file =file.path(GeoDir, paste0('dist_water_bodies_', as.character(vars[i]), 
                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
@@ -737,17 +737,19 @@ dhs_hh <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', rea
 dhs_hh <- dhs_hh %>% map(~filter(., hv025 == 1)) %>%  map(~dplyr::select(., hv001, hv006, hv007)) %>%  map(~distinct(.,)) 
 
 dhs_2010 <- left_join(st_as_sf(dhs[[1]]), dhs_hh[[1]], by = c("DHSCLUST"="hv001")) %>% 
-  group_split(hv006) %>% setNames(paste0(unique(dhs_hh[[1]]$hv006), '_', unique(dhs_hh[[1]]$hv007)))
+  group_split(hv006) 
+for(i in seq_along(dhs_2010)) {names(dhs_2010)[[i]] <- paste0(unique(dhs_2010[[i]]$hv006), '_', unique(dhs_2010[[i]]$hv007))}
 
 dhs_2015 <- left_join(st_as_sf(dhs[[2]]), dhs_hh[[2]], by = c("DHSCLUST"="hv001")) %>% 
-  group_split(hv006) %>% setNames(paste0(unique(dhs_hh[[2]]$hv006), '_', unique(dhs_hh[[2]]$hv007)))
+  group_split(hv006)
+for(i in seq_along(dhs_2015)) {names(dhs_2015)[[i]] <- paste0(unique(dhs_2015[[i]]$hv006), '_', unique(dhs_2015[[i]]$hv007))}
+
 
 dhs_2018 <- left_join(st_as_sf(dhs[[3]]), dhs_hh[[3]], by = c("DHSCLUST"="hv001")) %>% 
-  group_split(hv006) %>% setNames(paste0(unique(dhs_hh[[3]]$hv006), '_', unique(dhs_hh[[3]]$hv007)))
+  group_split(hv006) 
+for(i in seq_along(dhs_2018)) {names(dhs_2018)[[i]] <- paste0(unique(dhs_2018[[i]]$hv006), '_', unique(dhs_2018[[i]]$hv007))}
 
-dhs_2018_ordered<- list(`08_2018`=dhs_2018$`8_2018`, `09_2018`=dhs_2018$`9_2018`, `10_2018`=dhs_2018$`10_2018`, `11_2018`=dhs_2018$`11_2018`, `12_2018`=dhs_2018$`12_2018`)
-
-dhs <- sapply(c(dhs_2010, dhs_2015, dhs_2018_ordered), sf:::as_Spatial, simplify = F)
+dhs <- sapply(c(dhs_2010, dhs_2015, dhs_2018), sf:::as_Spatial, simplify = F)
 names(dhs)
 
 
@@ -755,26 +757,26 @@ names(dhs)
 files <- list.files(path = file.path(RastDir , "EVI") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
 raster <- sapply(files, raster, simplify = F)
 
+
 for (i in 1:length(vars)) {
+  var_name <- paste0('EVI_', as.character(vars[i]), 'm')
   df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- plyr::ldply(df)
-  var_name <- paste0('temp_', as.character(vars[i]), 'm')
-  df <- extrclean.fun(df, var_name)
-  write.csv(df, file = file.path(GeoDir, paste0('temp_', as.character(vars[i]), 
+  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('EVI')))
+  df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
+  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1) #use descending to get data for the second month for sensitivity analysis 
+  write.csv(df, file = file.path(GeoDir, paste0('EVI_', as.character(vars[i]), 
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
 
+
+#get first  values for EVI
+
 #Temperature/all years
 #loading temp rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(RastDir , "EVI") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+files <- list.files(path = file.path(RastDir , "temperature_all_years_prior") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
 raster <- sapply(files, raster, simplify = F)
-
-raster <- list(raster_2010_oct, raster_2010_dec, raster_2010_nov, raster_2015_oct, raster_2015_nov,
-               raster_2018_oct, raster_2018_nov, raster_2018_dec,raster_2018_aug, raster_2018_sep)
-
-raster <-sapply(files, raster, simplify = F)
 
 #temp extraction
 
@@ -795,12 +797,9 @@ for (i in 1:length(vars)) {
 
 
 #loading precip rasters in months when DHIS/MIS was conducted
+files <- list.files(path = file.path(RastDir , "rainfall_monthly") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+raster <- sapply(files, raster, simplify = F)
 
-
-raster <- list(raster_2018_aug, raster_2018_sep, raster_2010_oct, raster_2015_oct, raster_2018_oct,
-               raster_2010_nov, raster_2015_nov, raster_2018_nov, raster_2010_dec, raster_2018_dec)
-
-raster <-sapply(files, raster, simplify = F)
 
 #precip extraction
 
@@ -820,21 +819,10 @@ for (i in 1:length(vars)) {
 #temperature era
 
 #loading temp era rasters in months when DHIS/MIS was conducted
-raster_2018_aug <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2018_month_08.tif"))
-raster_2018_sep <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2018_month_09.tif"))
-raster_2010_oct <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2013_month_10.tif"))
-raster_2015_oct <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2015_month_10.tif"))
-raster_2018_oct <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2018_month_10.tif"))
-raster_2010_nov <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2013_month_11.tif"))
-raster_2015_nov <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2015_month_11.tif"))
-raster_2018_nov <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2018_month_11.tif"))
-raster_2010_dec <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2013_month_12.tif"))
-raster_2018_dec <- raster(file.path(GlobDir, "air_temp_era5","air_temp_era5_year_2018_month_12.tif"))
 
-raster <- list(raster_2018_aug, raster_2018_sep, raster_2010_oct, raster_2015_oct, raster_2018_oct,
-               raster_2010_nov, raster_2015_nov, raster_2018_nov, raster_2010_dec, raster_2018_dec)
+files <- list.files(path = file.path(GlobDir, "air_temp_era5") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+raster <- sapply(files, raster, simplify = F)
 
-raster <-sapply(files, raster, simplify = F)
 
 #temp extraction
 
@@ -854,21 +842,9 @@ for (i in 1:length(vars)) {
 #precipitation era
 
 #loading temp era rasters in months when DHIS/MIS was conducted
-raster_2018_aug <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2018_month_08.tif"))
-raster_2018_sep <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2018_month_09.tif"))
-raster_2010_oct <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2013_month_10.tif"))
-raster_2015_oct <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2015_month_10.tif"))
-raster_2018_oct <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2018_month_10.tif"))
-raster_2010_nov <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2013_month_11.tif"))
-raster_2015_nov <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2015_month_11.tif"))
-raster_2018_nov <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2018_month_11.tif"))
-raster_2010_dec <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2013_month_12.tif"))
-raster_2018_dec <- raster(file.path(GlobDir, "air_precip_era5","air_precip_era5_year_2018_month_12.tif"))
+files <- list.files(path = file.path(GlobDir, "air_precip_era5") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+raster <- sapply(files, raster, simplify = F)
 
-raster <- list(raster_2018_aug, raster_2018_sep, raster_2010_oct, raster_2015_oct, raster_2018_oct,
-               raster_2010_nov, raster_2015_nov, raster_2018_nov, raster_2010_dec, raster_2018_dec)
-
-raster <-sapply(files, raster, simplify = F)
 
 #precip extraction
 
@@ -888,31 +864,9 @@ for (i in 1:length(vars)) {
 #soil surface wetness
 
 #loading soil surface wetness rasters in months when DHIS/MIS was conducted
-raster_2018_aug <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20180801-20180831.180W_90S_180E_90N.tif"))
-raster_2018_sep <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20180901-20180930.180W_90S_180E_90N.tif"))
-raster_2010_oct <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20101001-20101031.180W_90S_180E_90N.tif"))
-raster_2015_oct <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20151001-20151031.180W_90S_180E_90N.tif"))
-raster_2018_oct <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20181001-20181031.180W_90S_180E_90N.tif"))
-raster_2010_nov <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20101101-20101130.180W_90S_180E_90N.tif"))
-raster_2015_nov <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20151101-20151130.180W_90S_180E_90N.tif"))
-raster_2018_nov <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20181101-20181130.180W_90S_180E_90N.tif"))
-raster_2010_dec <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20101201-20101231.180W_90S_180E_90N.tif"))
-raster_2018_dec <- raster(file.path(RastDir, "surface_soil_wetness",
-                                    "GIOVANNI-g4.timeAvgMap.M2TMNXLND_5_12_4_GWETTOP.20181201-20181231.180W_90S_180E_90N.tif"))
+files <- list.files(path = file.path(RastDir, "surface_soil_wetness") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+raster <- sapply(files, raster, simplify = F)
 
-raster <- list(raster_2018_aug, raster_2018_sep, raster_2010_oct, raster_2015_oct, raster_2018_oct,
-               raster_2010_nov, raster_2015_nov, raster_2018_nov, raster_2010_dec, raster_2018_dec)
-
-raster <-sapply(files, raster, simplify = F)
 
 for (i in 1:length(vars)) {
   var_name <- paste0('soil_wetness_', as.character(vars[i]), 'm')

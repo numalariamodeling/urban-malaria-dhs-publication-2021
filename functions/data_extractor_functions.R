@@ -3,7 +3,7 @@
 list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "rgdal", "raster",
        "lubridate", "RColorBrewer","sf", "shinyjs", "tmap", "knitr", "labelled", "plotrix", "arules", "foreign",
        "fuzzyjoin", "splitstackshape", "magrittr", "caTools", "sjlabelled", "raster", "rlist", 'rgeos', 'INLA', 'ggpubr',
-       'cowplot', 'gridExtra', 'lme4', "patchwork", 'ggsci')
+       'cowplot', 'gridExtra', 'lme4', "patchwork", 'ggsci', 'glue')
 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -78,3 +78,8 @@ extract_fun <- function(raster, dhs, buffer){
     mutate(hv001 = dhs$DHSCLUST) 
 }
 
+
+extract_fun_month <- function(raster, dhs, buffer){
+  clu_val<-raster::extract(raster,dhs, buffer = buffer, fun = mean, df =TRUE) %>%
+    mutate(dhs_year = dhs$DHSYEAR, hv001 = dhs$DHSCLUST, month = dhs$hv006)
+}

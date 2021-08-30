@@ -27,7 +27,9 @@ source("./functions/descriptive_analysis_functions.R")
 ## ----------------------------------------------------------------
 ### Covariate plots for DHS and geospatial variables   
 ## ----------------------------------------------------------------
-dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
+
+#DHS
+dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
 
 
 #correlation coefficients for DHS variables 
@@ -50,10 +52,12 @@ corrPlot= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_DHS.pdf'), corrPlot, width = 13, height = 9)
 
 
+#geospatial
 #examine distribution of geospatial variables, select buffers with fewer negative and NA values and run correlation coefficient 
 files = list.files(path = CsvDir, pattern = '.csv', full.names = TRUE, recursive = FALSE)
 files = files[-grep('all_DHS_variables_urban', files)]
 df_geo = sapply(files, read.csv, simplify = F)
+
 
 #find the number of NAs per column in geospatial data 
 df_nas = df_geo %>%  map(~summarise_all(., funs(sum(is.na(.)))))
@@ -86,6 +90,11 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
          pop_den_U5_FB_4000m = df_geo[[5]]$pop_den_U5_FB_4000m, pop_density_0m = df_geo[[1]]$pop_density_0m, precipitation_all_yrs_0m = df_geo[[1]]$prec_all_yrs_0m,
          precipitation_0m = df_geo[[1]]$prec_0m, soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, temp_all_years_0m = df_geo[[1]]$temp_all_yrs_0m,
          temperature_0m = df_geo[[1]]$temp_all_yrs_0m) 
+
+
+
+
+
 
 dhs_g = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',')
 

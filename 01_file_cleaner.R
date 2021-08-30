@@ -62,19 +62,23 @@ write.csv(df, paste0(cleandatDir, '/New_082321/all_DHS_variables_urban_malaria.c
 
 buffer <- c('_1000m_|_2000m_|_3000m_|_4000m_',  '_0m_|_2000m_|_3000m_|_4000m_', '_0m_|_1000m_|_3000m_|_4000m_','_0m_|_1000m_|_2000m_|_4000m_', '_0m_|_1000m_|_2000m_|_3000m_')
 
+buffer_label <- c('0m', '1000m', '2000m', '3000m', '4000m')
+
 df_geo<- list()
 
 for (i in 1:length(buffer)){
   files <- list.files(path = file.path(DataIn, 'geospatial_covariates') , pattern = '.csv', full.names = TRUE, recursive = FALSE)
-  files<- files[-grep('pop_density_FB|secondary_vector_', files)]
-  files <- files[-grep(buffer[[i]], files)]
+  files<- files[-grep('pop_density_FB|secondary_vector', files)]
+  files <- files[-grep(buffer[[1]], files)]
   df<-sapply(files, read.csv, simplify = F)
   df <- df %>% map_if(~ all(c('hv001') %in% colnames(.x)), ~rename(., v001 = hv001))
   df<- df[order(sapply(df,nrow),decreasing = T)]
   df<- df %>% map_if(~ all(c('.id') %in% colnames(.x)),~dplyr::select(., -.id))
+  df<- df %>% map_if(~ all(c('month') %in% colnames(.x)),~dplyr::select(., -month))
   df <- df %>%  purrr::reduce(left_join, by = c('dhs_year', 'v001')) %>%  mutate(dhs_year = as.character(dhs_year))
   df_geo <- append(df_geo, list(df))
 }
+
 
 
 filenames <- c('0m', '1000m', '2000m', '3000m', '4000m')
