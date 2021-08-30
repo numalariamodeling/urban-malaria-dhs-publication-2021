@@ -771,12 +771,13 @@ for (i in 1:length(vars)) {
 
 
 
-#get first  values for EVI
+
 
 #Temperature/all years
 #loading temp rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(RastDir , "temperature_all_years_prior") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+files <- list.files(path = file.path(RastDir , "temperature_all_years_prior") ,pattern = ".tif", full.names = TRUE, recursive = TRUE)
 raster <- sapply(files, raster, simplify = F)
+#remove non-dhs months and re-extract to see if values are different 
 
 #temp extraction
 
