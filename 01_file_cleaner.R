@@ -84,5 +84,5 @@ for (i in 1:length(buffer)){
 filenames <- c('0m', '1000m', '2000m', '3000m', '4000m')
 
 for (i in 1:length(df_geo)){
-write.csv(df_geo[[i]], paste0(cleandatDir, '/New_082321/all_geospatial_variables_urban_malaria_', filenames[[i]], '.csv'))
+write_csv(df_geo[[i]], paste0(cleandatDir, '/New_082321/all_geospatial_variables_urban_malaria_', filenames[[i]], '.csv'))
 }

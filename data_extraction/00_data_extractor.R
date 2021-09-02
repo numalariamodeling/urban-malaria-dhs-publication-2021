@@ -779,39 +779,44 @@ files <- list.files(path = file.path(RastDir , "temperature_all_years_prior") ,p
 raster <- sapply(files, raster, simplify = F)
 #remove non-dhs months and re-extract to see if values are different 
 
-#temp extraction
 
+#temp extraction
 for (i in 1:length(vars)) {
+  var_name <- paste0('temp_all_years_prior_', as.character(vars[i]), 'm')
   df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- plyr::ldply(df)
-  var_name <- paste0('temp_', as.character(vars[i]), 'm')
-  df <- extrclean.fun(df, var_name)
-  write.csv(df, file = file.path(GeoDir, paste0('temp_', as.character(vars[i]), 
+  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('temp')))
+  df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
+  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
+  write.csv(df, file = file.path(GeoDir, paste0('temp_all_years_prior_', as.character(vars[i]), 
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
-#still trying to figure out why 2010 amd 2018 observations are less when the csv is generated
+
+
+
+#still trying to figure out why 2010 and 2018 observations are less when the csv is generated
 #End
 
 #Precipitation/all years
 
 
 #loading precip rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(RastDir , "rainfall_monthly") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+files <- list.files(path = file.path(RastDir, "rainfall_all_years_prior") ,pattern = "*.tif$", full.names = TRUE, recursive = TRUE)
 raster <- sapply(files, raster, simplify = F)
 
 
 #precip extraction
 
 for (i in 1:length(vars)) {
+  var_name <- paste0('preci_all_years_prior_', as.character(vars[i]), 'm')
   df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- plyr::ldply(df)
-  var_name <- paste0('prec_', as.character(vars[i]), 'm')
-  df <- extrclean.fun(df, var_name)
-  write.csv(df, file = file.path(GeoDir, paste0('prec_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('rainfall')))
+  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
+  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
+  write.csv(df, file = file.path(GeoDir, paste0('preci_all_years_prior_', as.character(vars[i]), 
+                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
 
@@ -821,41 +826,43 @@ for (i in 1:length(vars)) {
 
 #loading temp era rasters in months when DHIS/MIS was conducted
 
-files <- list.files(path = file.path(GlobDir, "air_temp_era5") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+files <- list.files(path = file.path(RastDir, "temperature_monthly") ,pattern = "*.tif$", full.names = TRUE, recursive = TRUE)
 raster <- sapply(files, raster, simplify = F)
 
 
 #temp extraction
 
 for (i in 1:length(vars)) {
+  var_name <- paste0('temp_survey_month_', as.character(vars[i]), 'm')
   df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- plyr::ldply(df)
-  var_name <- paste0('temp_', as.character(vars[i]), 'm')
-  df <- extrclean.fun(df, var_name)
-  write.csv(df, file = file.path(GeoDir, paste0('temp_', as.character(vars[i]), 
+  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('temp')))
+  df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
+  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
+  write.csv(df, file = file.path(GeoDir, paste0('temp_survey_month_', as.character(vars[i]), 
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
-#still trying to figure out why 2010 amd 2018 observations are less when the csv is generated
+#still trying to figure out why 2010 and 2018 observations are less when the csv is generated
 #End
 
 #precipitation era
 
 #loading temp era rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(GlobDir, "air_precip_era5") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
+files <- list.files(path = file.path(RastDir, "rainfall_monthly"), pattern = "*.tif$", full.names = TRUE, recursive = TRUE)
 raster <- sapply(files, raster, simplify = F)
 
 
 #precip extraction
 
 for (i in 1:length(vars)) {
+  var_name <- paste0('preci_monthly_', as.character(vars[i]), 'm')
   df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- plyr::ldply(df)
-  var_name <- paste0('precip_', as.character(vars[i]), 'm')
-  df <- extrclean.fun(df, var_name)
-  write.csv(df, file = file.path(GeoDir, paste0('precip_', as.character(vars[i]), 
+  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
+  df <- df %>% map(~rename_with(., .fn=~paste0(var_name), .cols = contains('rainfall')))
+  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
+  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
+  write.csv(df, file = file.path(GeoDir, paste0('precip_monthly_', as.character(vars[i]), 
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
@@ -872,9 +879,10 @@ raster <- sapply(files, raster, simplify = F)
 for (i in 1:length(vars)) {
   var_name <- paste0('soil_wetness_', as.character(vars[i]), 'm')
   df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
+  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('GIOVANNI')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
+  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
   write.csv(df, file = file.path(GeoDir, paste0('soil_wetness_', as.character(vars[i]), 
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }

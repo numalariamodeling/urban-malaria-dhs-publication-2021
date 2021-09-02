@@ -86,9 +86,9 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
          minutes_nearest_city_1000m = df_geo[[2]]$minutes_to_city_1000m, minutes_travel_metre_2015_1000m = df_geo[[2]]$minutes_travel_metre_2015_1000m,
          minutes_travel_metre_2019_2000m = df_geo[[3]]$minutes_travel_metre_2019_2000m, minutes_walking_healthcare_2000m = df_geo[[3]]$minutes_walking_healthcare_2000m,
          minutes_walking_metre_2000m = df_geo[[3]]$minutes_walking_metre_2000m, motorized_travel_healthcare_2019_2000m = df_geo[[3]]$motorized_travel_healthcare_2019_2000m,
-         pop_den_U5_FB_4000m = df_geo[[5]]$pop_den_U5_FB_4000m, pop_density_0m = df_geo[[1]]$pop_density_0m, precipitation_all_yrs_0m = df_geo[[1]]$prec_all_yrs_0m,
-         precipitation_0m = df_geo[[1]]$prec_0m, soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, temp_all_years_0m = df_geo[[1]]$temp_all_yrs_0m,
-         temperature_0m = df_geo[[1]]$temp_all_yrs_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
+         pop_den_U5_FB_4000m = df_geo[[5]]$pop_den_U5_FB_4000m, pop_density_0m = df_geo[[1]]$pop_density_0m,
+         precipitation_monthly_0m = df_geo[[1]]$preci_monthly_0m,soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, 
+         temperature_monthly_0m = df_geo[[1]]$temp_survey_month_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
 
 df_sp = df_sp %>% dplyr::select(-c(dhs_year, v001)) #removes categorical variables and malaria prevalence 
 
@@ -111,8 +111,44 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_corr
 #investigate temperature all years and temperature monthly extraction. Same for precipitation.
 
 #based on the correlation coefficient plot, we drop variables from the DHS and geospatial dataframes seperately 
+dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
+dhs = dhs %>%  dplyr::select(-c(U5_pop, all_female_sex, wall_type, floor_type, housing_q, net_use, household_size, mean_age, p_test))#p_test or test positivity rate is dropped since it is not used in the model
+
+df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, elevation_1000m = df_geo[[2]]$elev_merit_1000m,
+                   housing_2000_4000m = df_geo[[5]]$housing_2000_4000m,  housing_2015_4000m = df_geo[[5]]$housing_2015_4000m,
+                   minutes_nearest_city_1000m = df_geo[[2]]$minutes_to_city_1000m, minutes_travel_metre_2015_1000m = df_geo[[2]]$minutes_travel_metre_2015_1000m,
+                   minutes_travel_metre_2019_2000m = df_geo[[3]]$minutes_travel_metre_2019_2000m, minutes_walking_healthcare_2000m = df_geo[[3]]$minutes_walking_healthcare_2000m,
+                   minutes_walking_metre_2000m = df_geo[[3]]$minutes_walking_metre_2000m, motorized_travel_healthcare_2019_2000m = df_geo[[3]]$motorized_travel_healthcare_2019_2000m,
+                   pop_den_U5_FB_4000m = df_geo[[5]]$pop_den_U5_FB_4000m, pop_density_0m = df_geo[[1]]$pop_density_0m,
+                   precipitation_monthly_0m = df_geo[[1]]$preci_monthly_0m,soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, 
+                   temperature_monthly_0m = df_geo[[1]]$temp_survey_month_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
+
+df_sp = df_sp %>%  dplyr::select(-c(motorized_travel_healthcare_2019_2000m, housing_2000_4000m, minutes_travel_metre_2015_1000m, minutes_travel_metre_2019_2000m, elevation_1000m))
 
 
+df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
+
+#compute correlation coefficient for all dhs and geospatial variables 
+x = df_all %>% dplyr::select(-c(positives, first_interview_month, dhs_year, shstate, v001, region, num_child_6_59)) #removes categorical variables and malaria prevalence 
+
+#replace nas with their means 
+for(i in 1:ncol(x)){
+  x[is.na(x[,i]), i] = mean(x[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(x), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(x)
+
+
+corrPlot= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.9))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_DHS_geospatial_all.pdf'), corrPlot, width = 13, height = 9)
+
+#final dataset of covariates and independent variable 
+write.csv(df_all, paste0(CsvDir, '/final_dataset_with_positives_number_tested_and_covariates.csv'))
 
 
 ## ----------------------------------------------------------------
