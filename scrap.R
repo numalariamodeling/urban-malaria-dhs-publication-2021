@@ -128,3 +128,42 @@ u_bar
 
 ggsave(paste0(HisDir, '/', Sys.Date(),  'combined_urban_malaria_clusters_percent.pdf'), u_bar, width=13, height=13)
 
+
+
+#Dominant vector
+
+#loading raster files
+
+files <- list.files(path = file.path(RastDir , "vector") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
+files<- files[(grep('Dominant_Vector', files))]
+raster<-sapply(files, raster, simplify = F)
+
+
+for (i in 1:length(vars)) {
+  var_name <- paste0('dominant_vector_', as.character(vars[i]), 'm')
+  df <- map2(dhs, raster, get_crs)
+  df <- pmap(list(raster, df, vars[i]), extract_fun)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Dominant_Vector')))
+  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
+  write.csv(df, file = file.path(GeoDir, paste0('dominant_vector_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+}
+
+
+
+#Secondary vector
+
+files <- list.files(path = file.path(RastDir , "vector") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
+files<- files[(grep('Secondary', files))]
+raster<-sapply(files, raster, simplify = F)
+
+
+for (i in 1:length(vars)) {
+  var_name <- paste0('secondary_vector_', as.character(vars[i]), 'm')
+  df <- map2(dhs, raster, get_crs)
+  df <- pmap(list(raster, df, vars[i]), extract_fun)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Secondary')))
+  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
+  write.csv(df, file = file.path(GeoDir, paste0('secondary_vector_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+}

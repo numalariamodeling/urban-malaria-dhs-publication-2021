@@ -20,7 +20,7 @@ GeoDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 # -----------------------------------------
 ### Required functions and settings
 ## -----------------------------------------
-source("./functions/data_extractor_functions.R")
+source("./data_extractor_functions/data_extractor_functions.R")
 options(survey.lonely.psu="adjust") # this option allows admin units with only one cluster to be analyzed
 
 
@@ -688,46 +688,9 @@ for (i in 1:length(vars)) {
 }
 
 
+## Geospatial data monthly extraction 
 
 
-
-#Dominant vector
-
-#loading raster files
-
-files <- list.files(path = file.path(RastDir , "vector") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('Dominant_Vector', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('dominant_vector_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Dominant_Vector')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('dominant_vector_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
-
-#Secondary vector
-
-files <- list.files(path = file.path(RastDir , "vector") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('Secondary', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('secondary_vector_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Secondary')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('secondary_vector_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
 
 #dhs clusters by year and month of sampling 
 
@@ -771,58 +734,7 @@ for (i in 1:length(vars)) {
 
 
 
-
-
-#Temperature/all years
-#loading temp rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(RastDir , "temperature_all_years_prior") ,pattern = ".tif", full.names = TRUE, recursive = TRUE)
-raster <- sapply(files, raster, simplify = F)
-#remove non-dhs months and re-extract to see if values are different 
-
-
-#temp extraction
-for (i in 1:length(vars)) {
-  var_name <- paste0('temp_all_years_prior_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('temp')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
-  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
-  write.csv(df, file = file.path(GeoDir, paste0('temp_all_years_prior_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
-
-
-#still trying to figure out why 2010 and 2018 observations are less when the csv is generated
-#End
-
-#Precipitation/all years
-
-
-#loading precip rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(RastDir, "rainfall_all_years_prior") ,pattern = "*.tif$", full.names = TRUE, recursive = TRUE)
-raster <- sapply(files, raster, simplify = F)
-
-
-#precip extraction
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('preci_all_years_prior_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('rainfall')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
-  write.csv(df, file = file.path(GeoDir, paste0('preci_all_years_prior_', as.character(vars[i]), 
-                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
-
-
-#temperature era
+#temperature era5
 
 #loading temp era rasters in months when DHIS/MIS was conducted
 
@@ -843,8 +755,7 @@ for (i in 1:length(vars)) {
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
-#still trying to figure out why 2010 and 2018 observations are less when the csv is generated
-#End
+
 
 #precipitation era
 

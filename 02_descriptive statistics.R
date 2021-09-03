@@ -20,7 +20,7 @@ CsvDir = file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covar
 # ----------------------------------------------------
 ### Required functions and settings
 ## ----------------------------------------------------
-source("./functions/descriptive_analysis_functions.R")
+source("./other_functions/descriptive_analysis_functions.R")
 
 
 ## ----------------------------------------------------------------
@@ -32,7 +32,7 @@ dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header 
 
 
 #correlation coefficients for DHS variables 
-x = dhs %>% dplyr::select(-c(p_test,positives, first_interview_month, dhs_year, shstate, v001, region, num_child_6_59, mean_age)) #removes categorical variables and malaria prevalence 
+x = dhs %>% dplyr::select(-c(p_test,positives, first_interview_month, dhs_year, shstate, v001, region, num_child_6_59, mean_age, female_child_sex, fever, U5_pop, housing_q)) #removes categorical variables and malaria prevalence 
 
 #replace nas with their means 
 for(i in 1:ncol(x)){
@@ -90,7 +90,7 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
          precipitation_monthly_0m = df_geo[[1]]$preci_monthly_0m,soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, 
          temperature_monthly_0m = df_geo[[1]]$temp_survey_month_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
 
-df_sp = df_sp %>% dplyr::select(-c(dhs_year, v001)) #removes categorical variables and malaria prevalence 
+df_sp = df_sp %>% dplyr::select(-c(dhs_year, v001, minutes_travel_metre_2015_1000m, minutes_travel_metre_2019_2000m, minutes_walking_metre_2000m, minutes_walking_healthcare_2000m)) %>% mutate(housing_2015_4000m = housing_2015_4000m*100,  housing_2000_4000m =  housing_2000_4000m *100,) #removes categorical variables and malaria prevalence 
 
 
 #replace nas with their means 
@@ -112,7 +112,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_corr
 
 #based on the correlation coefficient plot, we drop variables from the DHS and geospatial dataframes seperately 
 dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
-dhs = dhs %>%  dplyr::select(-c(U5_pop, all_female_sex, wall_type, floor_type, housing_q, net_use, household_size, mean_age, p_test))#p_test or test positivity rate is dropped since it is not used in the model
+dhs = dhs %>%  dplyr::select(-c(U5_pop, female_child_sex, wall_type, floor_type, housing_q, net_use, household_size, mean_age, p_test, fever))#p_test or test positivity rate is dropped since it is not used in the model
 
 df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, elevation_1000m = df_geo[[2]]$elev_merit_1000m,
                    housing_2000_4000m = df_geo[[5]]$housing_2000_4000m,  housing_2015_4000m = df_geo[[5]]$housing_2015_4000m,
@@ -123,7 +123,7 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
                    precipitation_monthly_0m = df_geo[[1]]$preci_monthly_0m,soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, 
                    temperature_monthly_0m = df_geo[[1]]$temp_survey_month_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
 
-df_sp = df_sp %>%  dplyr::select(-c(motorized_travel_healthcare_2019_2000m, housing_2000_4000m, minutes_travel_metre_2015_1000m, minutes_travel_metre_2019_2000m, elevation_1000m))
+df_sp = df_sp %>%  dplyr::select(-c(minutes_walking_healthcare_2000m, minutes_walking_metre_2000m, housing_2000_4000m, minutes_travel_metre_2015_1000m, minutes_travel_metre_2019_2000m, elevation_1000m))
 
 
 df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
@@ -148,7 +148,7 @@ corrPlot= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_DHS_geospatial_all.pdf'), corrPlot, width = 13, height = 9)
 
 #final dataset of covariates and independent variable 
-write.csv(df_all, paste0(CsvDir, '/final_dataset_with_positives_number_tested_and_covariates.csv'))
+write_csv(df_all, paste0(CsvDir, '/final_dataset/final_dataset.csv'))
 
 
 ## ----------------------------------------------------------------
