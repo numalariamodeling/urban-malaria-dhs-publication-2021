@@ -24,35 +24,12 @@ source("./other_functions/descriptive_analysis_functions.R")
 
 
 ## ----------------------------------------------------------------
-### Covariate plots for DHS and geospatial variables   
+### Creating analysis data  
 ## ----------------------------------------------------------------
-
-#DHS
+#read in dhs file 
 dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
 
-
-#correlation coefficients for DHS variables 
-x = dhs %>% dplyr::select(-c(p_test,positives, first_interview_month, dhs_year, shstate, v001, region, num_child_6_59, mean_age, female_child_sex, fever, U5_pop, housing_q)) #removes categorical variables and malaria prevalence 
-
-#replace nas with their means 
-for(i in 1:ncol(x)){
-  x[is.na(x[,i]), i] = mean(x[,i], na.rm = TRUE)
-}
-
-#correlation matrix 
-corr = round(cor(x), 1)
-
-# Compute a matrix of correlation p-values
-p.mat = cor_pmat(x)
-
-
-corrPlot= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.9))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_DHS.pdf'), corrPlot, width = 13, height = 9)
-
-
-#geospatial
-#examine distribution of geospatial variables, select buffers with fewer negative and NA values and run correlation coefficient 
+#read in geospatial dataset and create final data 
 files = list.files(path = CsvDir, pattern = '.csv', full.names = TRUE, recursive = FALSE)
 files = files[-grep('all_DHS_variables_urban', files)]
 df_geo = sapply(files, read.csv, simplify = F)
@@ -79,41 +56,7 @@ df_na_neg = cbind(df_nas, df_neg)
 df_na_neg = df_na_neg[,order(colnames(df_na_neg))]
 df_na_neg
 
-#create a geospatial data based on results of nas and negatives check 
-
-df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, elevation_1000m = df_geo[[2]]$elev_merit_1000m,
-         housing_2000_4000m = df_geo[[5]]$housing_2000_4000m,  housing_2015_4000m = df_geo[[5]]$housing_2015_4000m,
-         minutes_nearest_city_1000m = df_geo[[2]]$minutes_to_city_1000m, minutes_travel_metre_2015_1000m = df_geo[[2]]$minutes_travel_metre_2015_1000m,
-         minutes_travel_metre_2019_2000m = df_geo[[3]]$minutes_travel_metre_2019_2000m, minutes_walking_healthcare_2000m = df_geo[[3]]$minutes_walking_healthcare_2000m,
-         minutes_walking_metre_2000m = df_geo[[3]]$minutes_walking_metre_2000m, motorized_travel_healthcare_2019_2000m = df_geo[[3]]$motorized_travel_healthcare_2019_2000m,
-         pop_den_U5_FB_4000m = df_geo[[5]]$pop_den_U5_FB_4000m, pop_density_0m = df_geo[[1]]$pop_density_0m,
-         precipitation_monthly_0m = df_geo[[1]]$preci_monthly_0m,soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, 
-         temperature_monthly_0m = df_geo[[1]]$temp_survey_month_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
-
-df_sp = df_sp %>% dplyr::select(-c(dhs_year, v001, minutes_travel_metre_2015_1000m, minutes_travel_metre_2019_2000m, minutes_walking_metre_2000m, minutes_walking_healthcare_2000m)) %>% mutate(housing_2015_4000m = housing_2015_4000m*100,  housing_2000_4000m =  housing_2000_4000m *100,) #removes categorical variables and malaria prevalence 
-
-
-#replace nas with their means 
-for(i in 1:ncol(df_sp)){
-  df_sp[is.na(df_sp[,i]), i] = mean(df_sp[,i], na.rm = TRUE)
-}
-
-#correlation matrix 
-corr = round(cor(df_sp), 1)
-
-# Compute a matrix of correlation p-values
-p.mat = cor_pmat(df_sp)
-
-
-corrPlot= ggcorrplot(corr, lab=TRUE, legend.title = "Correlation coefficient")+ 
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.9))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_geospatial.pdf'), corrPlot, width = 13, height = 9)
-#investigate temperature all years and temperature monthly extraction. Same for precipitation.
-
-#based on the correlation coefficient plot, we drop variables from the DHS and geospatial dataframes seperately 
-dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
-dhs = dhs %>%  dplyr::select(-c(U5_pop, female_child_sex, wall_type, floor_type, housing_q, net_use, household_size, mean_age, p_test, fever))#p_test or test positivity rate is dropped since it is not used in the model
-
+#select geospatial dataset values with fewest 
 df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, elevation_1000m = df_geo[[2]]$elev_merit_1000m,
                    housing_2000_4000m = df_geo[[5]]$housing_2000_4000m,  housing_2015_4000m = df_geo[[5]]$housing_2015_4000m,
                    minutes_nearest_city_1000m = df_geo[[2]]$minutes_to_city_1000m, minutes_travel_metre_2015_1000m = df_geo[[2]]$minutes_travel_metre_2015_1000m,
@@ -123,33 +66,198 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
                    precipitation_monthly_0m = df_geo[[1]]$preci_monthly_0m,soil_wetness_0m = df_geo[[1]]$soil_wetness_0m, 
                    temperature_monthly_0m = df_geo[[1]]$temp_survey_month_0m, dist_water_bodies_0m = df_geo[[1]]$dist_water_bodies_0m, EVI_0m = df_geo[[1]]$EVI_0m) 
 
-df_sp = df_sp %>%  dplyr::select(-c(minutes_walking_healthcare_2000m, minutes_walking_metre_2000m, housing_2000_4000m, minutes_travel_metre_2015_1000m, minutes_travel_metre_2019_2000m, elevation_1000m))
-
 
 df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
 
-#compute correlation coefficient for all dhs and geospatial variables 
-x = df_all %>% dplyr::select(-c(positives, first_interview_month, dhs_year, shstate, v001, region, num_child_6_59)) #removes categorical variables and malaria prevalence 
+## -----------------------------------------------------------------------------------------------------------------------
+### Socio-economic variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
+## -----------------------------------------------------------------------------------------------------------------------
 
+#variable distribition and cumulative distribution 
+dhs_social = data.frame(`Educational attainment` = df_all$edu_a, Wealth = df_all$wealth, `Improved flooring` =df_all$floor_type,
+                        `Improved roofing materials` = df_all$roof_type, `Improved wall` = df_all$wall_type, `improved housing in 2000` =df_all$housing_2000_4000m,
+                        `improved housing in 2015` = df_all$housing_2015_4000m) %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
+                                                                                             improved.housing.in.2015= improved.housing.in.2015*100)
+dhs_social_long = dhs_social %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
+
+df_list =split(dhs_social_long, dhs_social_long$x_label)
+df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
+                       df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
+                       df_list$improved.housing.in.2015)
+
+cdf_hist = function(df, fill,color, x, xlab){
+  hist=ggplot(df, aes(x =.data[[x]]))+geom_histogram(alpha = 0.4, position="identity")
+  max_y=max(ggplot_build(hist)$data[[1]]$count)
+  ggplot(df, aes(.data[[x]]))+
+    geom_histogram(fill=fill, color= color, alpha = 0.4, position="identity") +
+    stat_ecdf(aes_(y =bquote(..y..* .(max_y)), color =color))+
+    scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percentage', labels = percent))+
+    theme_manuscript()+theme(legend.position = 'none')+
+    xlab(xlab)
+}
+
+
+x=list('values')
+fill = list('#8971B3')
+color = list('#8971B3')
+xlab=list('% with post-primary education',
+          '% in the rich wealth quintiles','% in homes with improved flooring',
+          '% in homes with a metal or zinc roof', '% in homes with an improved wall type',
+          '% living in improved housing (2000)',
+          '% living in improved housing (2015)')
+
+
+
+
+p = pmap(list(df_list_ordered,fill, color, x, xlab), cdf_hist)
+all_p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]
+all_p
+ggsave(paste0(ResultDir, '/updated_figures', '/social_variables', Sys.Date(), 'social_variable_distribution.pdf'), all_p, width =13, height =9)
+
+#correlation 
+
+dhs_social_ordered = data.frame(`improved housing in 2015` = df_all$housing_2015_4000m, 
+                                `improved housing in 2000` =df_all$housing_2000_4000m, `Improved wall` = df_all$wall_type,
+                                `Improved roofing materials` = df_all$roof_type,  `Improved flooring` =df_all$floor_type,Wealth = df_all$wealth, 
+                                `Educational attainment` = df_all$edu_a) %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
+                                                                                            improved.housing.in.2015= improved.housing.in.2015*100)
 #replace nas with their means 
-for(i in 1:ncol(x)){
-  x[is.na(x[,i]), i] = mean(x[,i], na.rm = TRUE)
+for(i in 1:ncol(dhs_social_ordered)){
+  dhs_social_ordered[is.na(dhs_social_ordered[,i]), i] = mean(dhs_social_ordered[,i], na.rm = TRUE)
 }
 
 #correlation matrix 
-corr = round(cor(x), 1)
+corr = round(cor(dhs_social_ordered), 1)
 
 # Compute a matrix of correlation p-values
-p.mat = cor_pmat(x)
+p.mat = cor_pmat(dhs_social_ordered)
 
 
-corrPlot= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.9))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_DHS_geospatial_all.pdf'), corrPlot, width = 13, height = 9)
+corr_social= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_social.pdf'), corr_social, width = 13, height = 9)
 
-#final dataset of covariates and independent variable 
-write_csv(df_all, paste0(CsvDir, '/final_dataset/final_dataset.csv'))
+#relationship with log(positives)
+positives = dhs$positives +1
+dhs_year=dhs$dhs_year
+dhs_social_plot = cbind(dhs_social, dhs_year, positives)
+dhs_social_plot = dhs_social_plot  %>%  pivot_longer(!c(dhs_year, positives),names_to='x_label', values_to='values')
+df_list = split(dhs_social_plot, dhs_social_plot$x_label)
+df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
+                       df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
+                       df_list$improved.housing.in.2015)
 
+plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x, aes(x=values, y=log(positives)))+
+                                   geom_point(shape = 42, size = 5, color = "#f64b77") +
+                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128")+
+                                   geom_smooth(aes(color = "Confidence Interval"),  fill = "#a56c56", linetype = 0)+
+                                   theme_manuscript()+
+                                   labs(x = .y, y ='log (malaria positives)')+
+                                     guides(fill =FALSE, color =FALSE))}
+
+social_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[7]]
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.pdf'), social_p, width = 14, height =9)
+
+plots_by_region = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x, aes(x=values, y=log(positives), group=dhs_year))+
+                                     geom_point(aes(color =dhs_year, fill=dhs_year), alpha=0.7, shape=21) +
+                                     geom_smooth(aes(color =dhs_year, fill=dhs_year))+
+                                     theme_manuscript()+
+                                     labs(x = .y, y ='log (positive malaria test)'))}
+
+plots_by_region[[1]]+plots_by_region[[2]]+ plots_by_region[[3]]+ plots_by_region[[4]]+ plots_by_region[[5]]+ plots_by_region[[6]]+ plots_by_region[[7]]
+
+## ----------------------------------------------------------------
+### Examining correlations among numeric variables 
+## ----------------------------------------------------------------
+#create the demographic correlation dataset 
+dhs_demo = data.frame(`Population density` = df_all$pop_density_0m, `U5 population density` = df_all$pop_den_U5_FB_4000m, `Pregnant women` =df_all$preg_women,
+                      `Female population` = df_all$all_female_sex, `Median household size` = df_all$household_size, `Median age` =df_all$median_age)
+
+#replace nas with their means 
+for(i in 1:ncol(dhs_demo)){
+  dhs_demo[is.na(dhs_demo[,i]), i] = mean(dhs_demo[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(dhs_demo), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(dhs_demo)
+
+
+corr_demo= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+
+#create the socioeconomic correlation dataset 
+dhs_social = data.frame(`Educational attainment` = df_all$edu_a, Wealth = df_all$wealth, `Improved flooring` =df_all$floor_type,
+                        `Improved roofing materials` = df_all$roof_type, `Improved wall` = df_all$wall_type, `improved housing in 2000` =df_all$housing_2000_4000m,
+                        `improved housing in 2015` = df_all$housing_2015_4000m)
+
+
+
+
+
+#create the behavioral correlation dataset 
+dhs_behvioral = data.frame(`Net use` = df_all$net_use, `Children's net use` =df_all$net_use_child, `Medical treatment` =df_all$med_treat_fever,
+                      `Effective fever treatment` = df_all$ACT_use_U5)
+
+#replace nas with their means 
+for(i in 1:ncol(dhs_behvioral)){
+  dhs_behvioral[is.na(dhs_behvioral[,i]), i] = mean(dhs_behvioral[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(dhs_behvioral), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(dhs_behvioral)
+
+
+corr_behvioral= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+
+
+#create the accessibility correlation dataset 
+dhs_access = data.frame(`Motorized travel to health facility` =df_all$motorized_travel_healthcare_2019_2000m, 
+                           `Minutes to the nearest city` = df_all$minutes_nearest_city_1000m)
+
+#replace nas with their means 
+for(i in 1:ncol(dhs_access)){
+  dhs_access[is.na(dhs_access[,i]), i] = mean(dhs_access[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(dhs_access), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(dhs_access)
+
+
+corr_access= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+
+
+#create the environment correlation dataset 
+dhs_environment = data.frame(Precipitation =df_all$precipitation_monthly_0m, Temperature = df_all$temperature_monthly_0m,
+                        `Surface soil moisture` = df_all$soil_wetness_0m, `Distance to water bodies` = df_all$dist_water_bodies_0m,
+                        Elevation = df_all$elevation_1000m, `Enhanced vegetation index` = df_all$EVI_0m)
+
+#replace nas with their means 
+for(i in 1:ncol(dhs_environment)){
+  dhs_environment[is.na(dhs_environment[,i]), i] = mean(dhs_environment[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(dhs_environment), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(dhs_environment)
+
+
+corr_environment= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5), 
+        axis.text.x = element_text(size = 16, color = "black"), 
+        axis.text.y = element_text(size = 16, color = "black"))
 
 ## ----------------------------------------------------------------
 ### Read in computed DHS cluster data and generate related figures  

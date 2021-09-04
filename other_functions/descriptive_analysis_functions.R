@@ -1,7 +1,6 @@
 # # Reading in the necessary packages 
 list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "rgdal", "raster",
-                      "lubridate", "RColorBrewer","sf", "shinyjs", "tmap", "knitr", "labelled", "plotrix", "arules", "foreign",
-                      "fuzzyjoin", "splitstackshape", "magrittr", "caTools", "sjlabelled", "raster", "rlist", 'rgeos', 'INLA', 'ggpubr',
+                      "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'rgeos', 'INLA', 'ggpubr',
                       'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot')
 
 
@@ -57,6 +56,12 @@ theme_manuscript <- function(){
           legend.title=element_text(size=16, colour = 'black'),
           legend.text =element_text(size = 16, colour = 'black'),
           legend.key.height = unit(1, "cm"))
+}
+
+theme_corr <- function(){
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5), 
+        axis.text.x = element_text(size = 16, color = "black"), 
+        axis.text.y = element_text(size = 16, color = "black"))
 }
 
 igv.lm.point <- function(x, y, point_val, legend_title, xlab, ylab){
