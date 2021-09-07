@@ -142,7 +142,8 @@ positives = dhs$positives
 dhs_year=dhs$dhs_year
 num_tested =dhs$child_6_59_tested_malaria
 dhs_social_plot = cbind(dhs_social, dhs_year, positives, num_tested)
-dhs_social_plot = dhs_social_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested),names_to='x_label', values_to='values')
+dhs_social_plot$rate = (dhs_social_plot$positives/dhs_social_plot$num_tested) 
+dhs_social_plot = dhs_social_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_social_plot, dhs_social_plot$x_label)
 df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
@@ -167,12 +168,6 @@ for(i in 1:length(df_list_ordered)){
 }
 
 
-ggplot(data=df_list_ordered[[1]]) + geom_point(aes(x=values, y = positives), size = 2, colour = "blue") +  
-  geom_smooth(data=df_list_ordered[[1]], aes(x=values, y=fit, ymin=lwr, ymax=upr), size = 1.5, 
-              colour = "red", se = TRUE, stat = "smooth", method = 'glm', method.args=list(family ='poisson'))
-
-
-
 plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x)+
                                    geom_point(mapping=aes(x=values, y=positives), shape=42, size= 5, color = "#f64b77", alpha = 0.5, position ='jitter') +
                                      geom_smooth(.x, mapping=aes(x=values, y=fit, ymin=lwr, ymax=upr, fill = "Trend"), stat="smooth", se = FALSE, color = "#644128", method = 'glm', method.args=list(family ='poisson'))+
@@ -185,6 +180,34 @@ social_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]
 social_p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.pdf'), social_p, width = 14, height =9)
 
+
+
+plots_rate = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                     geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'loess')+
+                                     geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'loess')+
+                                     theme_manuscript()+
+                                     labs(x = .y, y ='malaria test positive rate')+
+                                     guides(fill =FALSE, color =FALSE))}
+
+social_p_rate<- plots_rate[[1]]+plots_rate[[2]]+ plots_rate[[3]]+ plots_rate[[4]]+ plots_rate[[5]]+ plots_rate[[6]]+ plots_rate[[7]]
+social_p_rate
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), social_p_rate, width = 14, height =9)
+
+
+plots_by_year = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate, color = as.factor(dhs_year), fill = as.factor(dhs_year), group = as.factor(dhs_year)))+
+                                             geom_point(shape=42, size= 5, alpha = 0.6) +
+                                             geom_smooth(method = 'loess')+
+                                             #geom_smooth(.x, mapping=aes(color='Confidence Interval'), linetype = 0, method = 'loess')+
+                                             scale_color_viridis(discrete = TRUE)+
+                                             scale_fill_viridis(discrete = TRUE)+
+                                             theme_manuscript()+
+                                             theme(legend.title = element_blank())+
+                                             labs(x = .y, y ='malaria test positive rate'))}
+
+social_p_year = plots_by_year[[1]]+plots_by_year[[2]]+ plots_by_year[[3]]+ plots_by_year[[4]]+ plots_by_year[[5]]+ plots_by_year[[6]]+ plots_by_year[[7]]& theme(legend.position = "bottom", legend.title = element_blank())
+social_p_year=social_p_year+ plot_layout(guides = "collect")
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate_by_year.pdf'), social_p_year, width = 14, height =9)
 
 #effect list for social variables 
 
