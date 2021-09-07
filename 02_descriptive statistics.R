@@ -112,7 +112,7 @@ xlab=list('% with post-primary education',
 p = pmap(list(df_list_ordered,fill, color, x, xlab), cdf_hist)
 all_p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]
 all_p
-ggsave(paste0(ResultDir, '/updated_figures', '/social_variables', Sys.Date(), 'social_variable_distribution.pdf'), all_p, width =13, height =9)
+ggsave(paste0(ResultDir, '/updated_figures', Sys.Date(), 'social_variable_distribution.pdf'), all_p, width =13, height =9)
 
 #correlation 
 
@@ -135,36 +135,104 @@ p.mat = cor_pmat(dhs_social_ordered)
 
 corr_social= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_methods_figures_correlation_coefficients_social.pdf'), corr_social, width = 13, height = 9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_social.pdf'), corr_social, width = 13, height = 9)
 
-#relationship with log(positives)
-positives = dhs$positives +1
+#relationship with malaria positives
+positives = dhs$positives 
 dhs_year=dhs$dhs_year
-dhs_social_plot = cbind(dhs_social, dhs_year, positives)
-dhs_social_plot = dhs_social_plot  %>%  pivot_longer(!c(dhs_year, positives),names_to='x_label', values_to='values')
+num_tested =dhs$child_6_59_tested_malaria
+dhs_social_plot = cbind(dhs_social, dhs_year, positives, num_tested)
+dhs_social_plot = dhs_social_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested),names_to='x_label', values_to='values')
 df_list = split(dhs_social_plot, dhs_social_plot$x_label)
 df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
                        df_list$improved.housing.in.2015)
 
-plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x, aes(x=values, y=log(positives)))+
-                                   geom_point(shape = 42, size = 5, color = "#f64b77") +
-                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128")+
-                                   geom_smooth(aes(color = "Confidence Interval"),  fill = "#a56c56", linetype = 0)+
+
+#create values for geom_smooth
+for(i in 1:length(df_list_ordered)){
+    mod= glm(positives ~ values +offset(log(num_tested)), data=df_list_ordered[[i]], family = "poisson")
+    mod.p =predict(mod, df_list_ordered[[1]],type = "link", se.fit = TRUE)#type = "link", se.fit = TRUE
+    critval <- 1.96 ## approx 95% CI
+    upr <- mod.p$fit + (critval * mod.p$se.fit)
+    lwr <- mod.p$fit - (critval * mod.p$se.fit)
+    fit <- mod.p$fit
+    fit2 <- mod$family$linkinv(fit)
+    upr2 <- mod$family$linkinv(upr)
+    lwr2 <- mod$family$linkinv(lwr)
+    df_list_ordered[[i]]$lwr <- round(lwr2, 0) 
+    df_list_ordered[[i]]$upr <- round(upr2, 0) 
+    df_list_ordered[[i]]$fit <- round(fit2, 0) 
+    
+}
+
+
+ggplot(data=df_list_ordered[[1]]) + geom_point(aes(x=values, y = positives), size = 2, colour = "blue") +  
+  geom_smooth(data=df_list_ordered[[1]], aes(x=values, y=fit, ymin=lwr, ymax=upr), size = 1.5, 
+              colour = "red", se = TRUE, stat = "smooth", method = 'glm', method.args=list(family ='poisson'))
+
+
+
+plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x)+
+                                   geom_point(mapping=aes(x=values, y=positives), shape=42, size= 5, color = "#f64b77", alpha = 0.5, position ='jitter') +
+                                     geom_smooth(.x, mapping=aes(x=values, y=fit, ymin=lwr, ymax=upr, fill = "Trend"), stat="smooth", se = FALSE, color = "#644128", method = 'glm', method.args=list(family ='poisson'))+
+                                  geom_smooth(.x, mapping=aes(x=values, y=fit, ymin=lwr, ymax=upr, color = "Confidence Interval"), stat="smooth", fill = "#a56c56", linetype = 0, method = 'glm', method.args=list(family ='poisson'))+
                                    theme_manuscript()+
-                                   labs(x = .y, y ='log (malaria positives)')+
+                                   labs(x = .y, y ='malaria positives')+
                                      guides(fill =FALSE, color =FALSE))}
 
 social_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[7]]
+social_p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.pdf'), social_p, width = 14, height =9)
 
+
+#effect list for social variables 
+
+effect_list = list()
+
+for(i in 1:length(df_list_ordered)){
+  
+  m = glm(positives ~ values +offset(log(num_tested)), data=df_list_ordered[[i]], family = "poisson")
+  variable = unique(df_list_ordered[[i]]$x_label)
+  slope = m$coefficients[[2]]
+  std_error = summary(m)$coefficients[, 2][[2]]
+  lci = slope - std_error
+  uci = slope + std_error
+  index = i
+  dat = data.frame(index =i, beta = slope, LCI = lci, UCL = uci, variable=variable)
+  effect_list = append(effect_list, list(dat))
+}
+
+all_effect =plyr::ldply(effect_list)
+
+#effect plot 
+xname <- expression(paste("Slope estimate"))
+
+p <- ggplot(data=all_effect, aes(y=index, x=beta, xmin=LCI, xmax=UCL))+ 
+  geom_point(shape = 15, color='#644128', size = 3)+ 
+  geom_errorbarh(height=.1, color ="#a56c56")+
+  scale_x_continuous(limits=c(-0.07,0.01), breaks = c(-0.07,-0.06, -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01), name=xname)+
+  scale_y_continuous(name = "", breaks=1:7, labels = all_effect$variable, trans = 'reverse')+
+  geom_vline(xintercept=0, color='black', linetype="dashed", alpha=.5)+
+  theme_manuscript()
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_social.pdf'), p, width = 14, height =9)
+
+
+
+
+
+
+
+
+
 plots_by_region = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x, aes(x=values, y=log(positives), group=dhs_year))+
-                                     geom_point(aes(color =dhs_year, fill=dhs_year), alpha=0.7, shape=21) +
-                                     geom_smooth(aes(color =dhs_year, fill=dhs_year))+
-                                     theme_manuscript()+
-                                     labs(x = .y, y ='log (positive malaria test)'))}
+                                               geom_point(aes(color =dhs_year, fill=dhs_year), alpha=0.7, shape=21) +
+                                               geom_smooth(aes(color =dhs_year, fill=dhs_year), method = 'glm', method.args=list(family ='poisson'))+
+                                               theme_manuscript()+
+                                               labs(x = .y, y ='positive malaria test'))}
 
 plots_by_region[[1]]+plots_by_region[[2]]+ plots_by_region[[3]]+ plots_by_region[[4]]+ plots_by_region[[5]]+ plots_by_region[[6]]+ plots_by_region[[7]]
+
 
 ## ----------------------------------------------------------------
 ### Examining correlations among numeric variables 

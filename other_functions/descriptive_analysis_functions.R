@@ -1,7 +1,7 @@
 # # Reading in the necessary packages 
 list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "rgdal", "raster",
                       "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'rgeos', 'INLA', 'ggpubr',
-                      'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot')
+                      'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot', 'pscl', 'visreg')
 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
