@@ -55,8 +55,9 @@ dhs<- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
                             household_size = hv013,
                             p_test = ifelse(hml32 > 1, NA, hml32),
                             U5_pop = ifelse(hc1 %in% c(0:59), 1, 0),
-                            region = hv024, interview_month = hv006)) %>% 
-  map(~filter(., hv025 == 1)) %>% 
+                            region = hv024, interview_month = hv006,
+                          visitors = hv102)) %>% 
+  map(~filter(., hv025 == 1)) %>% #filtering to urban areas only 
   map(~dplyr::select(., -c(hv013, hv105, hv106, hv021, hv005, hv022, hml12, hc27, hv215, hv214, hv213, hv270, hv024, hv006)))
 
 
@@ -89,8 +90,10 @@ df_test <- pfpr_df %>% map(~dplyr::select(., hv001, hml32)) %>%  map(~dplyr::gro
   plyr::ldply() 
 write.csv(df_test, paste0(DataIn, "/tested_malaria_children_6_59_months.csv"), row.names = FALSE)
 
-
-
+#median number of visitors by cluster
+visitors_num <- dhs %>% map(~dplyr::select(., hv001, visitors)) %>%  map(~filter(., visitors == 0)) %>% map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,visitors = n())) %>% 
+  plyr::ldply() 
+write.csv(visitors_num, paste0(DataIn, "/num_visitors_DHS_10_15_18.csv"), row.names = FALSE)
 
 ## -----------------------------------------
 ### estimation using all PR files 
@@ -147,7 +150,7 @@ for (i in 1:length(vars)) {
 
 #median
 
-vars <- c('median_age', 'household_size')
+vars <- c()#'median_age', 'household_size'
 
 for (i in 1:length(vars)) {
   col <- list(vars[i])
