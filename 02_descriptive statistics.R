@@ -83,7 +83,8 @@ df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
 dhs_social = data.frame(`Educational attainment` = df_all$edu_a, Wealth = df_all$wealth, `Improved flooring` =df_all$floor_type,
                         `Improved roofing materials` = df_all$roof_type, `Improved wall` = df_all$wall_type, `improved housing in 2000` =df_all$housing_2000_4000m,
                         `improved housing in 2015` = df_all$housing_2015_4000m) %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
-                                                                                             improved.housing.in.2015= improved.housing.in.2015*100)
+                                                                                             improved.housing.in.2015= improved.housing.in.2015*100) 
+
 dhs_social_long = dhs_social %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
 
 df_list =split(dhs_social_long, dhs_social_long$x_label)
