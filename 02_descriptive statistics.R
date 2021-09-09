@@ -69,6 +69,12 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
 
 df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
 
+
+
+
+
+
+
 ## -----------------------------------------------------------------------------------------------------------------------
 ### Socio-economic variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
 ## -----------------------------------------------------------------------------------------------------------------------
@@ -85,17 +91,6 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
                        df_list$improved.housing.in.2015)
 
-cdf_hist = function(df, fill,color, x, xlab){
-  hist=ggplot(df, aes(x =.data[[x]]))+geom_histogram(alpha = 0.4, position="identity")
-  max_y=max(ggplot_build(hist)$data[[1]]$count)
-  ggplot(df, aes(.data[[x]]))+
-    geom_histogram(fill=fill, color= color, alpha = 0.4, position="identity") +
-    stat_ecdf(aes_(y =bquote(..y..* .(max_y)), color =color))+
-    scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percentage', labels = percent))+
-    theme_manuscript()+theme(legend.position = 'none')+
-    xlab(xlab)
-}
-
 
 x=list('values')
 fill = list('#8971B3')
@@ -106,10 +101,10 @@ xlab=list('% with post-primary education',
           '% living in improved housing (2000)',
           '% living in improved housing (2015)')
 
+bins = list(30)
 
 
-
-p = pmap(list(df_list_ordered,fill, color, x, xlab), cdf_hist)
+p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
 all_p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]
 all_p
 ggsave(paste0(ResultDir, '/updated_figures', Sys.Date(), 'social_variable_distribution.pdf'), all_p, width =13, height =9)
@@ -136,6 +131,9 @@ p.mat = cor_pmat(dhs_social_ordered)
 corr_social= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_social.pdf'), corr_social, width = 13, height = 9)
+
+
+
 
 #relationship with malaria positives
 positives = dhs$positives 
@@ -226,7 +224,10 @@ for(i in 1:length(df_list_ordered)){
   effect_list = append(effect_list, list(dat))
 }
 
-all_effect =plyr::ldply(effect_list)
+all_effect =plyr::ldply(effect_list) %>%  mutate(beta_exp1 = exp(beta), LCI1 = exp(LCI), UCL1 = exp(UCL),
+                                                 beta_exp10 = exp(beta * 10),
+                                                 LCI10 =exp(LCI * 10),
+                                                 UCL10 =exp(UCL * 10))
 
 #effect plot 
 xname <- expression(paste("Slope estimate"))
@@ -245,113 +246,73 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_socia
 
 
 
+## -----------------------------------------------------------------------------------------------------------------------
+### Demographic variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
+## -----------------------------------------------------------------------------------------------------------------------
+
+#variable distribution and cumulative distribution 
+demo_numeric = data.frame(`Population density` = df_all$pop_density_0m, `U5 population density` = df_all$pop_den_U5_FB_4000m, `Pregnant women` =df_all$preg_women,
+                        `Female population` = df_all$all_female_sex, `Household size` = df_all$household_size, `Median age` =df_all$median_age)
+                      
+demo_numeric_long = demo_numeric %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
+
+df_list =split(demo_numeric_long, demo_numeric_long$x_label)
+df_list_ordered = list(df_list$Population.density,df_list$U5.population.density, df_list$Pregnant.women,
+                       df_list$Female.population, df_list$Household.size, df_list$Median.age)
+
+
+x=list('values')
+fill = list('#00A08A')
+color = list('#00A08A')
+xlab=list('Population density',
+          'U5 population density','% of pregnant women',
+          '% of females', 'Median household size',
+          'Median age')
+bins = list(25)
 
 
 
-plots_by_region = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x, aes(x=values, y=log(positives), group=dhs_year))+
-                                               geom_point(aes(color =dhs_year, fill=dhs_year), alpha=0.7, shape=21) +
-                                               geom_smooth(aes(color =dhs_year, fill=dhs_year), method = 'glm', method.args=list(family ='poisson'))+
-                                               theme_manuscript()+
-                                               labs(x = .y, y ='positive malaria test'))}
+p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
+all_p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]] + p[[6]]
+all_p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_variable_distribution.pdf'), all_p, width = 14, height =9)
 
-plots_by_region[[1]]+plots_by_region[[2]]+ plots_by_region[[3]]+ plots_by_region[[4]]+ plots_by_region[[5]]+ plots_by_region[[6]]+ plots_by_region[[7]]
+#maps for categorical variable 
+clu_num_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
+  mutate(NAME_1 = str_to_title(shstate), NAME_1 = ifelse(NAME_1 == 'Fct-Abuja', 'Federal Capital Territory',
+                                                         ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1)))
+
+#read in state shape file 
+stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
+state_sf = st_as_sf(stateshp)
+state_map = left_join(state_sf, clu_name_state, by =c('NAME_1'))
+state_map$nun_cut = cut(state_map$n, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80), include.lowest = TRUE)
+map=ggplot(state_map) +
+  geom_sf(aes(fill = nun_cut))+ 
+  brightness(viridis::scale_fill_viridis(option="E", discrete =TRUE, labels = c('0 - 10', '11 - 20', '21 - 30', '31 - 40', '41 - 50', '51 - 60', '61 - 70', '71 - 80' )), 0.8)+
+  map_theme()+
+  guides(fill = guide_legend(title= 'Number of clusters sampled per state', override.aes = list(size = 5)))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_state.pdf'), map, width = 14, height =9)
+
+
+#map by geopolitical region
+clu_num_geo = df_all %>%  group_by(region) %>%  summarise(n = n())
+clu_num_geo_ = left_join(df_all, clu_num_geo, by=c('region')) %>%  dplyr::select(region, shstate, n) %>%  
+  mutate(NAME_1 = str_to_title(shstate), NAME_1 = ifelse(NAME_1 == 'Fct-Abuja', 'Federal Capital Territory',
+                                                         ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1)))
+geo_map = left_join(state_sf, clu_num_geo_, by =c('NAME_1'))
+
+geo_map=ggplot(geo_map) +
+  geom_sf(aes(fill =as.factor(n)))+ 
+  brightness(viridis::scale_fill_viridis(option="E", discrete = TRUE), 0.8)+
+  map_theme()+
+  guides(fill = guide_legend(title= 'Number of clusters sampled per geopolitical region', override.aes = list(size = 5)))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_GPZ.pdf'), geo_map, width = 14, height =9)
+
 
 
 ## ----------------------------------------------------------------
-### Examining correlations among numeric variables 
-## ----------------------------------------------------------------
-#create the demographic correlation dataset 
-dhs_demo = data.frame(`Population density` = df_all$pop_density_0m, `U5 population density` = df_all$pop_den_U5_FB_4000m, `Pregnant women` =df_all$preg_women,
-                      `Female population` = df_all$all_female_sex, `Median household size` = df_all$household_size, `Median age` =df_all$median_age)
-
-#replace nas with their means 
-for(i in 1:ncol(dhs_demo)){
-  dhs_demo[is.na(dhs_demo[,i]), i] = mean(dhs_demo[,i], na.rm = TRUE)
-}
-
-#correlation matrix 
-corr = round(cor(dhs_demo), 1)
-
-# Compute a matrix of correlation p-values
-p.mat = cor_pmat(dhs_demo)
-
-
-corr_demo= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
-  theme_corr()
-
-#create the socioeconomic correlation dataset 
-dhs_social = data.frame(`Educational attainment` = df_all$edu_a, Wealth = df_all$wealth, `Improved flooring` =df_all$floor_type,
-                        `Improved roofing materials` = df_all$roof_type, `Improved wall` = df_all$wall_type, `improved housing in 2000` =df_all$housing_2000_4000m,
-                        `improved housing in 2015` = df_all$housing_2015_4000m)
-
-
-
-
-
-#create the behavioral correlation dataset 
-dhs_behvioral = data.frame(`Net use` = df_all$net_use, `Children's net use` =df_all$net_use_child, `Medical treatment` =df_all$med_treat_fever,
-                      `Effective fever treatment` = df_all$ACT_use_U5)
-
-#replace nas with their means 
-for(i in 1:ncol(dhs_behvioral)){
-  dhs_behvioral[is.na(dhs_behvioral[,i]), i] = mean(dhs_behvioral[,i], na.rm = TRUE)
-}
-
-#correlation matrix 
-corr = round(cor(dhs_behvioral), 1)
-
-# Compute a matrix of correlation p-values
-p.mat = cor_pmat(dhs_behvioral)
-
-
-corr_behvioral= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
-  theme_corr()
-
-
-#create the accessibility correlation dataset 
-dhs_access = data.frame(`Motorized travel to health facility` =df_all$motorized_travel_healthcare_2019_2000m, 
-                           `Minutes to the nearest city` = df_all$minutes_nearest_city_1000m)
-
-#replace nas with their means 
-for(i in 1:ncol(dhs_access)){
-  dhs_access[is.na(dhs_access[,i]), i] = mean(dhs_access[,i], na.rm = TRUE)
-}
-
-#correlation matrix 
-corr = round(cor(dhs_access), 1)
-
-# Compute a matrix of correlation p-values
-p.mat = cor_pmat(dhs_access)
-
-
-corr_access= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
-  theme_corr()
-
-
-#create the environment correlation dataset 
-dhs_environment = data.frame(Precipitation =df_all$precipitation_monthly_0m, Temperature = df_all$temperature_monthly_0m,
-                        `Surface soil moisture` = df_all$soil_wetness_0m, `Distance to water bodies` = df_all$dist_water_bodies_0m,
-                        Elevation = df_all$elevation_1000m, `Enhanced vegetation index` = df_all$EVI_0m)
-
-#replace nas with their means 
-for(i in 1:ncol(dhs_environment)){
-  dhs_environment[is.na(dhs_environment[,i]), i] = mean(dhs_environment[,i], na.rm = TRUE)
-}
-
-#correlation matrix 
-corr = round(cor(dhs_environment), 1)
-
-# Compute a matrix of correlation p-values
-p.mat = cor_pmat(dhs_environment)
-
-
-corr_environment= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5), 
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"))
-
-## ----------------------------------------------------------------
-### Read in computed DHS cluster data and generate related figures  
+### Read in computed DHS cluster data and generate related figures - will bring this up later during code cleaning   
 ## ----------------------------------------------------------------
 
 #figure 1
@@ -374,7 +335,7 @@ df_all = rbind(df_tested, df_positives)
 p2 = hist_fun(df_all, df_all$values, df_all$category, 'Number of children 6 - 59 months', 'Count', c("Positive tests", "Tested"))
 
 
-  
+
 #figure 2b
 #examine the number of children tested 
 p3 = igv.lm.point(dhs$child_6_59_tested_malaria, dhs$positives, dhs$dhs_year, 'Survey year', 'Number of children 6 - 59 months \n tested for malaria', 'Number of positive tests' )
@@ -389,10 +350,6 @@ sf15 = st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NG
 sf10 = st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),) 
 sf_all = rbind(sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  rename(v001 = DHSCLUST)
 
-#read in state shape file 
-stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
-state_sf = st_as_sf(stateshp)
-
 
 #data wrangling
 dhs = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year)
@@ -404,24 +361,24 @@ df_count = map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%
 
 #big map 
 map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Count[[1]], ')'), 
-          paste0('0.3 - 0.4',  ' (', df_count$Count[[2]], ')'), paste0('0.5 - 0.6',  ' (', df_count$Count[[3]], ')'), 
-          paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
-          'Missing data'),
-            map$positives_cut, 'Test positivity rate (overall count)')
+                                           paste0('0.3 - 0.4',  ' (', df_count$Count[[2]], ')'), paste0('0.5 - 0.6',  ' (', df_count$Count[[3]], ')'), 
+                                           paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
+                                           'Missing data'),
+                   map$positives_cut, 'Test positivity rate (overall count)')
 
 
 #Lagos 
 df_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
 map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
 map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                    map_lagos$positives_cut, 'Test positivity rate')
+                   map_lagos$positives_cut, 'Test positivity rate')
 map_lag = map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
 
 #Anambra 
 df_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))
 map_anambra = dplyr::filter(map, (ADM1NAME %in% c('ANAMBRA')))
 map_anam = gmap_fun(df_anambra, map_anambra, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                     map_anambra$positives_cut, 'Test positivity rate')
+                    map_anambra$positives_cut, 'Test positivity rate')
 map_anam = map_anam + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Anambra')
 
 
@@ -429,7 +386,7 @@ map_anam = map_anam + theme(legend.position = 'none', panel.border = element_rec
 df_rivers = dplyr::filter(state_sf, (NAME_1 %in% c('Rivers')))
 map_rivers = dplyr::filter(map, (ADM1NAME %in% c('RIVERS')))
 map_riv = gmap_fun(df_rivers, map_rivers, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                    map_rivers$positives_cut, 'Test positivity rate')
+                   map_rivers$positives_cut, 'Test positivity rate')
 map_riv = map_riv + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Rivers')
 
 
@@ -454,16 +411,16 @@ table(trend_data$month_year)
 
 trend_data_10 = trend_data[trend_data$first_interview_month ==10,]
 p_all_10 = gdensity_fun(trend_data_10, trend_data_10$positives_prop, trend_data_10$dhs_year, "Survey year", 
-'Test positivity rate for clusters sampled in october', 'Density')
+                        'Test positivity rate for clusters sampled in october', 'Density')
 
 trend_data_11 = trend_data[trend_data$first_interview_month ==11,]
 p_all_11 = gdensity_fun(trend_data_11, trend_data_11$positives_prop, trend_data_11$dhs_year, "Survey year", 
-                         'Test positivity rate for clusters sampled in November', 'Density')
+                        'Test positivity rate for clusters sampled in November', 'Density')
 
 
 trend_data_12 = trend_data[trend_data$first_interview_month ==12,]
 p_all_12 = gdensity_fun(trend_data_12, trend_data_12$positives_prop, trend_data_12$dhs_year, "Survey year", 
-                         'Test positivity rate for clusters sampled in November', 'Density')
+                        'Test positivity rate for clusters sampled in November', 'Density')
 
 all_plots = p_all_10 / p_all_11 / p_all_12 +  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3_malaria_tests_positivity_trends.pdf'), all_plots, width = 13, height = 9)
@@ -474,25 +431,10 @@ data_ = data %>%  filter(pos == 0)
 
 
 
-## ----------------------------------------------------------------
-### bivariate plots for DHS and geospatial variables   
-## ----------------------------------------------------------------
-df = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') 
-df= df %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
-df$edu_cut = cut(df$edu_a, breaks=c(0, 10, 20, 30, 40, 50, 60,70, 80,90, 100), include.lowest=TRUE)
 
 
-ggplot(df) +
-  geom_histogram(aes(x = positives_prop), bins = 4, colour = "black", fill = "white") +
-  facet_wrap(~edu_cut)
 
-df_check = df %>%  group_by(edu_cut) %>%  summarize(mean_positives=mean(positives, na.rm=TRUE), sd_positives=sd(positives, na.rm=TRUE),
-                                                     mean_positives_prop=mean(positives_prop, na.rm=TRUE), sd_positives_prop=sd(positives_prop, na.rm=TRUE), n = n())
 
-ggplot(df, aes(floor_type, log(positives))) +
-  geom_point() +
-  geom_smooth()+
-  facet_wrap(~region)
 
 
 

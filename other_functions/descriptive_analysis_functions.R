@@ -1,7 +1,7 @@
 # # Reading in the necessary packages 
 list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "rgdal", "raster",
                       "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'rgeos', 'INLA', 'ggpubr',
-                      'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot', 'pscl', 'visreg')
+                      'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot', 'pscl', 'visreg', 'viridis')
 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -147,7 +147,16 @@ hist_fun2 <-function(df, xmin, xmax){
 }
 
 
-
+cdf_hist = function(df, fill,color, x, xlab, bins){
+  hist=ggplot(df, aes(x =.data[[x]]))+geom_histogram(alpha = 0.4, position="identity", bins=bins)
+  max_y=max(ggplot_build(hist)$data[[1]]$count)
+  ggplot(df, aes(.data[[x]]))+
+    geom_histogram(fill=fill, color= color, alpha = 0.4, position="identity", bins = bins) +
+    stat_ecdf(aes_(y =bquote(..y..* .(max_y)), color =color))+
+    scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percentage', labels = percent))+
+    theme_manuscript()+theme(legend.position = 'none')+
+    xlab(xlab)
+}
 
 
 #x <- c("tidyverse","INLA", "ggplot2", "ggpubr",  "rgdal", "sp", "sf", "tmap", 
