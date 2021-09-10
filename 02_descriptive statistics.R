@@ -69,6 +69,10 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
 
 df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
 
+#define variables to be used throughout analysis
+positives = dhs$positives 
+dhs_year=dhs$dhs_year
+num_tested =dhs$child_6_59_tested_malaria
 
 
 
@@ -108,14 +112,11 @@ bins = list(30)
 p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
 all_p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]
 all_p
-ggsave(paste0(ResultDir, '/updated_figures', Sys.Date(), 'social_variable_distribution.pdf'), all_p, width =13, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distribution.pdf'), all_p, width =13, height =9)
 
 #correlation 
 
-dhs_social_ordered = data.frame(`improved housing in 2015` = df_all$housing_2015_4000m, 
-                                `improved housing in 2000` =df_all$housing_2000_4000m, `Improved wall` = df_all$wall_type,
-                                `Improved roofing materials` = df_all$roof_type,  `Improved flooring` =df_all$floor_type,Wealth = df_all$wealth, 
-                                `Educational attainment` = df_all$edu_a) %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
+dhs_social_ordered = dhs_social[, order(ncol(dhs_social):1)] %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
                                                                                             improved.housing.in.2015= improved.housing.in.2015*100)
 #replace nas with their means 
 for(i in 1:ncol(dhs_social_ordered)){
@@ -137,9 +138,6 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficie
 
 
 #relationship with malaria positives
-positives = dhs$positives 
-dhs_year=dhs$dhs_year
-num_tested =dhs$child_6_59_tested_malaria
 dhs_social_plot = cbind(dhs_social, dhs_year, positives, num_tested)
 dhs_social_plot$rate = (dhs_social_plot$positives/dhs_social_plot$num_tested) 
 dhs_social_plot = dhs_social_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
@@ -148,65 +146,35 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
                        df_list$improved.housing.in.2015)
 
-
-#create values for geom_smooth
-for(i in 1:length(df_list_ordered)){
-    mod= glm(positives ~ values +offset(log(num_tested)), data=df_list_ordered[[i]], family = "poisson")
-    mod.p =predict(mod, df_list_ordered[[1]],type = "link", se.fit = TRUE)#type = "link", se.fit = TRUE
-    critval <- 1.96 ## approx 95% CI
-    upr <- mod.p$fit + (critval * mod.p$se.fit)
-    lwr <- mod.p$fit - (critval * mod.p$se.fit)
-    fit <- mod.p$fit
-    fit2 <- mod$family$linkinv(fit)
-    upr2 <- mod$family$linkinv(upr)
-    lwr2 <- mod$family$linkinv(lwr)
-    df_list_ordered[[i]]$lwr <- round(lwr2, 0) 
-    df_list_ordered[[i]]$upr <- round(upr2, 0) 
-    df_list_ordered[[i]]$fit <- round(fit2, 0) 
-    
-}
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                            geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria positives')+
+                                            guides(fill =FALSE, color =FALSE))}
 
 
-plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x)+
-                                   geom_point(mapping=aes(x=values, y=positives), shape=42, size= 5, color = "#f64b77", alpha = 0.5, position ='jitter') +
-                                     geom_smooth(.x, mapping=aes(x=values, y=fit, ymin=lwr, ymax=upr, fill = "Trend"), stat="smooth", se = FALSE, color = "#644128", method = 'glm', method.args=list(family ='poisson'))+
-                                  geom_smooth(.x, mapping=aes(x=values, y=fit, ymin=lwr, ymax=upr, color = "Confidence Interval"), stat="smooth", fill = "#a56c56", linetype = 0, method = 'glm', method.args=list(family ='poisson'))+
-                                   theme_manuscript()+
-                                   labs(x = .y, y ='malaria positives')+
-                                     guides(fill =FALSE, color =FALSE))}
 
-social_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[7]]
+social_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]] + plots[[7]]
 social_p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.pdf'), social_p, width = 14, height =9)
 
-
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), social_p, width = 14, height =9)
 
 plots_rate = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
-                                     geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
-                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'loess')+
-                                     geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'loess')+
-                                     theme_manuscript()+
-                                     labs(x = .y, y ='malaria test positive rate')+
-                                     guides(fill =FALSE, color =FALSE))}
+                                          geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+                                          geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                          geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
+                                          theme_manuscript()+
+                                          labs(x = .y, y ='malaria test positive rate')+
+                                          guides(fill =FALSE, color =FALSE))}
 
 social_p_rate<- plots_rate[[1]]+plots_rate[[2]]+ plots_rate[[3]]+ plots_rate[[4]]+ plots_rate[[5]]+ plots_rate[[6]]+ plots_rate[[7]]
 social_p_rate
+
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), social_p_rate, width = 14, height =9)
 
 
-plots_by_year = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate, color = as.factor(dhs_year), fill = as.factor(dhs_year), group = as.factor(dhs_year)))+
-                                             geom_point(shape=42, size= 5, alpha = 0.6) +
-                                             geom_smooth(method = 'loess')+
-                                             #geom_smooth(.x, mapping=aes(color='Confidence Interval'), linetype = 0, method = 'loess')+
-                                             scale_color_viridis(discrete = TRUE)+
-                                             scale_fill_viridis(discrete = TRUE)+
-                                             theme_manuscript()+
-                                             theme(legend.title = element_blank())+
-                                             labs(x = .y, y ='malaria test positive rate'))}
-
-social_p_year = plots_by_year[[1]]+plots_by_year[[2]]+ plots_by_year[[3]]+ plots_by_year[[4]]+ plots_by_year[[5]]+ plots_by_year[[6]]+ plots_by_year[[7]]& theme(legend.position = "bottom", legend.title = element_blank())
-social_p_year=social_p_year+ plot_layout(guides = "collect")
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate_by_year.pdf'), social_p_year, width = 14, height =9)
 
 #effect list for social variables 
 
@@ -250,7 +218,6 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_socia
 ## -----------------------------------------------------------------------------------------------------------------------
 ### Demographic variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
 ## -----------------------------------------------------------------------------------------------------------------------
-
 #variable distribution and cumulative distribution 
 demo_numeric = data.frame(`Population density` = df_all$pop_density_0m, `U5 population density` = df_all$pop_den_U5_FB_4000m, `Pregnant women` =df_all$preg_women,
                         `Female population` = df_all$all_female_sex, `Household size` = df_all$household_size, `Median age` =df_all$median_age)
@@ -309,6 +276,114 @@ geo_map=ggplot(geo_map) +
   map_theme()+
   guides(fill = guide_legend(title= 'Number of clusters sampled per geopolitical region', override.aes = list(size = 5)))
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_GPZ.pdf'), geo_map, width = 14, height =9)
+
+
+#correlation 
+demo_numeric_reverse=demo_numeric[,order(ncol(demo_numeric):1)]
+
+  
+#replace nas with their means 
+for(i in 1:ncol(demo_numeric_reverse)){
+  demo_numeric_reverse[is.na(demo_numeric_reverse[,i]), i] = mean(demo_numeric_reverse[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(demo_numeric_reverse), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(demo_numeric_reverse)
+
+
+corr_demo= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_demo.pdf'), corr_demo, width = 13, height = 9)
+
+
+
+#relationship with malaria positives
+dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
+is.na(dhs_demo_plot['Population.density'])<- dhs_demo_plot['Population.density'] > 3000
+is.na(dhs_demo_plot['U5.population.density'])<- dhs_demo_plot['U5.population.density'] > 10
+dhs_demo_plot$rate = (dhs_demo_plot$positives/dhs_demo_plot$num_tested) 
+dhs_demo_plot = dhs_demo_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
+df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
+                       df_list$Pregnant.women, df_list$Female.population, df_list$Household.size, df_list$Median.age)
+
+
+
+
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                          geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+                                          geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                          geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                          theme_manuscript()+
+                                          labs(x = .y, y ='malaria test positive')+
+                                          guides(fill =FALSE, color =FALSE))}
+
+
+
+demo_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+demo_p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_chopped_bondary.pdf'), demo_p, width = 14, height =9)
+
+
+dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
+dhs_demo_plot$rate = (dhs_demo_plot$positives/dhs_demo_plot$num_tested) 
+dhs_demo_plot = dhs_demo_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
+df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
+                       df_list$Pregnant.women, df_list$Female.population, df_list$Household.size, df_list$Median.age)
+
+
+
+
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                            geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria test positive')+
+                                            guides(fill =FALSE, color =FALSE))}
+
+
+
+demo_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+demo_p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_expanded_boundary.pdf'), demo_p, width = 14, height =9)
+
+
+
+
+dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
+is.na(dhs_demo_plot['Population.density'])<- dhs_demo_plot['Population.density'] > 3000
+is.na(dhs_demo_plot['U5.population.density'])<- dhs_demo_plot['U5.population.density'] > 10
+is.na(dhs_demo_plot['Median.age'])<- dhs_demo_plot['Median.age'] > 30
+is.na(dhs_demo_plot['Pregnant.women'])<- dhs_demo_plot['Pregnant.women'] > 30
+dhs_demo_plot$rate = (dhs_demo_plot$positives/dhs_demo_plot$num_tested) 
+dhs_demo_plot = dhs_demo_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
+df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
+                       df_list$Pregnant.women, df_list$Female.population, df_list$Household.size, df_list$Median.age)
+
+
+plots_rate = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                            geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria test positive rate')+
+                                            guides(fill =FALSE, color =FALSE))}
+
+
+
+demo_rate<- plots_rate[[1]]+plots_rate[[2]]+ plots_rate[[3]]+ plots_rate[[4]]+ plots_rate[[5]]+ plots_rate[[6]]
+demo_rate
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_age_twice_chopped_boundary.pdf'), demo_p, width = 14, height =9)
+
+
+
 
 
 
