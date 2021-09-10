@@ -159,6 +159,17 @@ cdf_hist = function(df, fill,color, x, xlab, bins){
 }
 
 
+
+forest_fun = function(data, color1, color2, xname, breaks, labels){
+  ggplot(data=data, aes(y=index, x= coefficient, xmin=lci, xmax=uci))+ 
+    geom_point(shape = 15, color=color1, size = 3)+ 
+    geom_errorbarh(height=.1, color =color2)+
+    scale_x_continuous(name=xname)+
+    scale_y_continuous(name = "", breaks=breaks, labels = labels, trans = 'reverse')+
+    geom_vline(xintercept=0, color='black', linetype="dashed", alpha=.5)+
+    theme_manuscript()
+}
+
 #x <- c("tidyverse","INLA", "ggplot2", "ggpubr",  "rgdal", "sp", "sf", "tmap", 
 #'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "patchwork", "gdata",'cowplot', 'mmtable2', 'ggsci') #"inlabru","rebus"
 

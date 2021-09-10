@@ -70,12 +70,12 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
 df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
 
 #define variables to be used throughout analysis
-positives = dhs$positives 
-dhs_year=dhs$dhs_year
-num_tested =dhs$child_6_59_tested_malaria
-
-
-
+positives = df_all$positives 
+dhs_year=df_all$dhs_year
+num_tested =df_all$child_6_59_tested_malaria
+region = df_all$region
+interview_month = df_all$first_interview_month
+edu_cat = cut(df_all$edu_a, breaks = c(0, 5, 10, 15, 100), include.lowest =TRUE)
 
 
 
@@ -110,9 +110,9 @@ bins = list(30)
 
 
 p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
-all_p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]
-all_p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distribution.pdf'), all_p, width =13, height =9)
+p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distribution.pdf'), p, width =13, height =9)
 
 #correlation 
 
@@ -130,9 +130,9 @@ corr = round(cor(dhs_social_ordered), 1)
 p.mat = cor_pmat(dhs_social_ordered)
 
 
-corr_social= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_social.pdf'), corr_social, width = 13, height = 9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_social.pdf'), corr, width = 13, height = 9)
 
 
 
@@ -147,7 +147,7 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$improved.housing.in.2015)
 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                            geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+                                            geom_point(shape=42, size= 6, color = "#f64b77", alpha = 0.7) +
                                             geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
                                             theme_manuscript()+
@@ -156,59 +156,26 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
 
 
 
-social_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]] + plots[[7]]
-social_p
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]] + plots[[7]]
+p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), social_p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), p, width = 14, height =9)
 
-plots_rate = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
-                                          geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
+plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                          geom_point(shape=42, size= 6, color = "#f64b77", alpha = 0.7) +
                                           geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                           geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
                                           theme_manuscript()+
                                           labs(x = .y, y ='malaria test positive rate')+
                                           guides(fill =FALSE, color =FALSE))}
 
-social_p_rate<- plots_rate[[1]]+plots_rate[[2]]+ plots_rate[[3]]+ plots_rate[[4]]+ plots_rate[[5]]+ plots_rate[[6]]+ plots_rate[[7]]
-social_p_rate
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plotse[[7]]
+p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), social_p_rate, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), p, width = 14, height =9)
 
 
 
-#effect list for social variables 
-
-effect_list = list()
-
-for(i in 1:length(df_list_ordered)){
-  
-  m = glm(positives ~ values +offset(log(num_tested)), data=df_list_ordered[[i]], family = "poisson")
-  variable = unique(df_list_ordered[[i]]$x_label)
-  slope = m$coefficients[[2]]
-  std_error = summary(m)$coefficients[, 2][[2]]
-  lci = slope - std_error
-  uci = slope + std_error
-  index = i
-  dat = data.frame(index =i, beta = slope, LCI = lci, UCL = uci, variable=variable)
-  effect_list = append(effect_list, list(dat))
-}
-
-all_effect =plyr::ldply(effect_list) %>%  mutate(beta_exp1 = exp(beta), LCI1 = exp(LCI), UCL1 = exp(UCL),
-                                                 beta_exp10 = exp(beta * 10),
-                                                 LCI10 =exp(LCI * 10),
-                                                 UCL10 =exp(UCL * 10))
-
-#effect plot 
-xname <- expression(paste("Slope estimate"))
-
-p <- ggplot(data=all_effect, aes(y=index, x=beta, xmin=LCI, xmax=UCL))+ 
-  geom_point(shape = 15, color='#644128', size = 3)+ 
-  geom_errorbarh(height=.1, color ="#a56c56")+
-  scale_x_continuous(limits=c(-0.07,0.01), breaks = c(-0.07,-0.06, -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01), name=xname)+
-  scale_y_continuous(name = "", breaks=1:7, labels = all_effect$variable, trans = 'reverse')+
-  geom_vline(xintercept=0, color='black', linetype="dashed", alpha=.5)+
-  theme_manuscript()
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_social.pdf'), p, width = 14, height =9)
 
 
 
@@ -241,9 +208,9 @@ bins = list(25)
 
 
 p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
-all_p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]] + p[[6]]
-all_p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_variable_distribution.pdf'), all_p, width = 14, height =9)
+p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]] + p[[6]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_variable_distribution.pdf'), p, width = 14, height =9)
 
 #maps for categorical variable 
 clu_num_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
@@ -270,12 +237,12 @@ clu_num_geo_ = left_join(df_all, clu_num_geo, by=c('region')) %>%  dplyr::select
                                                          ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1)))
 geo_map = left_join(state_sf, clu_num_geo_, by =c('NAME_1'))
 
-geo_map=ggplot(geo_map) +
+map=ggplot(geo_map) +
   geom_sf(aes(fill =as.factor(n)))+ 
   brightness(viridis::scale_fill_viridis(option="E", discrete = TRUE), 0.8)+
   map_theme()+
   guides(fill = guide_legend(title= 'Number of clusters sampled per geopolitical region', override.aes = list(size = 5)))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_GPZ.pdf'), geo_map, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_GPZ.pdf'), map, width = 14, height =9)
 
 
 #correlation 
@@ -294,9 +261,9 @@ corr = round(cor(demo_numeric_reverse), 1)
 p.mat = cor_pmat(demo_numeric_reverse)
 
 
-corr_demo= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_demo.pdf'), corr_demo, width = 13, height = 9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_demo.pdf'), corr, width = 13, height = 9)
 
 
 
@@ -304,6 +271,8 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficie
 dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
 is.na(dhs_demo_plot['Population.density'])<- dhs_demo_plot['Population.density'] > 3000
 is.na(dhs_demo_plot['U5.population.density'])<- dhs_demo_plot['U5.population.density'] > 10
+is.na(dhs_demo_plot['Median.age'])<- dhs_demo_plot['Median.age'] > 30
+is.na(dhs_demo_plot['Pregnant.women'])<- dhs_demo_plot['Pregnant.women'] > 30
 dhs_demo_plot$rate = (dhs_demo_plot$positives/dhs_demo_plot$num_tested) 
 dhs_demo_plot = dhs_demo_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
@@ -312,20 +281,20 @@ df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
 
 
 
-
+#unadjusted positives chopped boundary 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                          geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
-                                          geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
-                                          geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                          geom_point(shape=42, size= 6, color = "dodgerblue3", alpha = 0.7) +
+                                          geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                          geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
                                           theme_manuscript()+
                                           labs(x = .y, y ='malaria test positive')+
                                           guides(fill =FALSE, color =FALSE))}
 
 
 
-demo_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
-demo_p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_chopped_bondary.pdf'), demo_p, width = 14, height =9)
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_chopped_bondary.pdf'), p, width = 14, height =9)
 
 
 dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
@@ -337,20 +306,20 @@ df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
 
 
 
-
+#unadjusted positives expanded boundary 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                            geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
-                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
-                                            geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            geom_point(shape=42, size= 5, color = "dodgerblue3", alpha = 0.7) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
                                             theme_manuscript()+
                                             labs(x = .y, y ='malaria test positive')+
                                             guides(fill =FALSE, color =FALSE))}
 
 
 
-demo_p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
-demo_p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_expanded_boundary.pdf'), demo_p, width = 14, height =9)
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_expanded_boundary.pdf'), p, width = 14, height =9)
 
 
 
@@ -367,21 +336,219 @@ df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
                        df_list$Pregnant.women, df_list$Female.population, df_list$Household.size, df_list$Median.age)
 
 
-plots_rate = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
-                                            geom_point(shape=42, size= 5, color = "#f64b77", alpha = 0.7) +
-                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
-                                            geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
+#rate chopped boundary 
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                            geom_point(shape=42, size= 5, color = "dodgerblue3", alpha = 0.7) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
                                             theme_manuscript()+
                                             labs(x = .y, y ='malaria test positive rate')+
                                             guides(fill =FALSE, color =FALSE))}
 
 
 
-demo_rate<- plots_rate[[1]]+plots_rate[[2]]+ plots_rate[[3]]+ plots_rate[[4]]+ plots_rate[[5]]+ plots_rate[[6]]
-demo_rate
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_age_twice_chopped_boundary.pdf'), demo_p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_age_twice_chopped_boundary.pdf'), p, width = 14, height =9)
 
+
+#relationship with demo categorical variables 
+#state data 
+state_rship = glm(positives ~ as.factor(shstate)+ offset(log(num_tested)), data = df_all, family ='poisson')
+state_dat =data.frame(coefficient=state_rship$coefficients, std_error = summary(state_rship)$coefficients[, 2])
+state_dat$names = rownames(state_dat)
+state_dat = state_dat %>%  mutate(lci = coefficient - std_error, uci = coefficient + std_error) %>% 
+  filter(names !='(Intercept)') %>%  mutate(index = 1:36)
+
+#effect plot - state  
+xname <- expression(paste("Slope estimate"))
+p = forest_fun(state_dat, '#644128', "#a56c56", xname, 1:36, state_dat$names)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_state_comparison.pdf'), p, width = 14, height =9)
+
+#GPZ data 
+GPZ_rship = glm(positives ~ as.factor(region)+ offset(log(num_tested)), data = df_all, family ='poisson')
+GPZ_dat =data.frame(coefficient=GPZ_rship$coefficients, std_error = summary(GPZ_rship)$coefficients[, 2])
+GPZ_dat$names = rownames(GPZ_dat)
+GPZ_dat = GPZ_dat %>%  mutate(lci = coefficient - std_error, uci = coefficient + std_error) %>% 
+  filter(names !='(Intercept)') %>%  mutate(index = 1:5)
+
+#effect plot - GPZ 
+p = forest_fun(GPZ_dat, "forestgreen", "darkseagreen", xname,1:5, GPZ_dat$names)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_GPZ_comparison.pdf'), p, width = 14, height =9)
+
+
+
+
+## --------------------------------------------------------------------------------------------------------------------------
+### Behavioral factors variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
+## --------------------------------------------------------------------------------------------------------------------------
+
+#variable distribution and cumulative distribution 
+df_behave = data.frame(`Net use` = df_all$net_use, `Child net use` = df_all$net_use_child, `Medical treatment for fever` =df_all$med_treat_fever,
+                          `Effective fever treatment` = df_all$fever)
+
+df_behave_long = df_behave %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
+
+df_list =split(df_behave_long, df_behave_long$x_label)
+df_list_ordered = list(df_list$Net.use,df_list$Child.net.use, df_list$Medical.treatment.for.fever,
+                       df_list$Effective.fever.treatment)
+
+
+x=list('values')
+fill = list('salmon')
+color = list('salmon')
+xlab=list('Net use',
+          'Child net use','Medical treatment for fever',
+          'Effective fever treatment')
+bins = list(25)
+
+
+
+p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
+p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]] + p[[2]]+ p[[3]]+p[[4]]
+p
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_distribution.pdf'), p, width = 14, height =9)
+
+
+
+#correlation 
+df_behave_reverse=df_behave[,order(ncol(df_behave):1)]
+
+
+#replace nas with their means 
+for(i in 1:ncol(df_behave_reverse)){
+  df_behave_reverse[is.na(df_behave_reverse[,i]), i] = mean(df_behave_reverse[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(df_behave_reverse), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(df_behave_reverse)
+
+
+corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_behave.pdf'), corr, width = 13, height = 9)
+
+
+dhs_behave_plot = cbind(df_behave, region, positives, num_tested) 
+dhs_behave_plot$rate = (dhs_behave_plot$positives/dhs_behave_plot$num_tested) 
+dhs_behave_plot = dhs_behave_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_behave_plot, dhs_behave_plot$x_label)
+df_list_ordered = list(df_list$Net.use,df_list$Child.net.use, df_list$Medical.treatment.for.fever, df_list$Effective.fever.treatment)
+
+#unadjusted positives
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                            geom_point(shape=42, size= 5, color = "purple2", alpha = 0.7) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "deeppink4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "deeppink", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria test positive')+
+                                            guides(fill =FALSE, color =FALSE))}
+
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+plots[[2]]+ plots[[3]]+ plots[[4]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.pdf'), p, width = 14, height =9)
+
+#rate
+plots= df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                                 geom_point(shape=42, size= 5, color = "purple2", alpha = 0.7) +
+                                                 geom_smooth(aes(fill = "Trend"), se = FALSE, color = "deeppink4", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                                 geom_smooth(aes(color = "Confidence Interval"), fill = "deeppink", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                                 theme_manuscript()+
+                                                 labs(x = .y, y ='malaria test positive rate')+
+                                                 guides(fill =FALSE, color =FALSE))}
+
+p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+plots[[2]]+ plots[[3]]+ plots[[4]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.pdf'), p, width = 14, height =9)
+
+
+#region adjustment 
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives, color=region, group = region, fill=region))+
+                                            geom_point(shape=42, size= 5, alpha = 0.7) +
+                                            geom_smooth(method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria test positive')+
+                                            guides(fill =FALSE))}
+
+p= plots[[1]]+plot[[2]]+ plot[[3]]+ plots[[4]]
+p = p+ plot_layout(guides = "collect")
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives_region.pdf'), p, width = 14, height =9)
+
+
+
+
+
+
+## --------------------------------------------------------------------------------------------------------------------------
+### Accessibility factors variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
+## --------------------------------------------------------------------------------------------------------------------------
+
+#variable distribution and cumulative distribution 
+df_access = data.frame(`motor_travel_healthcare` = df_all$motorized_travel_healthcare_2019_2000m, `minutes_to_city` = df_all$minutes_nearest_city_1000m)
+
+df_access_long = df_access %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
+
+df_list =split(df_access_long, df_access_long$x_label)
+df_list_ordered = list(df_list$motor_travel_healthcare,df_list$minutes_to_city)
+
+x=list('values')
+fill = list('darkturquoise')
+color = list('darkturquoise')
+xlab=list('Motorized travel time to health care', 'Travel time to the nearest city via surface transport')
+bins = list(30)
+
+
+
+p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
+p=p[[1]]+ p[[2]]+ p[[1]]+ p[[2]]+ p[[1]]+ p[[2]]+ p[[2]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_distribution.pdf'), p, width = 14, height =9)
+
+
+#correlation 
+df_access_reverse=df_access[,order(ncol(df_access):1)]
+
+
+#replace nas with their means 
+for(i in 1:ncol(df_access_reverse)){
+  df_access_reverse[is.na(df_access_reverse[,i]), i] = mean(df_access_reverse[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(df_access_reverse), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(df_access_reverse)
+
+
+corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_access.pdf'), corr, width = 13, height = 9)
+
+
+dhs_access_plot = cbind(df_access, region, positives, num_tested) 
+dhs_access_plot$rate = (dhs_access_plot$positives/dhs_access_plot$num_tested) 
+dhs_access_plot = dhs_access_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_access_plot, dhs_access_plot$x_label)
+df_list_ordered = list(df_list$motor_travel_healthcare,df_list$minutes_to_city)
+
+#unadjusted positives
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                            geom_point(shape=42, size= 5, color = "purple2", alpha = 0.7) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "deeppink4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "deeppink", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria test positive')+
+                                            guides(fill =FALSE, color =FALSE))}
+
+p<- plots[[1]]+plots[[2]]
+p
 
 
 
@@ -542,595 +709,6 @@ data_ = data %>%  filter(pos == 0)
 
 
 
-
-
-
-#___________________________________________ Sup map Plots______________________________________________________
-name_list = c("edu_a", "wealth", "roof_type", "median_age", "all_female_sex", "preg_women",  
-              "net_use_child", "med_treat_fever", "ACT_use_U5",
-              
-              "pop_density_0m", "pop_den_U5_FB_4000m", "housing_2015_4000m", 
-              "EVI_0m","dist_water_bodies_0m", "temperature_monthly_0m", "soil_wetness_0m", "precipitation_monthly_0m",
-              "minutes_nearest_city_1000m", "motorized_travel_healthcare_2019_2000m", "LONGNUM", "LATNUM")
-
-
-dhs = read.csv(file.path(CsvDir, "New_082321", "final_dataset", "final_dataset.csv"), header = T, sep = ',')
-# join dhs variables to cluster points by year 
-df_10_18_fin <- left_join(sf_all, dhs, by = c("v001" = "v001", "DHSYEAR" = "dhs_year"))%>% filter(URBAN_RURA == "U")
-
-df_10_18_fin <- df_10_18_fin %>% dplyr::select(name_list)
-
-#function
-df_10_18_fin = df_10_18_fin %>% filter(LONGNUM > 0.000000)
-
-map_fun2 <- function(polygon_name, point_data, var_n, title, break1, break2, break3, break4, break5, break6,label1, label2, label3, label4, label5){
-  point_data[[var_n]] = cut(point_data[[var_n]], breaks=c(break1,break2, break3, break4, break5, break6, NA), include.lowest = TRUE)
-  p= ggplot() + 
-    geom_sf(data =polygon_name, color='lightgrey')+
-    geom_point(point_data, mapping = aes(x = LONGNUM, y = LATNUM, color = point_data[[var_n]]), size =3, alpha =0.6)+
-    theme_bw()+
-    theme(axis.text.x = ggplot2::element_blank(),
-          axis.text.y = ggplot2::element_blank(),
-          axis.ticks = ggplot2::element_blank(),
-          rect = ggplot2::element_blank(),
-          plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
-          legend.title.align=0.5,
-          legend.title=element_text(size=16, colour = 'black'), 
-          legend.text =element_text(size = 12, colour = 'black'),
-          legend.key.height = unit(0.65, "cm"),
-          plot.title = element_text(hjust = 0.5),
-          panel.grid.major = element_blank()) +
-    labs (title = title, x = "values", size=25) +
-    xlab("") +
-    ylab("")+
-    guides(color=guide_legend(title = "", override.aes = list(size = 5)))+
-    scale_color_manual(values = c("#00AFBB", "burlywood4", "#FC4E07", "#E7B800", "green4", "lightgrey"), 
-                       labels = c(label1, label2, label3, label4, label5, "NA"))
-  
-}
-
-#plot maps
-edu_map <- map_fun2(state_sf, df_10_18_fin, 1, "Percentage of reproductive-age women with sendary or higher educational attainment", 
-                    0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-wealth_map <- map_fun2(state_sf, df_10_18_fin, 2, "Percentage of reproductive-age women belonging to fourth or higher wealth quantile", 
-                       0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-roof_map <- map_fun2(state_sf, df_10_18_fin, 3, "Percentage of housing with conversional roof type", 
-                     0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-median_map <- map_fun2(state_sf, df_10_18_fin, 4, "Median age",10, 17, 24, 31, 38, 45, "10 - 17", "17 - 24","24 - 31", "31 - 38", "38 - 45")
-female_map <- map_fun2(state_sf, df_10_18_fin, 5, "Percentage of female population", 
-                       0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-preg_map <- map_fun2(state_sf, df_10_18_fin, 6, "Percentage of preganant women", 
-                     0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-child_net_map <- map_fun2(state_sf, df_10_18_fin, 7, "Percentage of under five year olds using bed nets", 
-                          0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-treat_fever_map <- map_fun2(state_sf, df_10_18_fin, 8, "Percantage of medicine treated fevers", 0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-ACT_map <- map_fun2(state_sf, df_10_18_fin, 9, "Percentage of under five year olds using ACT", 
-                    0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-pop_map <- map_fun2(state_sf, df_10_18_fin, 10, "Population density",0, 110, 220, 330, 440, 550, "0 - 110", "110 - 220","220 - 330", "330 - 440", "440 - 550")
-pop_U5_map <- map_fun2(state_sf, df_10_18_fin, 11, "Under five population density", 
-                       0, 40, 80, 120, 160, 200, "0 - 40", "40 - 80","80 - 120", "160 - 200", "")
-housing_map <- map_fun2(state_sf, df_10_18_fin, 12, "Housing quality (2015)", 
-                        0, 0.20, 0.40, 0.60, 0.80, 1, "0 - 0.2", "0.2 - 0.4","0.4 - 0.6", "0.6 - 0.8", "")
-EVI_map <- map_fun2(state_sf, df_10_18_fin, 13, " Enhanced vegetation index", 
-                    0, 0.20, 0.40, 0.60, 0.80, 1, "0 - 0.2", "0.2 - 0.4","0.4 - 0.6", "0.6 - 0.8", "")
-water_map <- map_fun2(state_sf, df_10_18_fin, 14, "Distance to water bodies", 
-                      0, 2000, 4000, 6000, 8000, 10000, "0 - 2000", "2000 - 4000","4000 - 6000", "6000 - 8000", "8000 - 10000")
-temp_map <- map_fun2(state_sf, df_10_18_fin, 15, "Temperature", 
-                     18, 21, 24, 27, 30, 33, "18 - 21", "21 - 24","24 - 27", "27 - 30", "30 - 33")
-soil_map <- map_fun2(state_sf, df_10_18_fin, 16, "Soil wetness", 0, 0.20, 0.40, 0.60, 0.80, 1, "0 - 0.2", "0.2 - 0.4","0.4 - 0.6", "0.6 - 0.8", "0.8 - 1")
-prec_map <- map_fun2(state_sf, df_10_18_fin, 17, "Precipitation",0, 130, 260, 390, 520, 650, "0 - 130", "130 - 260","260 - 390", "390 - 520", "520 - 650")
-city_map <- map_fun2(state_sf, df_10_18_fin, 18, "Travel time to nearest city", 
-                     0, 90, 180, 270, 360, 450, "0 - 90", "90 - 180","180 - 270", "360 - 450", "")
-travel_healthcare_map <- map_fun2(state_sf, df_10_18_fin, 19, "Travel time to healthcare",
-                                  0, 20, 40, 60, 80, 100, "0 - 20", "20 - 40","40 - 60", "60 - 80", "80 - 100")
-
-#page1
-variable1 = ggarrange(text_grob("Demographic Health Survey covariates", face = "bold", size = 16, color = "dodgerblue"),
-                      edu_map, wealth_map, roof_map,  
-                      nrow = 4, ncol= 1, heights = c(0.2,1,1,1 , widths = c(1,1,1)))
-variables = annotate_figure(variable1, top = text_grob("Supplement Maps", 
-                                                       color = "Black", face = "bold", size = 14))
-ggsave(paste0(ResultDir, '/maps/', Sys.Date(),  'sup_map1.pdf'), variables, width=8.5, height=13)
-
-#page2
-variable1 = ggarrange(median_map, female_map, preg_map,  
-                      nrow = 3, ncol= 1, heights = c(1,1,1 , widths = c(1,1,1)))
-ggsave(paste0(ResultDir, '/maps/', Sys.Date(),  'sup_map2.pdf'), variable1, width=8.5, height=13)
-
-#page3
-variable1 = ggarrange(child_net_map, treat_fever_map, ACT_map,  
-                      nrow = 3, ncol= 1, heights = c(1,1,1 , widths = c(1,1,1)))
-ggsave(paste0(ResultDir, '/maps/', Sys.Date(),  'sup_map3.pdf'), variable1, width=8.5, height=13)
-
-#page4
-variable1 = ggarrange(text_grob("Geospatial covariates", face = "bold", size = 16, color = "dodgerblue"),
-                      pop_map, pop_U5_map, housing_map,  
-                      nrow = 4, ncol= 1, heights = c(0.2,1,1,1 , widths = c(1,1,1)))
-ggsave(paste0(ResultDir, '/maps/', Sys.Date(),  'sup_map4.pdf'), variable1, width=8.5, height=13)
-
-#page5
-variable1 = ggarrange(EVI_map, water_map, soil_map,  
-                      nrow = 3, ncol= 1, heights = c(1,1,1 , widths = c(1,1,1)))
-ggsave(paste0(ResultDir, '/maps/', Sys.Date(),  'sup_map5.pdf'), variable1, width=8.5, height=13)
-
-#page6
-variable1 = ggarrange(temp_map, prec_map, city_map,  
-                      nrow = 3, ncol= 1, heights = c(1,1,1 , widths = c(1,1,1)))
-ggsave(paste0(ResultDir, '/maps/', Sys.Date(),  'sup_map6.pdf'), variable1, width=8.5, height=13)
-
-#page6
-variable1 = ggarrange(travel_healthcare_map, NULL, NULL,  
-                      nrow = 3, ncol= 1, heights = c(1,1,1 , widths = c(1,1,1)))
-ggsave(paste0(ResultDir, '/maps/', Sys.Date(),  'sup_map6.pdf'), variable1, width=8.5, height=13)
-
-###Combine pdfs
-
-qpdf::pdf_combine(MapsDir = c("sup_map1.pdf", "sup_map2.pdf", "sup_map3.pdf", "sup_map4.pdf",
-                              "sup_map5.pdf", "sup_map6.pdf"), MapsDir = "supplement_maps.pdf")
-
-
-#_______________________________________________________________________________________________________
-
-############Uncleaned, awaiting final list of vars###############################################
-
-#______________________________________________________________________________________________________
-
-
-#histogram
-
-hist_fun2 =function(df, xmin, xmax){
-  p= ggplot(df, aes_string(x=names(df)[var_list[[2]]])) + 
-    geom_histogram(bins = 30, alpha = 0.7, position="identity", color = "violetred4", fill = colr_data[colr_list[[1]]])+
-    theme_manuscript()+ 
-    labs (title = labels_data[label_list[[2]]], x = "values") +
-    xlab(xlab_data[2]) +
-    ylab("Count")+
-    scale_y_continuous(expand = c(0.03, 0))+
-    scale_x_continuous(limits = c(xmin, xmax), expand = c(0.01, 0))
-  
-}
-
-hist_fun2(clu_df_cont, 0, 100)
-
-
-#map
-df_10_18_fin = df_10_18_fin %>% filter(LONGNUM > 0.000000)
-
-df_10_18_fin$ed_cut = cut(df_10_18_fin$edu_a, breaks=c(0,20, 40, 60, 80, 100, NA), include.lowest = TRUE)
-p= ggplot() + 
-  geom_sf(data =state_sf, color='lightgrey')+
-  geom_point(df_10_18_fin, mapping = aes(x = LONGNUM, y = LATNUM, color = ed_cut), size =8, alpha =0.5)+
-  theme_bw()+
-  theme(axis.text.x = ggplot2::element_blank(),
-        axis.text.y = ggplot2::element_blank(),
-        axis.ticks = ggplot2::element_blank(),
-        rect = ggplot2::element_blank(),
-        plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
-        legend.title.align=0.5,
-        legend.title=element_text(size=16, colour = 'black'), 
-        legend.text =element_text(size = 16, colour = 'black'),
-        legend.key.height = unit(0.65, "cm"),
-        plot.title = element_text(hjust = 0.5),
-        panel.grid.major = element_blank()) +
-  labs (title = labels_data[label_list[[2]]], x = "values", size=20) +
-  xlab("") +
-  ylab("")+
-  guides(color=guide_legend(""))+
-  scale_color_manual(values = c("#00AFBB", "burlywood4", "#FC4E07", "#E7B800", "#00AFBB", "lightgrey"), 
-                     labels = c("0 - 20", "20 - 40", "40 - 60", "60 - 80", "80 - 100", "NA"))
-
-p
-
-
-for (i in 1:34) { 
-  df_10_18_fin = df_10_18_fin %>% filter(LONGNUM > 0.000000)
-  df_10_18_fin[[1]] = cut(df_10_18_fin[[1]], breaks=5, include.lowest = TRUE)
-  p= ggplot() + 
-    geom_sf(data =state_sf, color='lightgrey')+
-    geom_point(df_10_18_fin, mapping = aes_string(x = "LONGNUM", y = "LATNUM", color = name_list[[1]]), size =8, alpha =0.7)+
-    theme_bw()+
-    map_theme(panel.grid.major = element_blank()) +
-    labs (title = labels_data[[1]], x = "values", size=20) +
-    xlab("") +
-    ylab("")+
-    guides(color=guide_legend(""))+
-    scale_color_manual(values = c("#00AFBB", "burlywood4", "#FC4E07", "#E7B800", "#00AFBB", "lightgrey"), 
-                       labels = c("0 - 20", "20 - 40", "40 - 60", "60 - 80", "80 - 100", "NA"))
-  plot_list[[1]]=p
-  
-}
-
-
-map_fun2 <- function(polygon_name, point_data, title, variable, break1, break2, break3, break4, break5, break6){
-  point_data = point_data %>% filter(LONGNUM > 0.000000)
-  point_data$variable = cut(df_10_18_fin$variable, breaks=c(), include.lowest = TRUE)
-  p= ggplot() + 
-    geom_sf(data =state_sf, color='lightgrey')+
-    geom_point(df_10_18_fin, mapping = aes_string(x = "LONGNUM", y = "LATNUM", color = name_list[[i]]), size =8, alpha =0.7)+
-    theme_bw()+
-    map_theme() +
-    theme(panel.grid.major = element_blank()) +
-    labs (title = labels_data[label_list[[i]]], x = "values", size=20) +
-    xlab("") +
-    ylab("")+
-    guides(color=guide_legend(""))+
-    scale_color_manual(values = c("#00AFBB", "burlywood4", "#FC4E07", "#E7B800", "#00AFBB", "lightgrey"), 
-                       labels = c("0 - 20", "20 - 40", "40 - 60", "60 - 80", "80 - 100", "NA"))
-  plot_list[[i]]=p
-  
-}
-
-
-
-#______________________________
-df_10_18_fin = df_10_18_fin %>% filter(LONGNUM > 0.000000)
-
-gmap_fun = function(polygon_name, point_data, labels, fill, legend_title){
-  ggplot(polygon_name) +
-    geom_sf(color='lightgrey')+
-    geom_point(data = point_data,
-               aes(fill=fill,  geometry = geometry),
-               stat = "sf_coordinates", alpha = 0.45, size=3, shape=21
-    ) +
-    #viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,20]', '(20,40]', '(40,60]', '(60,80]', '(80,100]', NA)) +
-    map_theme() + 
-    guides(fill = guide_legend(title=legend_title, override.aes = list(size = 5)))+
-    xlab("")+
-    ylab("")
-}
-
-
-
-
-#________________________________all coveriates histogram plots 200m buffer_________________________________
-
-
-clu_df_cont = clu_df_10_18[ , -which(names(clu_df_10_18) %in% c("shstate", "region", "X"))]
-clu_df_cont$y = ifelse(clu_df_cont$p_test < 0.1, 0,1) %>% (as.numeric)
-clu_df_cont= na.omit(clu_df_cont)
-
-
-name_list = c("test", 
-              "edu","wealth","housing_q","floor", "roof_type", 
-              "wall","household_size","mean_age","median_age","preg_women",
-              "net_use_all","net_use_child","fever_cases","med_treat_fever","ACT_use_U5",
-              "all_female_sex","U5_pop","female_child_sex",
-              
-              "pop_density","U5_FB","housing_2000","housing_2015","building", 
-              "elev_","minutes_to_city","travel_metre_2015","travel_metre_2019","walking_metre", 
-              "travel_healthcare","walking_healthcare","dominant","secondary_vector","temp_all_yrs",
-              "v001")
-
-labels_data = list("Education", "Floor type", "Household size", "Housing quality", "Mean age", 
-                   "Median age", "Net use", "Roof type", "Under five population" ,"Wall type",
-                   "Wealth", "Fever", "Pregnant women", "Female population", "Under five Female population", 
-                   "Under five net use", "Malaria prevalence", "Fever treatment", "Under five ACT use","Travel time to city", 
-                   "Building density", "Dominant vector", "Elevation", "Time to travel one metre 2015","Housing quality 2000", 
-                   "Housing quality 2015", "Time to travel one metre 2019","Travel time to healthcare", "Under five population density (FB)", "Population density",
-                   "Secondary vector", "Temperature", "Time to walk one metre", "Walk time to healthcare")
-
-xlab_data = list("percent per cl", "percent", "number", "percent", "number", 
-                 "number", "percent", "percent","percent" ,"percent", 
-                 "percent", "percent", "percent", "percent", "percent",
-                 "percent", "percent", "percent", "percent","Mean minutes", 
-                 "Mean", "Mean", "Mean", "Mean minutes", "percent",
-                 "percent", "Mean minutes","Mean minutes", "Mean", "Mean",
-                 "Mean", "Mean", "Mean minutes", "Mean minutes")
-
-colr_data = rep(c("orangered", "dodgerblue", "darkorchid","green4","tan4","turquoise"), times =c(1,9,9,5,7,3))
-
-
-
-for (i in 1:34) { 
-  p= ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
-    geom_histogram(fill = colr_data[colr_list[[i]]])+
-    theme_manuscript() +
-    labs (title = labels_data[label_list[[i]]], x = "values") +
-    xlab(xlab_data[label_list[[i]]]) +
-    ylab("")
-  plot_list[[i]]=p
-}
-
-
-variable1 = ggarrange(NULL,NULL,get_legend(plot_list[[2]] + theme(legend.position="bottom")),NULL,NULL,
-                      NULL,NULL,plot_list[[1]],NULL,NULL, 
-                      NULL,NULL,text_grob("Socioeconmic factors", face = "italic", size = 16, color = "dodgerblue"),NULL,NULL,
-                      plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
-                      plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
-                      NULL,NULL,text_grob("Demographic factors", face = "italic", size = 16, color = "darkorchid"),NULL,NULL,
-                      plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                      plot_list[[17]],plot_list[[18]],plot_list[[19]],NULL,
-                      NULL,NULL,text_grob("Behavioral factors", face = "italic", size = 16, color = "green4"),NULL,NULL,
-                      plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
-                      NULL,NULL,text_grob("Accessibility factors", face = "italic", size = 16, color = "tan4"),NULL,NULL,
-                      plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
-                      NULL,NULL,NULL,plot_list[[31]],
-                      NULL,NULL,text_grob("Environmental factors", face = "italic", size = 16, color = 'turquoise'),NULL,NULL,
-                      NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
-                      nrow = 15, ncol= 5, heights = c(0.2,1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
-
-
-variables = annotate_figure(variable1, top = text_grob("Distribution of covariates", 
-                                                       color = "Black", face = "bold", size = 14),
-                            left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms.pdf'), variables, width=13, height=20)
-
-#__________________________
-
-for (i in 1:34) { 
-  #clu_df_cont$colors = ifelse(clu_df_cont$p_test < 0.1, "blue", "green")
-  p= ggplot(clu_df_cont, aes_string(x=names(clu_df_cont)[var_list[[i]]])) + 
-    geom_histogram(aes(position="stack", group = y, fill=y))+
-    theme_manuscript() +
-    labs (title = labels_data[label_list[[i]]], x = "values") +
-    xlab(xlab_data[label_list[[i]]]) +
-    ylab("")
-  plot_list[[i]]=p
-}
-
-variable1 = ggarrange(NULL,NULL,get_legend(plot_list[[2]] + theme(legend.position="bottom")),NULL,NULL,
-                      NULL,NULL,plot_list[[1]],NULL,NULL, 
-                      NULL,NULL,text_grob("Socioeconmic factor", face = "italic", size = 10, color = "dodgerblue"),NULL,NULL,
-                      plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],plot_list[[7]],
-                      plot_list[[8]],plot_list[[9]],plot_list[[10]],NULL,
-                      NULL,NULL,text_grob("Demographic factors", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
-                      plot_list[[11]],plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                      plot_list[[17]],plot_list[[18]],plot_list[[19]],NULL,
-                      NULL,NULL,text_grob("Behavioral factors", face = "italic", size = 10, color = "green4"),NULL,NULL,
-                      plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
-                      NULL,NULL,text_grob("Accessibility factors", face = "italic", size = 10, color = "tan4"),NULL,NULL,
-                      plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],plot_list[[30]],
-                      NULL,NULL,NULL,plot_list[[31]],
-                      NULL,NULL,text_grob("Environmental factors", face = "italic", size = 10, color = 'turquoise'),NULL,NULL,
-                      NULL,plot_list[[32]],plot_list[[33]],plot_list[[34]],NULL,
-                      nrow = 15, ncol= 5, heights = c(0.5,1,00.2,1,1,0.2, 1,1,0.2,1,0.2,1,1,0.2,1, widths = c(1,1,1,1,1)))
-
-
-variables = annotate_figure(variable1, top = text_grob("Distribution of covariates", 
-                                                       color = "Black", face = "bold", size = 14),
-                            left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(HisDir, '/', Sys.Date(),  'histograms_y.pdf'), variables, width=13, height=13)
-
-
-
-#All buffers plot - according to theme
-
-fill0 =  c("orangered", "dodgerblue", "darkorchid","green4","tan4", "turquoise", "orangered", "dodgerblue", "darkorchid","green4","tan4", "turquoise")
-fill1 = c("dodgerblue", "darkorchid","green4","tan4", "turquoise", "orangered", "dodgerblue", "darkorchid","green4","tan4", "turquoise")
-fill2 = c("darkorchid", "darkgoldenrod1", "red1","cornflowerblue","hotpink","darkorchid", "darkgoldenrod1", "red1","cornflowerblue","hotpink")
-fill3 = c("green4", "chocolate2", "chocolate3","gold","cornflowerblue","chocolate1", "chocolate2", "chocolate3","chocolate4","chocolate")
-fill4 = c("magenta", "limegreen", "gold2","gray48","tan4","magenta", "limegreen", "gold2","gray48","tan4")
-fill5 = c("lightcoral", "darkgoldenrod", "brown1","darkslategray4","turquoise","lightcoral", "darkgoldenrod", "brown1","darkslategray4","turquoise")
-
-
-
-#All buffers plot - grouped in two
-
-
-labels_data = list("Malaria prevalence",
-                   "Education","wealth","Housing quality","Floor type", "Roof type",
-                   "Wall type","Household size","Mean age","Median age","Pregnant women",
-                   "Net use","Under five net use","Fever cases","Fever treatment","Under five ACT use",
-                   "Female population","Under five population","Under five Female population",
-                   
-                   "Population density","Under five population density (FB)","Housing quality 2000","Housing quality 2015","building",
-                   "Elevation","Travel time to city","Time to travel one metre 2015","Time to travel one metre 2019","Time to walk one metre",
-                   "Travel time to healthcare","Walk time to healthcare","Dominant vector","Secondary vector","Temperature", 
-                   "v001")
-
-name_list = c("test", 
-              "edu","wealth","housing_q","floor", "roof_type", 
-              "wall","household_size","mean_age","median_age","preg_women",
-              "net_use_all","net_use_child","fever_cases","med_treat_fever","ACT_use_U5",
-              "all_female_sex","U5_pop","female_child_sex",
-              
-              "pop_density","U5_FB","housing_2000","housing_2015","building", 
-              "elev_","minutes_to_city","travel_metre_2015","travel_metre_2019","walking_metre", 
-              "travel_healthcare","walking_healthcare","dominant","secondary_vector","temp_all_yrs",
-              "v001")
-
-
-fill_list = rep(list(fill0, fill2,fill5), times =c(1,18,15))
-label_list = c(1:34)
-
-
-for (i in 1:34) { 
-  melteddf = melt(dplyr::select(clu_df_cont, "v001", matches(name_list[[i]])), id="v001", na.rm=T)
-  fill_select = colr_list[i]
-  p= ggplot(melteddf, aes_string(x= "value", fill = "variable", color = "variable")) +
-    geom_freqpoly(size = 0.7) +
-    theme_manuscript()+
-    labs (title = labels_data[label_list[[i]]], x = "values") +
-    scale_color_manual(labels = c("0m", "1000m", "2000m", "3000m","4000m"), 
-                       values = fill_list[[i]]) +
-    guides(color=guide_legend("Legend/Buffers")) +
-    xlab(xlab_data[label_list[[i]]]) +
-    ylab("")
-  plot_list[[i]]=p  
-  
-}
-
-
-variable1 = ggarrange(NULL,NULL,plot_list[[1]],NULL,NULL, 
-                      NULL,NULL,text_grob("DHS covariates", face = "italic", size = 10, color = "darkorchid"),NULL,NULL,
-                      plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],plot_list[[6]],
-                      plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],plot_list[[11]], 
-                      plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                      plot_list[[17]],plot_list[[18]], plot_list[[19]],NULL,NULL,
-                      
-                      NULL,NULL,text_grob("Geospatial covariates", face = "italic", size = 10, color = "turquoise"),NULL,NULL,
-                      NULL,NULL,get_legend(plot_list[[20]] + theme(legend.position="bottom")),NULL,NULL,
-                      plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
-                      
-                      
-                      plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],
-                      plot_list[[30]],plot_list[[31]],plot_list[[32]],plot_list[[33]],plot_list[[34]],
-                      
-                      nrow = 12, ncol= 5, heights = c(1,0.2,1,1,1,1,0.2,0.2,1,1,1, widths = c(1,1,1,1,1)))
-
-variables = annotate_figure(variable1, top = text_grob("Distribution of covariates", 
-                                                       color = "Black", face = "bold", size = 14),
-                            left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(HisDir, '/', Sys.Date(),  'freqpoly_durce_grouped.pdf'), variables, width=13, height=13)
-
-
-
-#________________________________ geospatial coveriates plots______________________________
-
-#make an urban map of all cluster values 
-
-u_df_18_fin = df_10_18_fin %>% filter(DHSYEAR == 2018) 
-u_df_15_fin = df_10_18_fin %>% filter(DHSYEAR == 2015) 
-u_df_10_fin = df_10_18_fin %>% filter(DHSYEAR == 2010)
-
-#read in state shape file 
-stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",
-                   use_iconv=TRUE, encoding= "UTF-8")
-state_sf = st_as_sf(stateshp)
-
-#make cluster maps 
-
-clustermap=function(cluster_shp, title){
-  tm_shape(state_sf) + #this is the health district shapfile with DS estimates info
-    tm_polygons()+
-    tm_shape(cluster_shp)+ #this is the points shape file with LLIN and number of kids info by cluster 
-    tm_bubbles(size =0.2, col = "p_test", 
-               border.col= "black", palette="seq",textNA = "Missing",
-               breaks=c(0, 0.2, 0.3,0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0), legend.col.show=T)+
-    tm_layout(aes.palette = list(seq ="-RdYlBu"), title = title)+
-    tm_legend(legend.title.size = 0.8, legend.just="top")
-}
-
-map_18=clustermap(u_df_18_fin, "2018 malaria prevalence by cluster (DHS)")
-map_15 =clustermap(u_df_15_fin, "2015 malaria prevalence by cluster (DHS)")
-map_10 =clustermap(u_df_10_fin, "2010 malaria prevalence by cluster (DHS)")
-
-
-urban_map=tmap_arrange(map_18, map_15, map_10)
-
-
-tmap_save(tm =urban_map, filename = file.path(ResultDir, "maps", "urban_malaria_maps.pdf"), 
-          width=13, height=13, units ="in", asp=0,
-          paper ="A4r", useDingbats=FALSE)
-
-
-
-#make maps for all variable using their cluster values 
-
-
-for (i in 1:34){ 
-  m=tm_shape(state_sf) + #this is the health district shapfile with DS estimates info
-    tm_polygons()+
-    tm_shape(df_10_18_fin)+ #this is the points shape file with LLIN and number of kids info by cluster 
-    tm_bubbles(size=0.1, col = names(clu_df_cont)[grepl(name_list[[i]], names(clu_df_cont))], 
-               border.col= "black", palette="seq",textNA = "Missing", title.col ="     ")+
-    tm_layout(aes.palette = list(seq ="-RdYlBu"), main.title = labels_data[label_list[[i]]], 
-              main.title.position = "center", main.title.size =0.8,
-              legend.position = c("right", "top"))
-  
-  plot_list[[i]]=m
-  
-  
-}
-
-
-map_plpot =tmap_arrange(plot_list[[1]],plot_list[[2]],plot_list[[3]],plot_list[[4]],plot_list[[5]],
-                        plot_list[[6]],plot_list[[7]],plot_list[[8]],plot_list[[9]],plot_list[[10]],
-                        plot_list[[11]], plot_list[[12]],plot_list[[13]],plot_list[[14]],plot_list[[15]],
-                        plot_list[[16]], plot_list[[17]], plot_list[[18]], plot_list[[19]],plot_list[[20]],
-                        plot_list[[20]],plot_list[[21]],plot_list[[22]],plot_list[[23]],plot_list[[24]],
-                        plot_list[[25]],plot_list[[26]],plot_list[[27]],plot_list[[28]],plot_list[[29]],
-                        plot_list[[30]],plot_list[[31]],plot_list[[32]],plot_list[[33]],plot_list[[34]],nrow = 7, ncol= 5)
-
-tmap_save(tm =map_plpot, filename = file.path(ResultDir, "maps", "dependent_dhscov_maps.pdf"), 
-          width=13, height=18, units ="in", asp=0,
-          paper ="A4r", useDingbats=FALSE, add.titles = "Distribution of Covariates")
-
-
-
-p= ggplot() + 
-  geom_sf(data =state_sf)+
-  geom_point(df_10_18_fin, mapping = aes(x = LONGNUM, y = LATNUM, color = edu_a))+
-  map_theme() +
-  guides(color=guide_legend("Legend/Buffers")) +
-  xlab(xlab_data[label_list[[i]]]) +
-  ylab("")
-
-p
-
-#______________________________
-df_10_18_fin = df_10_18_fin %>% filter(LONGNUM > 0.000000)
-
-gmap_fun = function(polygon_name, point_data, labels, fill, legend_title){
-  ggplot(polygon_name) +
-    geom_sf(color='lightgrey')+
-    geom_point(data = point_data,
-               aes(fill=fill,  geometry = geometry),
-               stat = "sf_coordinates", alpha = 0.45, size=3, shape=21
-    ) +
-    #viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,20]', '(20,40]', '(40,60]', '(60,80]', '(80,100]', NA)) +
-    map_theme() + 
-    guides(fill = guide_legend(title=legend_title, override.aes = list(size = 5)))+
-    xlab("")+
-    ylab("")
-}
-
-
-
-
-for (i in 1:34) { 
-  p = gmap_fun(state_sf, df_10_18_fin, labels_data[label_list[[i]]], names(clu_df_cont)[var_list[[i]]], "legend") +
-    
-    plot_list[[i]]=p 
-    
-}
-
-
-
-
-variable1 = ggarrange(NULL,plot_list[[1]],NULL,
-                      NULL,text_grob("DHS covariates", face = "italic", size = 10, color = "darkorchid"),NULL,
-                      plot_list[[2]],plot_list[[3]],plot_list[[4]],
-                      plot_list[[5]],plot_list[[6]],plot_list[[7]],
-                      plot_list[[8]],plot_list[[9]],plot_list[[10]],
-                      plot_list[[11]],plot_list[[12]],plot_list[[13]],
-                      plot_list[[14]],plot_list[[15]],plot_list[[16]],
-                      plot_list[[17]],plot_list[[18]], plot_list[[19]],
-                      
-                      
-                      NULL,text_grob("Geospatial covariates", face = "italic", size = 10, color = "turquoise"),NULL,
-                      plot_list[[20]],plot_list[[21]],plot_list[[22]],
-                      plot_list[[23]],plot_list[[24]],plot_list[[25]],
-                      
-                      
-                      plot_list[[26]],plot_list[[27]],plot_list[[28]],
-                      plot_list[[29]],plot_list[[30]],plot_list[[31]],
-                      plot_list[[32]],plot_list[[33]],plot_list[[34]],
-                      
-                      nrow = 14, ncol= 3, heights = c(1,0.2,1,1,1,1,1,1,0.2,1,1,1,1,1))
-
-variables = annotate_figure(variable1, top = text_grob("Distribution of covariates", 
-                                                       color = "Black", face = "bold", size = 14),
-                            left = text_grob("Count", color = "Black", size = 14,  rot = 90))
-ggsave(paste0(MapsDir, '/', Sys.Date(),  'maps_grouped.pdf'), variables, width=13, height=30)
-
-
-
-
-
-
-
-#________________________ plotting goespatials averages per state
-
-state_sf = state_sf %>% mutate(NAME_1 = case_when(NAME_1 == "Federal Capital Territory" ~ "Fct Abuja",
-                                                  NAME_1 == "Nassarawa" ~ "Nasarawa",
-                                                  TRUE ~ as.character(NAME_1)))%>% mutate(NAME_1 = tolower(NAME_1))
-
-
-state_mean = clu_df_10_18 %>% group_by(names(clu_df_cont[3:38])) %>% summarise(Mean_sales = mean(Sales))
-
-
-sf = left_join(state_mean, state_sf, by =c("shstate" = "NAME_1"))
 
 
 
