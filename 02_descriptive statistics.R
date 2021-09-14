@@ -100,19 +100,20 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
 x=list('values')
 fill = list('#8971B3')
 color = list('#8971B3')
-xlab=list('% with post-primary education',
-          '% in the rich wealth quintiles','% in homes with improved flooring',
-          '% in homes with a metal or zinc roof', '% in homes with an improved wall type',
-          '% living in improved housing (2000)',
-          '% living in improved housing (2015)')
+xlab=list(expression(atop('% with post-primary', paste('education'))),
+          expression(atop('% in the rich wealth', paste('quintiles'))),expression(atop('% in homes with improved', paste(' flooring'))),
+          expression(atop('% in homes with a metal', paste('or zinc roof'))), expression(atop('% in homes with an', paste('improved wall type'))),
+          expression(atop('% living in improved', paste('housing (2000)'))),
+          expression(atop('% living in improved', paste('housing (2015)'))))
 
 bins = list(30)
 
 
 p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
-p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]
+p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]]+ p[[5]]+p[[6]]+p[[7]]+ plot_annotation(tag_levels = 'A')& theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distribution.pdf'), p, width =13, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distribution.pdf'), p, width =8, height =7)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distribution.png'), p, width =8, height =7)
 
 #correlation 
 
@@ -147,7 +148,7 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$improved.housing.in.2015)
 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                            geom_point(shape=42, size= 6, color = "#f64b77", alpha = 0.7) +
+                                            geom_point(shape=42, size= 3, color = "#f64b77", alpha = 0.5) +
                                             geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
                                             theme_manuscript()+
@@ -156,24 +157,27 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
 
 
 
-p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]] + plots[[7]]
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]] + plots[[7]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.pdf'), p, width = 8, height =7)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.png'), p, width = 8, height =7)
 
 plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
-                                          geom_point(shape=42, size= 6, color = "#f64b77", alpha = 0.7) +
+                                          geom_point(shape=42, size= 3, color = "#f64b77", alpha = 0.5) +
                                           geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                           geom_smooth(aes(color = "Confidence Interval"), fill = "#a56c56", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
                                           theme_manuscript()+
                                           labs(x = .y, y ='malaria test positive rate')+
                                           guides(fill =FALSE, color =FALSE))}
 
-p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plotse[[7]]
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[7]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.pdf'), p, width = 14, height =9)
-
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.png'), p, width = 8, height =7)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate.png'), p, width = 8, height =7)
 
 
 
@@ -200,7 +204,7 @@ x=list('values')
 fill = list('#00A08A')
 color = list('#00A08A')
 xlab=list('Population density',
-          'U5 population density','% of pregnant women',
+          expression(atop('Population density,', paste('children 5 years and under'))),'% of pregnant women',
           '% of females', 'Median household size',
           'Median age')
 bins = list(25)
@@ -245,7 +249,11 @@ map=ggplot(geo_map) +
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_GPZ.pdf'), map, width = 14, height =9)
 
 
-#correlation 
+#correlation
+colnames(demo_numeric)= c('Population density',
+                                  'Population density,\n children 5 years and under','% of pregnant women',
+                                  '% of females', 'Median household size',
+                                  'Median age')
 demo_numeric_reverse=demo_numeric[,order(ncol(demo_numeric):1)]
 
   
@@ -263,7 +271,7 @@ p.mat = cor_pmat(demo_numeric_reverse)
 
 corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_demo.pdf'), corr, width = 13, height = 9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_demo.pdf'), corr, width = 8, height = 5)
 
 
 
@@ -283,7 +291,7 @@ df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
 
 #unadjusted positives chopped boundary 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                          geom_point(shape=42, size= 6, color = "dodgerblue3", alpha = 0.7) +
+                                          geom_point(shape=42, size= 3, color = "dodgerblue3", alpha = 0.5) +
                                           geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
                                           geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
                                           theme_manuscript()+
@@ -292,9 +300,11 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
 
 
 
-p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_chopped_bondary.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_chopped_bondary.png'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_chopped_bondary.pdf'), p, width = 8.5, height =4.5)
 
 
 dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
@@ -308,7 +318,7 @@ df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
 
 #unadjusted positives expanded boundary 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                            geom_point(shape=42, size= 5, color = "dodgerblue3", alpha = 0.7) +
+                                            geom_point(shape=42, size= 3, color = "dodgerblue3", alpha = 0.5) +
                                             geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
                                             geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
                                             theme_manuscript()+
@@ -317,10 +327,11 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
 
 
 
-p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_twice_expanded_boundary.pdf'), p, width = 14, height =9)
-
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_expanded_boundary.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_age_expanded_boundary.png'), p, width = 8.5, height =4.5)
 
 
 
@@ -338,7 +349,7 @@ df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
 
 #rate chopped boundary 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
-                                            geom_point(shape=42, size= 5, color = "dodgerblue3", alpha = 0.7) +
+                                            geom_point(shape=42, size= 3, color = "dodgerblue3", alpha = 0.5) +
                                             geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
                                             geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
                                             theme_manuscript()+
@@ -347,10 +358,13 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=ra
 
 
 
-p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[6]]
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_age_twice_chopped_boundary.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_chopped_boundary.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_chopped_boundary.png'), p, width = 8.5, height =4.5)
+
 
 
 #relationship with demo categorical variables 
@@ -364,7 +378,7 @@ state_dat = state_dat %>%  mutate(lci = coefficient - std_error, uci = coefficie
 #effect plot - state  
 xname <- expression(paste("Slope estimate"))
 p = forest_fun(state_dat, '#644128', "#a56c56", xname, 1:36, state_dat$names)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_state_comparison.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_state_comparison_demo.pdf'), p, width = 8.5, height =7)
 
 #GPZ data 
 GPZ_rship = glm(positives ~ as.factor(region)+ offset(log(num_tested)), data = df_all, family ='poisson')
@@ -375,7 +389,7 @@ GPZ_dat = GPZ_dat %>%  mutate(lci = coefficient - std_error, uci = coefficient +
 
 #effect plot - GPZ 
 p = forest_fun(GPZ_dat, "forestgreen", "darkseagreen", xname,1:5, GPZ_dat$names)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_GPZ_comparison.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_GPZ_comparison.pdf'), p, width = 8.5, height =4.5)
 
 
 
@@ -406,10 +420,13 @@ bins = list(25)
 
 
 p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
-p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]] + p[[2]]+ p[[3]]+p[[4]]
+p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]] + plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_distribution.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_distribution.pdf'), p, width = 8, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_distribution.png'), p, width = 8, height =4.5)
+
 
 
 

@@ -49,19 +49,19 @@ theme_manuscript <- function(){
   theme_bw() + 
     theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
           plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(size = 16, color = "black"), 
-          axis.text.y = element_text(size = 16, color = "black"),
-          axis.title.x = element_text(size = 16),
-          axis.title.y = element_text(size =16),
-          legend.title=element_text(size=16, colour = 'black'),
-          legend.text =element_text(size = 16, colour = 'black'),
+          axis.text.x = element_text(size = 12, color = "black"), 
+          axis.text.y = element_text(size = 12, color = "black"),
+          axis.title.x = element_text(size = 12),
+          axis.title.y = element_text(size =12),
+          legend.title=element_text(size=12, colour = 'black'),
+          legend.text =element_text(size = 12, colour = 'black'),
           legend.key.height = unit(1, "cm"))
 }
 
 theme_corr <- function(){
   theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5), 
-        axis.text.x = element_text(size = 16, color = "black"), 
-        axis.text.y = element_text(size = 16, color = "black"))
+        axis.text.x = element_text(size = 12, color = "black"), 
+        axis.text.y = element_text(size = 12, color = "black"))
 }
 
 igv.lm.point <- function(x, y, point_val, legend_title, xlab, ylab){
@@ -153,7 +153,7 @@ cdf_hist = function(df, fill,color, x, xlab, bins){
   ggplot(df, aes(.data[[x]]))+
     geom_histogram(fill=fill, color= color, alpha = 0.4, position="identity", bins = bins) +
     stat_ecdf(aes_(y =bquote(..y..* .(max_y)), color =color))+
-    scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percentage', labels = percent))+
+    scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percent', labels = function(x) format(x *100, digits=2, nsmall=0)))+
     theme_manuscript()+theme(legend.position = 'none')+
     xlab(xlab)
 }
