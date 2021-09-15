@@ -431,6 +431,9 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_
 
 
 #correlation 
+colnames(df_behave)= c('Net use',
+                       'Child net use','Medical treatment for fever',
+                       'Effective fever treatment')
 df_behave_reverse=df_behave[,order(ncol(df_behave):1)]
 
 
@@ -448,40 +451,46 @@ p.mat = cor_pmat(df_behave_reverse)
 
 corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_behave.pdf'), corr, width = 13, height = 9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_behave.pdf'), corr, width = 8.5, height = 4.5)
+
 
 
 dhs_behave_plot = cbind(df_behave, region, positives, num_tested) 
 dhs_behave_plot$rate = (dhs_behave_plot$positives/dhs_behave_plot$num_tested) 
 dhs_behave_plot = dhs_behave_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_behave_plot, dhs_behave_plot$x_label)
-df_list_ordered = list(df_list$Net.use,df_list$Child.net.use, df_list$Medical.treatment.for.fever, df_list$Effective.fever.treatment)
+df_list_ordered = list(df_list$`Net use`,df_list$`Child net use`, df_list$`Medical treatment for fever`, df_list$`Effective fever treatment`)
 
 #unadjusted positives
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                            geom_point(shape=42, size= 5, color = "purple2", alpha = 0.7) +
+                                            geom_point(shape=42, size= 3, color = "purple2", alpha = 0.5) +
                                             geom_smooth(aes(fill = "Trend"), se = FALSE, color = "deeppink4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             geom_smooth(aes(color = "Confidence Interval"), fill = "deeppink", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             theme_manuscript()+
                                             labs(x = .y, y ='malaria test positive')+
                                             guides(fill =FALSE, color =FALSE))}
 
-p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+plots[[2]]+ plots[[3]]+ plots[[4]]
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.png'), p, width = 8.5, height =4.5)
+
 
 #rate
 plots= df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
-                                                 geom_point(shape=42, size= 5, color = "purple2", alpha = 0.7) +
+                                                 geom_point(shape=42, size= 3, color = "purple2", alpha = 0.5) +
                                                  geom_smooth(aes(fill = "Trend"), se = FALSE, color = "deeppink4", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                                  geom_smooth(aes(color = "Confidence Interval"), fill = "deeppink", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                                  theme_manuscript()+
                                                  labs(x = .y, y ='malaria test positive rate')+
                                                  guides(fill =FALSE, color =FALSE))}
 
-p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+plots[[2]]+ plots[[3]]+ plots[[4]]
+p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.pdf'), p, width = 14, height =9)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_rate_bivariate_positives.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_rate_bivariate_positives.png'), p, width = 8.5, height =4.5)
 
 
 #region adjustment 
@@ -492,11 +501,12 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
                                             labs(x = .y, y ='malaria test positive')+
                                             guides(fill =FALSE))}
 
-p= plots[[1]]+plot[[2]]+ plot[[3]]+ plots[[4]]
-p = p+ plot_layout(guides = "collect")
+p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]
+p = p+ plot_layout(guides = "collect")+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'), legend.position = 'bottom')
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives_region.pdf'), p, width = 14, height =9)
-
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives_region.pdf'), p, width = 8.5, height =7)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives_region.png'), p, width = 8.5, height =7)
 
 
 
@@ -507,67 +517,70 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_
 ## --------------------------------------------------------------------------------------------------------------------------
 
 #variable distribution and cumulative distribution 
-df_access = data.frame(`motor_travel_healthcare` = df_all$motorized_travel_healthcare_2019_2000m, `minutes_to_city` = df_all$minutes_nearest_city_1000m)
-
-df_access_long = df_access %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
-
-df_list =split(df_access_long, df_access_long$x_label)
-df_list_ordered = list(df_list$motor_travel_healthcare,df_list$minutes_to_city)
-
-x=list('values')
-fill = list('darkturquoise')
-color = list('darkturquoise')
-xlab=list('Motorized travel time to health care', 'Travel time to the nearest city via surface transport')
-bins = list(30)
-
-
-
-p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
-p=p[[1]]+ p[[2]]+ p[[1]]+ p[[2]]+ p[[1]]+ p[[2]]+ p[[2]]
-p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_distribution.pdf'), p, width = 14, height =9)
-
-
-#correlation 
-df_access_reverse=df_access[,order(ncol(df_access):1)]
-
-
-#replace nas with their means 
-for(i in 1:ncol(df_access_reverse)){
-  df_access_reverse[is.na(df_access_reverse[,i]), i] = mean(df_access_reverse[,i], na.rm = TRUE)
-}
-
-#correlation matrix 
-corr = round(cor(df_access_reverse), 1)
-
-# Compute a matrix of correlation p-values
-p.mat = cor_pmat(df_access_reverse)
-
-
-corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
-  theme_corr()
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_access.pdf'), corr, width = 13, height = 9)
-
+df_access = data.frame(`motor_travel_healthcare` = df_all$motorized_travel_healthcare_2019_2000m)
+hist=ggplot(df_access, aes(x =motor_travel_healthcare))+geom_histogram(alpha = 0.4, position="identity", bins=30)
+max_y=max(ggplot_build(hist)$data[[1]]$count)
+p=ggplot(df_access, aes(x=motor_travel_healthcare))+
+    geom_histogram(fill='darkturquoise', color='darkturquoise', alpha = 0.4, position="identity", bins = 30) +
+    stat_ecdf(aes_(y =bquote(..y..* .(max_y)), color ='darkturquoise'))+
+    scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percent', labels = function(x) format(x *100, digits=2, nsmall=0)))+
+    theme_manuscript()+theme(legend.position = 'none')+
+    xlab('Motorized travel time to health care')
+  
 
 dhs_access_plot = cbind(df_access, region, positives, num_tested) 
 dhs_access_plot$rate = (dhs_access_plot$positives/dhs_access_plot$num_tested) 
 dhs_access_plot = dhs_access_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_access_plot, dhs_access_plot$x_label)
-df_list_ordered = list(df_list$motor_travel_healthcare,df_list$minutes_to_city)
+
+
+xlab=list('Motorized travel time to health care')
 
 #unadjusted positives
-plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
-                                            geom_point(shape=42, size= 5, color = "purple2", alpha = 0.7) +
-                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "deeppink4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
-                                            geom_smooth(aes(color = "Confidence Interval"), fill = "deeppink", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                            geom_point(shape=42, size= 3, color = "turquoise4", alpha = 0.5) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             theme_manuscript()+
                                             labs(x = .y, y ='malaria test positive')+
                                             guides(fill =FALSE, color =FALSE))}
 
-p<- plots[[1]]+plots[[2]]
-p
+
+p_all=p +plots[[1]]
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives.pdf'), p_all, width = 8.5, height =3)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives.png'), p_all, width = 8.5, height =3)
 
 
+
+#chopped off boundaries 
+dhs_access_plot = cbind(df_access, region, positives, num_tested) 
+is.na(dhs_access_plot['motor_travel_healthcare'])<- dhs_access_plot['motor_travel_healthcare'] > 25
+dhs_access_plot$rate = (dhs_access_plot$positives/dhs_access_plot$num_tested) 
+dhs_access_plot = dhs_access_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_access_plot, dhs_access_plot$x_label)
+
+plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                    geom_point(shape=42, size= 3, color = "turquoise4", alpha = 0.5) +
+                                    geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                    geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                    theme_manuscript()+
+                                    labs(x = .y, y ='malaria test positive')+
+                                    guides(fill =FALSE, color =FALSE))}
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives_chopped_x.pdf'), plots[[1]], width = 4, height =3)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives_chopped_x.png'), plots[[1]], width = 4, height =3)
+
+
+
+plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                    geom_point(shape=42, size= 3, color = "turquoise4", alpha = 0.5) +
+                                    geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                    geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                    theme_manuscript()+
+                                    labs(x = .y, y ='malaria test positive')+
+                                    guides(fill =FALSE, color =FALSE))}
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_rate_bivariate_positives_region.pdf'), plots, width = 8.5, height =3)
 
 
 
