@@ -25,7 +25,6 @@ cleandatDir <- file.path(DataIn, 'cleaned_cluster_covariates_all')
 files <- list.files(path = file.path(DataIn, 'DHS_survey_extract') , pattern = '.csv', full.names = TRUE, recursive = TRUE)
 files<- files[-grep('_0m_|_1000m_|_3000m_|_4000m_|Temp_covereates|DHS_18.csv|pop_density_|p_test_lagos_|pop_density_2000m_buffer_DHS_10_15_18.csv|pop_density_2km_buffer_DHS_10_15_18_30sec|building_density|elevation_|interview_month', files)]
 df <-sapply(files, read.csv, simplify = F)
-
 df <- df %>% map_if(~ all(c('X') %in% colnames(.x)),~dplyr::select(., -X)) %>% 
   map_if(~ all(c('se') %in% colnames(.x)),~dplyr::select(., -se)) %>% 
   map_if(~ all(c('ci_l') %in% colnames(.x)),~dplyr::select(., -ci_l)) %>% 
@@ -86,3 +85,6 @@ filenames <- c('0m', '1000m', '2000m', '3000m', '4000m')
 for (i in 1:length(df_geo)){
 write_csv(df_geo[[i]], paste0(cleandatDir, '/New_082321/all_geospatial_variables_urban_malaria_', filenames[[i]], '.csv'))
 }
+
+
+

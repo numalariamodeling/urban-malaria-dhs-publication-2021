@@ -224,6 +224,9 @@ clu_num_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
 #read in state shape file 
 stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
 state_sf = st_as_sf(stateshp)
+
+state_df_2 = state_df %>% mutate(NAME_1 = str_to_title(state), NAME_1 = ifelse(NAME_1 == 'Fct Abuja', 'Federal Capital Territory',
+                                                       ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1))) %>% dplyr::select(-state)
 state_map = left_join(state_sf, clu_name_state, by =c('NAME_1'))
 state_map$nun_cut = cut(state_map$n, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80), include.lowest = TRUE)
 map=ggplot(state_map) +
@@ -525,7 +528,7 @@ p=ggplot(df_access, aes(x=motor_travel_healthcare))+
     stat_ecdf(aes_(y =bquote(..y..* .(max_y)), color ='darkturquoise'))+
     scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percent', labels = function(x) format(x *100, digits=2, nsmall=0)))+
     theme_manuscript()+theme(legend.position = 'none')+
-    xlab('Motorized travel time to health care')
+    xlab(expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))))
   
 
 dhs_access_plot = cbind(df_access, region, positives, num_tested) 
@@ -542,13 +545,11 @@ plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives)
                                             geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             theme_manuscript()+
-                                            labs(x = .y, y ='malaria test positive')+
+                                            labs(x = expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))), y ='malaria test positive')+
                                             guides(fill =FALSE, color =FALSE))}
 
 
 p_all=p +plots[[1]]
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives.pdf'), p_all, width = 8.5, height =3)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives.png'), p_all, width = 8.5, height =3)
 
 
 
@@ -564,29 +565,86 @@ plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives)
                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     theme_manuscript()+
-                                    labs(x = .y, y ='malaria test positive')+
+                                    labs(x = expression(atop('Motorized travel time to health care', paste('in minutes, 2019 (x-axis is limited values >=25)'))), y ='malaria test positive')+
                                     guides(fill =FALSE, color =FALSE))}
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives_chopped_x.pdf'), plots[[1]], width = 4, height =3)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_bivariate_positives_chopped_x.png'), plots[[1]], width = 4, height =3)
-
-
+p_all2 = p_all + plots[[1]]
 
 plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
                                     geom_point(shape=42, size= 3, color = "turquoise4", alpha = 0.5) +
                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     theme_manuscript()+
-                                    labs(x = .y, y ='malaria test positive')+
+                                    labs(x = expression(atop('Motorized travel time to health care', paste(' in minutes, 2019 (x-axis is limited values >=25)'))) , y ='malaria test positive rate')+
                                     guides(fill =FALSE, color =FALSE))}
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_rate_bivariate_positives_region.pdf'), plots, width = 8.5, height =3)
+p_all3 = p_all2 +  plots[[1]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
 
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_distribution_bivariate.pdf'), p_all3, width = 8.2, height =4.5)
+
+
+
+
+## --------------------------------------------------------------------------------------------------------------------------
+### Environmental factors variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
+## --------------------------------------------------------------------------------------------------------------------------
+#variable distribution and cumulative distribution 
+df_env = data.frame(`Precipitation` = df_all$precipitation_monthly_0m, `Temperature` = df_all$temperature_monthly_0m, `Surface soil moisture` =df_all$soil_wetness_0m,
+                       `Distance to water bodies` = df_all$dist_water_bodies_0m, `Elevation` = df_all$elevation_1000m, `Enhanced Vegetation Index`= df_all$EVI_0m)
+
+df_env_long = df_env %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
+
+df_list =split(df_env_long, df_env_long$x_label)
+df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surface.soil.moisture,df_list$Distance.to.water.bodies,
+                       df_list$Elevation, df_list$Enhanced.Vegetation.Index)
+
+x=list('values')
+fill = list('dodgerblue3')
+color = list('dodgerblue3')
+xlab=list(expression(atop('Precipitation', paste('(meters depth)'))), expression(atop('Temperature', paste('(°C)'))),expression(atop('Surface soil', paste('moisture (GSM)'))),expression(atop('Distance to water', paste('bodies (meters)'))), expression(atop('Elevation', paste('(meters)'))),
+          expression(atop('Enhanced Vegetation',  paste('Index'))))
+bins = list(25)
+
+
+
+p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
+p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]] + p[[5]]+ p[[6]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_distribution.pdf'), p, width = 8.5, height =5)
+
+
+
+#correlation 
+colnames(df_behave)= c('Precipitation',
+                       'Temperature','Surface soil moisture',
+                       'Distance to water bodies', 'Elevation', "Enhanced Vegetation Index")
+df_env_reverse=df_env[,order(ncol(df_env):1)]
+
+
+#replace nas with their means 
+for(i in 1:ncol(df_env)){
+  df_env_reverse[is.na(df_env_reverse[,i]), i] = mean(df_env_reverse[,i], na.rm = TRUE)
+}
+
+#correlation matrix 
+corr = round(cor(df_env_reverse), 1)
+
+# Compute a matrix of correlation p-values
+p.mat = cor_pmat(df_env_reverse)
+
+
+corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
+  theme_corr()
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_environmental.pdf'), corr, width = 8.5, height = 4.5)
 
 
 ## ----------------------------------------------------------------
 ### Read in computed DHS cluster data and generate related figures - will bring this up later during code cleaning   
 ## ----------------------------------------------------------------
+dhs$positives_prop = round(dhs$positives/dhs$child_6_59_tested_malaria, 1)
+summary(dhs$positives_prop)
 
 #figure 1
 p1 = igv.lm.point(dhs$num_child_6_59, dhs$child_6_59_tested_malaria,dhs$dhs_year,  "Survey year", 'Number of children 6 - 59 months', 'Number of children 6 - 59 months \n tested for malaria')

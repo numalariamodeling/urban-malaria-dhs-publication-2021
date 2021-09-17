@@ -20,7 +20,7 @@ GeoDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 # -----------------------------------------
 ### Required functions and settings
 ## -----------------------------------------
-source("./data_extractor_functions/data_extractor_functions.R")
+source("00_data_extraction/data_extractor_functions/data_extractor_functions.R")
 options(survey.lonely.psu="adjust") # this option allows admin units with only one cluster to be analyzed
 
 

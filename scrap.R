@@ -384,3 +384,23 @@ plots_by_year = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=r
 social_p_year = plots_by_year[[1]]+plots_by_year[[2]]+ plots_by_year[[3]]+ plots_by_year[[4]]+ plots_by_year[[5]]+ plots_by_year[[6]]+ plots_by_year[[7]]& theme(legend.position = "bottom", legend.title = element_blank())
 social_p_year=social_p_year+ plot_layout(guides = "collect")
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rate_by_year.pdf'), social_p_year, width = 14, height =9)
+map<-ggplot(state_map) +
+  geom_sf(aes(fill = p_test))+
+  viridis::scale_fill_viridis(option="D")+
+  map_theme()+ 
+  geom_text(
+    data = state_map,
+    aes(label =  NAME_1, geometry = geometry),color ='white',
+    stat = "sf_coordinates"
+  )+ #geom_sf_text(aes(label=name_long))+ 
+  xlab('')+
+  ylab('')
+
+state_map = left_join(state_sf, state_df_2, by =c('NAME_1'))
+
+
+ggsave('state_urban_malaria.pdf', map)
+
+# state_df=df$`C:/Users/ido0493/Box/NU-malaria-team/data/nigeria_dhs/data_analysis/data/DHS/Computed_cluster_information/urban_malaria_covariates/DHS_survey_extract/p_test_PfPR_urban_state_DHS_10_15_18.csv`
+# 
+# state_df =  state_df %>%  mutate(dhs_year = str_split(.id, "_", simplify = T)[, 4]) %>%  filter(dhs_year == '2018')
