@@ -565,17 +565,24 @@ plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives)
                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     theme_manuscript()+
-                                    labs(x = expression(atop('Motorized travel time to health care', paste('in minutes, 2019 (x-axis is limited values >=25)'))), y ='malaria test positive')+
+                                    labs(x = expression(atop('Motorized travel time to health care', paste('in minutes, 2019 (x-axis is limited values <=25)'))), y ='malaria test positive')+
                                     guides(fill =FALSE, color =FALSE))}
 
 p_all2 = p_all + plots[[1]]
+
+dhs_access_plot = cbind(df_access, region, positives, num_tested) 
+is.na(dhs_access_plot['motor_travel_healthcare'])<- dhs_access_plot['motor_travel_healthcare'] > 20
+dhs_access_plot$rate = (dhs_access_plot$positives/dhs_access_plot$num_tested) 
+dhs_access_plot = dhs_access_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_access_plot, dhs_access_plot$x_label)
+
 
 plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
                                     geom_point(shape=42, size= 3, color = "turquoise4", alpha = 0.5) +
                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "tan4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     geom_smooth(aes(color = "Confidence Interval"), fill = "tan3", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                     theme_manuscript()+
-                                    labs(x = expression(atop('Motorized travel time to health care', paste(' in minutes, 2019 (x-axis is limited values >=25)'))) , y ='malaria test positive rate')+
+                                    labs(x = expression(atop('Motorized travel time to health care', paste(' in minutes, 2019 (x-axis is limited values <=20)'))) , y ='malaria test positive rate')+
                                     guides(fill =FALSE, color =FALSE))}
 
 p_all3 = p_all2 +  plots[[1]]+ plot_annotation(tag_levels = 'A')& 
@@ -638,6 +645,78 @@ p.mat = cor_pmat(df_env_reverse)
 corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_environmental.pdf'), corr, width = 8.5, height = 4.5)
+
+
+dhs_env_plot = cbind(df_env, region, positives, num_tested) 
+dhs_env_plot$rate = (dhs_env_plot$positives/dhs_env_plot$num_tested) 
+dhs_env_plot = dhs_env_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_env_plot, dhs_env_plot$x_label)
+df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surface.soil.moisture, df_list$Distance.to.water.bodies,
+                       df_list$Elevation, df_list$Enhanced.Vegetation.Index)
+
+#unadjusted positives
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                            geom_point(shape=42, size= 3, color = "slateblue4", alpha = 0.9) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "yellow4", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "yellow1", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria test positive')+
+                                            guides(fill =FALSE, color =FALSE))}
+
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_bivariate_positives.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_bivariate_positives.png'), p, width = 8.5, height =4.5)
+
+
+#rate
+dhs_env_plot = cbind(df_env, region, positives, num_tested) 
+is.na(dhs_env_plot$Precipitation) = dhs_env_plot$Precipitation > 400
+is.na(dhs_env_plot$Elevation) = dhs_env_plot$Elevation > 750
+dhs_env_plot$rate = (dhs_env_plot$positives/dhs_env_plot$num_tested) 
+dhs_env_plot = dhs_env_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
+df_list = split(dhs_env_plot, dhs_env_plot$x_label)
+df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surface.soil.moisture, df_list$Distance.to.water.bodies,
+                       df_list$Elevation, df_list$Enhanced.Vegetation.Index)
+
+xlab=list(expression(atop('Precipitation', paste('(meters depth, x-axis is limited to values <=400)'))), expression(atop('Temperature', paste('(°C)'))),expression(atop('Surface soil', paste('moisture (GSM)'))),expression(atop('Distance to water', paste('bodies (meters)'))), expression(atop('Elevation', paste('(meters, x-axis is limited to values <=750)'))),
+          expression(atop('Enhanced Vegetation',  paste('Index'))))
+
+
+plots = df_list_ordered %>%  {map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                     geom_point(shape=42, size= 3, color = "slateblue4", alpha = 0.5) +
+                                     geom_smooth(aes(fill = "Trend"), se = FALSE, color = "yellow4", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                     geom_smooth(aes(color = "Confidence Interval"), fill = "yellow4", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
+                                     theme_manuscript()+
+                                     labs(x = .y, y ='malaria test positive rate')+
+                                     guides(fill =FALSE, color =FALSE))}
+
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
+p
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_bivariate_positive_rate_choppedx.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_bivariate_positive_rate_choppedx.png'), p, width = 8.5, height =4.5)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## ----------------------------------------------------------------
