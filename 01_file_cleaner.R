@@ -87,4 +87,3 @@ write_csv(df_geo[[i]], paste0(cleandatDir, '/New_082321/all_geospatial_variables
 }
 
 
-

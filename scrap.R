@@ -404,3 +404,60 @@ ggsave('state_urban_malaria.pdf', map)
 # state_df=df$`C:/Users/ido0493/Box/NU-malaria-team/data/nigeria_dhs/data_analysis/data/DHS/Computed_cluster_information/urban_malaria_covariates/DHS_survey_extract/p_test_PfPR_urban_state_DHS_10_15_18.csv`
 # 
 # state_df =  state_df %>%  mutate(dhs_year = str_split(.id, "_", simplify = T)[, 4]) %>%  filter(dhs_year == '2018')
+
+
+stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
+state_sf = st_as_sf(stateshp)
+
+state_val<-raster::extract(raster[[3]],state_sf, buffer = buffer, fun = mean, df =TRUE) %>% 
+  mutate(NAME_1 = state_sf$NAME_1)
+
+state_map = left_join(state_sf, state_val)
+
+map=ggplot(state_map) +
+  geom_sf(aes(fill =gpw_v4_population_density_rev11_2020_1_deg))+
+  scale_fill_viridis_c(option = "C") +
+  map_theme()+
+  geom_text(
+    data = state_map,
+    aes(label =  NAME_1, geometry = geometry),color ='white',
+    stat = "sf_coordinates"
+  )+ #geom_sf_text(aes(label=name_long))+ 
+  xlab('')+
+  ylab('')
+
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_pop_density_by_state.pdf'), map, width = 8.5, height =7)
+
+
+state_df_2 = state_df %>% mutate(NAME_1 = str_to_title(state), NAME_1 = ifelse(NAME_1 == 'Fct Abuja', 'Federal Capital Territory',
+                                                                               ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1))) %>% dplyr::select(-state)
+
+
+state_edu_a=read.csv(file.path(DataIn, 'DHS_survey_extract', 'edu_a_all_state_DHS_PR_10_15_18.csv')) %>% 
+  mutate(dhs_year = str_split(.id, "_", simplify = T)[, 4]) %>%  dplyr::select(-.id) %>% filter(dhs_year == '2018')
+
+stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
+state_sf = st_as_sf(stateshp)
+
+state_edu_a_2 = state_edu_a %>% mutate(NAME_1 = str_to_title(state), NAME_1 = ifelse(NAME_1 == 'Fct Abuja', 'Federal Capital Territory',
+                                                                                     ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1))) %>% dplyr::select(-state)
+
+state_map = left_join(state_sf, state_edu_a_2)
+
+library("ggsci")
+map=ggplot(state_map) +
+  geom_sf(aes(fill =edu_a))+
+  scale_fill_gsea(reverse = T) +
+  map_theme()+
+  geom_text(
+    data = state_map,
+    aes(label =  NAME_1, geometry = geometry),color ='white',
+    stat = "sf_coordinates"
+  )+ #geom_sf_text(aes(label=name_long))+ 
+  xlab('')+
+  ylab('')
+
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_edu_by_state-2018.pdf'), map, width = 8.5, height =7)
+

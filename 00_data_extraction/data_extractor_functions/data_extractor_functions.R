@@ -83,3 +83,15 @@ extract_fun_month <- function(raster, dhs, buffer){
   clu_val<-raster::extract(raster,dhs, buffer = buffer, fun = mean, df =TRUE) %>%
     mutate(dhs_year = dhs$DHSYEAR, hv001 = dhs$DHSCLUST, month = dhs$hv006)
 }
+
+map_theme <- function(){
+  theme(axis.text.x = ggplot2::element_blank(),
+        axis.text.y = ggplot2::element_blank(),
+        axis.ticks = ggplot2::element_blank(),
+        rect = ggplot2::element_blank(),
+        plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
+        legend.title.align=0.5,
+        legend.title=element_text(size=16, colour = 'black'), 
+        legend.text =element_text(size = 16, colour = 'black'),
+        legend.key.height = unit(0.65, "cm"))
+}

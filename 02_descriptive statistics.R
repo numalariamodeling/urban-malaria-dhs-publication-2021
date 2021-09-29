@@ -23,6 +23,19 @@ CsvDir = file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covar
 source("./other_functions/descriptive_analysis_functions.R")
 
 
+library(glmmTMB)
+data(sleepstudy,package="lme4")
+
+library(splines)
+m1 <- glmmTMB(Reaction~ns(Days,5)+(1|Subject), data=sleepstudy)
+sleepstudy$pred <- predict(m1)
+
+library(ggplot2)
+ggplot(sleepstudy,aes(x=Days))+geom_point(aes(y=Reaction))+geom_line(aes(y=pred))
+
+
+
+
 ## ----------------------------------------------------------------
 ### Creating analysis data  
 ## ----------------------------------------------------------------
@@ -147,6 +160,35 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
                        df_list$improved.housing.in.2015)
 
+
+
+
+library(glmmTMB)
+data(sleepstudy,package="lme4")
+
+library(splines)
+data=df_list_ordered[[4]] %>% drop_na(positives)
+min=min(data$values)
+max=max(data$values)
+
+data_e= data[1:20, c('positives', 'values')]
+dput(data_e)
+
+m1 <- glmmTMB(positives~ns(values, 3, knots = seq(min(values),max(values),length =4)[2:3]), data=data_e,  ziformula=~1,family=poisson)
+#m1 <- glmmTMB(positives~ns(values, 3)+offset(log(num_tested)), data=data,  ziformula=~1,family=poisson)
+a=ggpredict(m1, terms="values [all]", type ='zero_inflated') %>% plot(rawdata = TRUE, jitter = .01) + theme_manuscript()
+
+colnames(m1$frame)[2]='values'
+
+m2 <- glm(positives~ns(values, 3, knots = seq(min(values),max(values),length =4)[2:3]), data=data, family=poisson)
+b=ggpredict(m2, terms = "values") %>% plot(rawdata = TRUE, jitter = .01)
+
+a +b
+
+library(ggplot2)
+ggplot(data,aes(x=values))+geom_point(aes(y=positives))+geom_line(aes(y=pred))
+
+
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
                                             geom_point(shape=42, size= 3, color = "#f64b77", alpha = 0.5) +
                                             geom_smooth(aes(fill = "Trend"), se = FALSE, color = "#644128", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
@@ -226,8 +268,7 @@ clu_num_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
 stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
 state_sf = st_as_sf(stateshp)
 
-state_df_2 = state_df %>% mutate(NAME_1 = str_to_title(state), NAME_1 = ifelse(NAME_1 == 'Fct Abuja', 'Federal Capital Territory',
-                                                       ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1))) %>% dplyr::select(-state)
+
 state_map = left_join(state_sf, clu_name_state, by =c('NAME_1'))
 state_map$nun_cut = cut(state_map$n, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80), include.lowest = TRUE)
 map=ggplot(state_map) +
@@ -765,12 +806,18 @@ sf_all = rbind(sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  rename(v001 =
 
 
 #data wrangling
-dhs = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year)
+dhs = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year, net_use, net_use_child)
 map = sf_all %>% left_join(dhs, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
 map$positives_prop = round(map$positives/map$child_6_59_tested_malaria, 1)
-map$positives_cut = cut(map$positives_prop, breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
+map$positives_cut = cut(map$positives_prop, breaks=c(0,0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
 df_count = map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
+map$net_cut = cut(map$net_use, breaks=c(0,10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100), include.lowest = TRUE)
 
+stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
+state_sf = st_as_sf(stateshp)
+
+# LGAshp = readOGR(file.path(DataDir, "shapefiles","Nigeria_LGAs_shapefile_191016"), layer ="NGA_LGAs",use_iconv=TRUE, encoding= "UTF-8")
+# LGA_sf = st_as_sf(LGAshp)
 
 #big map 
 map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Count[[1]], ')'), 
@@ -786,6 +833,19 @@ map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
 map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
                    map_lagos$positives_cut, 'Test positivity rate')
 map_lag = map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
+
+
+# df_lagos = dplyr::filter(LGA_sf, (State %in% c('Lagos')))
+# map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 10','11-15', '16 - 20', '21 - 25', '26 - 30', '31 - 40', '41 - 50', '51 - 60', '61 - 70', '71 - 80', '81 - 90', '91 - 100'),
+#                    map_lagos$net_cut, 'net use rate')
+# 
+# map_lag + geom_text_repel(
+#   data = df_lagos,
+#   aes(label = LGA, geometry = geometry),color ='black',
+#   stat = "sf_coordinates",
+#   min.segment.length = 0, size = 3, force = 1)+ #geom_sf_text(aes(label=name_long))+
+#   xlab('')+
+#   ylab('')
 
 #Anambra 
 df_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))

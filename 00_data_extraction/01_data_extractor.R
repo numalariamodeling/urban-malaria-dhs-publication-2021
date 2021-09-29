@@ -9,7 +9,9 @@ memory.limit(size = 50000)
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
-DataDir <- file.path(NuDir, "data", 'nigeria_dhs' , 'data_analysis', 'data')
+ProjectDir <- file.path(NuDir, "data", 'nigeria_dhs' , 'data_analysis')
+DataDir <- file.path(ProjectDir, 'data')
+ResultDir =file.path(ProjectDir, "results", "research_plots")
 GlobDir <- file.path(DataDir, 'africa_health_district_climate', 'climate', 'global')
 DHSData <- file.path(DataDir, 'DHS')
 RastDir <- file.path(DataDir, "Raster_files")
@@ -117,7 +119,7 @@ write.csv(fin_df, paste0(DataIn, "/positive_microscopy_test_6_59_months.csv"))
 
 vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women')
 
-vars<- c('roof_type')
+vars<- c('edu_a')
 for (i in 1:length(vars)) {
   col <- list(vars[i])
   by <- list('hv001')
@@ -130,6 +132,22 @@ for (i in 1:length(vars)) {
   
 }
 
+dhs[[1]]$state <- as_label(dhs[[1]]$shstate)
+dhs[[2]]$state <- as_label(dhs[[2]]$shstate)
+dhs[[3]]$state <- as_label(dhs[[3]]$shstate)
+
+vars<- c('edu_a')
+for (i in 1:length(vars)) {
+  col <- list(vars[i])
+  by <- list('state')
+  df <- dhs%>% 
+    map(~drop_na(.,vars[i]))
+  df <- pmap(list(df,col,by), estim_prop)
+  df <- plyr::ldply(df)
+  df[, vars[i]]<- df[, vars[i]]*100
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_state_DHS_PR_10_15_18.csv")))
+  
+}
 
 #mean
 
@@ -418,7 +436,6 @@ vars <- c(0, 1000, 2000, 3000, 4000)
 files <- list.files(path = file.path(DataDir, "Raster_files") , pattern = "*deg.tif$", full.names = TRUE, recursive = TRUE)
 files<- files[(grep('gpw_v4', files))]
 raster<-sapply(files, raster, simplify = F)
-
 
 
 for (i in 1:length(vars)) {
