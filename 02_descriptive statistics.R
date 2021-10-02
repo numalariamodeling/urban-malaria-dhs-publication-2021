@@ -15,24 +15,13 @@ DataIn = file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covar
 ResultDir =file.path(ProjectDir, "results", "research_plots")
 HisDir =file.path(ResultDir, "histograms")
 MapsDir = file.path(ResultDir, "maps")
+GeoDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'geospatial_covariates')
 CsvDir = file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'cleaned_cluster_covariates_all', 'New_082321')
 
 # ----------------------------------------------------
 ### Required functions and settings
 ## ----------------------------------------------------
 source("./other_functions/descriptive_analysis_functions.R")
-
-
-library(glmmTMB)
-data(sleepstudy,package="lme4")
-
-library(splines)
-m1 <- glmmTMB(Reaction~ns(Days,5)+(1|Subject), data=sleepstudy)
-sleepstudy$pred <- predict(m1)
-
-library(ggplot2)
-ggplot(sleepstudy,aes(x=Days))+geom_point(aes(y=Reaction))+geom_line(aes(y=pred))
-
 
 
 
@@ -44,7 +33,7 @@ dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header 
 
 #read in geospatial dataset and create final data 
 files = list.files(path = CsvDir, pattern = '.csv', full.names = TRUE, recursive = FALSE)
-files = files[-grep('all_DHS_variables_urban', files)]
+files = files[-grep('all_DHS_variables_urban|2018_mobility_DHS_variables_urban_malaria', files)]
 df_geo = sapply(files, read.csv, simplify = F)
 
 
@@ -163,30 +152,6 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
 
 
 
-library(glmmTMB)
-data(sleepstudy,package="lme4")
-
-library(splines)
-data=df_list_ordered[[4]] %>% drop_na(positives)
-min=min(data$values)
-max=max(data$values)
-
-data_e= data[1:20, c('positives', 'values')]
-dput(data_e)
-
-m1 <- glmmTMB(positives~ns(values, 3, knots = seq(min(values),max(values),length =4)[2:3]), data=data_e,  ziformula=~1,family=poisson)
-#m1 <- glmmTMB(positives~ns(values, 3)+offset(log(num_tested)), data=data,  ziformula=~1,family=poisson)
-a=ggpredict(m1, terms="values [all]", type ='zero_inflated') %>% plot(rawdata = TRUE, jitter = .01) + theme_manuscript()
-
-colnames(m1$frame)[2]='values'
-
-m2 <- glm(positives~ns(values, 3, knots = seq(min(values),max(values),length =4)[2:3]), data=data, family=poisson)
-b=ggpredict(m2, terms = "values") %>% plot(rawdata = TRUE, jitter = .01)
-
-a +b
-
-library(ggplot2)
-ggplot(data,aes(x=values))+geom_point(aes(y=positives))+geom_line(aes(y=pred))
 
 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
@@ -348,8 +313,8 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_chopped_bondary.png'), p, width = 8.5, height =4.5)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_chopped_bondary.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_chopped_bondary.png'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_chopped_bondary.pdf'), p, width = 8.5, height =4.5)
 
 
 dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
@@ -375,8 +340,8 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_expanded_boundary.pdf'), p, width = 8.5, height =4.5)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_distribution_expanded_boundary.png'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_expanded_boundary.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_expanded_boundary.png'), p, width = 8.5, height =4.5)
 
 
 
@@ -407,8 +372,8 @@ p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_
   theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_chopped_boundary.pdf'), p, width = 8.5, height =4.5)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_distribution_chopped_boundary.png'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_bivariate_chopped_boundary.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_bivariate_chopped_boundary.png'), p, width = 8.5, height =4.5)
 
 
 
@@ -436,6 +401,58 @@ GPZ_dat = GPZ_dat %>%  mutate(lci = coefficient - std_error, uci = coefficient +
 p = forest_fun(GPZ_dat, "forestgreen", "darkseagreen", xname,1:5, GPZ_dat$names)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_GPZ_comparison.pdf'), p, width = 8.5, height =4.5)
 
+
+
+#2018 data alone 
+occ_df = read.csv(file.path(CsvDir, "2018_mobility_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X, -agri_worker_both, -agri_worker_man, -agri_worker_woman)
+df_18 = df_all %>%  filter(dhs_year == '2018') %>%  dplyr::select(v001, positives)
+df_18_all = left_join(df_18, occ_df, by =c('v001'))
+occ_df = occ_df %>%  dplyr::select(agri_worker_partner,last_work_man, last_work_partner, last_work_woman, seasonal_work_man, seasonal_work_woman)
+#variable distribution and cumulative distribution 
+
+occ_long = occ_df %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
+
+df_list =split(occ_long, occ_long$x_label)
+df_list_ordered = list(df_list$agri_worker_partner, df_list$seasonal_work_man, df_list$seasonal_work_woman)
+
+x=list('values')
+fill = list('#00A08A')
+color = list('#00A08A')
+xlab=list('% of partners that are agricultural workers',
+          '% of male seasonal workers','% of female seasonal workers')
+bins = list(25)
+
+
+
+p = pmap(list(df_list_ordered,fill, color, x, xlab, bins), cdf_hist)
+p=p[[1]]+ p[[2]]+ p[[3]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_occupation_positive_distribution.pdf'), p, width = 8.5, height =2.25)
+
+#relationship with malaria positives
+dhs_occ_plot = df_18_all  %>% dplyr::select(positives, agri_worker_partner,seasonal_work_man, seasonal_work_woman) %>%  pivot_longer(!c(positives),names_to='x_label', values_to='values')
+df_list = split(dhs_occ_plot , dhs_occ_plot $x_label)
+
+
+
+
+#unadjusted positives chopped boundary 
+plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                            geom_point(shape=42, size= 3, color = "dodgerblue3", alpha = 0.5) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria positives')+
+                                            guides(fill =FALSE, color =FALSE))}
+
+
+
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
+p
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_occupation_positive_distribution.pdf'), p, width = 8.5, height =2.25)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_occupation_positive_distribution.png'), p, width = 8.5, height =2.25)
 
 
 
@@ -543,7 +560,7 @@ plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=po
                                             geom_point(shape=42, size= 5, alpha = 0.7) +
                                             geom_smooth(method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                             theme_manuscript()+
-                                            labs(x = .y, y ='malaria test positive')+
+                                            labs(x = .y, y ='malaria positives')+
                                             guides(fill =FALSE))}
 
 p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]
@@ -633,6 +650,55 @@ p_all3 = p_all2 +  plots[[1]]+ plot_annotation(tag_levels = 'A')&
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_accessibility_variable_distribution_bivariate.pdf'), p_all3, width = 8.2, height =4.5)
 
 
+#2018 data alone 
+acc_df = read.csv(file.path(CsvDir, "2018_mobility_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(v001, dhs_year, trips_man, trips_woman, duration_travel_woman, duration_travel_man)
+df_18 = df_all %>%  filter(dhs_year == '2018') %>%  dplyr::select(v001, positives)
+df_18_all = left_join(df_18, acc_df, by =c('v001'))
+acc_df = acc_df %>%  dplyr::select(-c(v001, dhs_year))
+#variable distribution and cumulative distribution 
+
+acc_long = acc_df %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
+df_list =split(acc_long, acc_long$x_label)
+#df_list_ordered = list(df_list$agri_worker_partner, df_list$seasonal_work_man, df_list$seasonal_work_woman)
+
+x=list('values')
+fill = list('#00A08A')
+color = list('#00A08A')
+xlab=list('% of men away for more than one month in the last 12 months', '% of women away for more than one month in the last 12 months',
+          'Number of times males were away from home in the last 12 months','Number of times women were away from home in the last 12 months')
+bins = list(25)
+
+
+
+p = pmap(list(df_list,fill, color, x, xlab, bins), cdf_hist)
+p=p[[1]]+ p[[2]]+ p[[3]]+ p[[4]]
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_trips_duration_distribution.pdf'), p, width = 8.5, height =2.25)
+
+#relationship with malaria positives
+dhs_acc_plot = df_18_all  %>% dplyr::select(duration_travel_woman, duration_travel_man,trips_man,trips_woman, positives) %>%  pivot_longer(!c(positives),names_to='x_label', values_to='values')
+df_list = split(dhs_acc_plot, dhs_acc_plot$x_label)
+
+
+
+
+#unadjusted positives chopped boundary 
+plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives))+
+                                    geom_point(shape=42, size= 3, color = "dodgerblue3", alpha = 0.5) +
+                                    geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                    geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3))+
+                                    theme_manuscript()+
+                                    labs(x = .y, y ='malaria positives')+
+                                    guides(fill =FALSE, color =FALSE))}
+
+
+
+p<- plots[[1]]+plots[[2]]+ plots[[3]] + plots[[4]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
+p
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_trips_duration_bivariate_distribution.pdf'), p, width = 8.5, height =2.25)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_trips_duration_bivariate_distribution.png'), p, width = 8.5, height =2.25)
 
 
 ## --------------------------------------------------------------------------------------------------------------------------
@@ -662,6 +728,15 @@ p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]] + p[[5]]+ p[[6]]+ plot_annotation(tag_levels = '
   theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_distribution.pdf'), p, width = 8.5, height =5)
+
+
+files <- list.files(path = file.path(GeoDir) , pattern = "month_07", full.names = TRUE, recursive = TRUE)
+files<-sapply(files, read.csv, simplify = F)
+preci_2010 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Precipitation, July 2010', paste('meters depth'))), 25)
+preci_2015 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Precipitation, July 2015', paste('meters depth'))), 25)
+preci_2018 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Precipitation, July 2018', paste('meters depth'))), 25)
+all_precip = preci_2010 + preci_2015 + preci_2018
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_precipitation_july_all_DHS.pdf'), all_precip, width = 8.5, height =3)
 
 
 
@@ -724,7 +799,7 @@ df_list = split(dhs_env_plot, dhs_env_plot$x_label)
 df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surface.soil.moisture, df_list$Distance.to.water.bodies,
                        df_list$Elevation, df_list$Enhanced.Vegetation.Index)
 
-xlab=list(expression(atop('Precipitation', paste('(meters depth, x-axis is limited to values <=400)'))), expression(atop('Temperature', paste('(°C)'))),expression(atop('Surface soil', paste('moisture (GSM)'))),expression(atop('Distance to water', paste('bodies (meters)'))), expression(atop('Elevation', paste('(meters, x-axis is limited to values <=750)'))),
+xlab=list(expression(atop('Precipitation', paste('(meters depth)'))), expression(atop('Temperature', paste('(?C)'))),expression(atop('Surface soil', paste('moisture (GSM)'))),expression(atop('Distance to water', paste('bodies (meters)'))), expression(atop('Elevation', paste('(meters)'))),
           expression(atop('Enhanced Vegetation',  paste('Index'))))
 
 

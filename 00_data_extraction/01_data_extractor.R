@@ -430,7 +430,6 @@ vars <- c(0, 1000, 2000, 3000, 4000)
 
 
 
-
 #pop density extraction with just columbia data 
 
 files <- list.files(path = file.path(DataDir, "Raster_files") , pattern = "*deg.tif$", full.names = TRUE, recursive = TRUE)

@@ -461,3 +461,60 @@ map=ggplot(state_map) +
 
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_edu_by_state-2018.pdf'), map, width = 8.5, height =7)
 
+# library(glmmTMB)
+# data(sleepstudy,package="lme4")
+# 
+# library(splines)
+# m1 <- glmmTMB(Reaction~ns(Days,5)+(1|Subject), data=sleepstudy)
+# sleepstudy$pred <- predict(m1)
+# 
+# library(ggplot2)
+# ggplot(sleepstudy,aes(x=Days))+geom_point(aes(y=Reaction))+geom_line(aes(y=pred))
+
+
+# 
+# library(glmmTMB)
+# data(sleepstudy,package="lme4")
+# 
+# library(splines)
+# data=df_list_ordered[[4]] %>% drop_na(positives)
+# min=min(data$values)
+# max=max(data$values)
+# 
+# data_e= data[1:20, c('positives', 'values')]
+# dput(data_e)
+# 
+# m1 <- glmmTMB(positives~ns(values, 3, knots = seq(min(values),max(values),length =4)[2:3]), data=data_e,  ziformula=~1,family=poisson)
+# #m1 <- glmmTMB(positives~ns(values, 3)+offset(log(num_tested)), data=data,  ziformula=~1,family=poisson)
+# a=ggpredict(m1, terms="values [all]", type ='zero_inflated') %>% plot(rawdata = TRUE, jitter = .01) + theme_manuscript()
+# 
+# colnames(m1$frame)[2]='values'
+# 
+# m2 <- glm(positives~ns(values, 3, knots = seq(min(values),max(values),length =4)[2:3]), data=data, family=poisson)
+# b=ggpredict(m2, terms = "values") %>% plot(rawdata = TRUE, jitter = .01)
+# 
+# a +b
+# 
+# library(ggplot2)
+# ggplot(data,aes(x=values))+geom_point(aes(y=positives))+geom_line(aes(y=pred))
+
+
+# what would the cluster point value be in 2018 for June and July?
+
+files <- list.files(path = file.path(DataDir, "Raster_files", 'rainfall_monthly', '2010', 'june_july_2010') , pattern = ".tif$", full.names = TRUE, recursive = TRUE)
+files<- files[(grep('month_07', files))]
+raster<-sapply(files, raster, simplify = F)
+
+for (i in 1:length(vars)) {
+  var_name <- c(paste0('precipitation', as.character(vars[i]), 'm'))
+  df <- map2(dhs, raster, get_crs)
+  df <- pmap(list(raster, df, vars[i]), extract_fun)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('month_07')))
+  df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
+  write.csv(df, file =file.path(GeoDir, paste0('precipitation_month_07_10_', as.character(vars[i]), 
+                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+}
+
+j18 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  'Precipitation, 2010', 25)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'cluster_precipitation_july_2010.pdf'),j18, width = 8.5, height =5)
+

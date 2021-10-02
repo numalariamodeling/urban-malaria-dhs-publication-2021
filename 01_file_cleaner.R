@@ -20,6 +20,11 @@ cleandatDir <- file.path(DataIn, 'cleaned_cluster_covariates_all')
 ### Data cleaning  
 ## -----------------------------------------
 
+library(tidyr)
+library(purrr)
+library(dplyr)
+library(stringr)
+
 #DHS data 
 
 files <- list.files(path = file.path(DataIn, 'DHS_survey_extract') , pattern = '.csv', full.names = TRUE, recursive = TRUE)
@@ -87,3 +92,18 @@ write_csv(df_geo[[i]], paste0(cleandatDir, '/New_082321/all_geospatial_variables
 }
 
 
+#2018 data alone 
+files <- list.files(path = file.path(DataIn, 'DHS_survey_extract') , pattern = '.csv', full.names = TRUE, recursive = TRUE)
+files<- files[grep('DHS_18', files)]
+files<- files[-grep('housing', files)]
+df <-sapply(files, read.csv, simplify = F)
+df <- df %>% map_if(~ all(c('X') %in% colnames(.x)),~dplyr::select(., -X)) %>% 
+  map_if(~ all(c('se') %in% colnames(.x)),~dplyr::select(., -se)) %>% 
+  map_if(~ all(c('ci_l') %in% colnames(.x)),~dplyr::select(., -ci_l)) %>% 
+  map_if(~ all(c('ci_u') %in% colnames(.x)),~dplyr::select(., -ci_u)) %>%
+  map_if(~ all(c('mv001') %in% colnames(.x)), ~rename(., v001 = mv001))
+
+df <- df %>%  map(~mutate(., dhs_year = str_split(.id, "_", simplify = T)[, 4]) ) %>%  map(~dplyr::select(., -.id))
+df<- df[order(sapply(df,nrow),decreasing = T)]
+df <- df %>%  purrr::reduce(left_join, by = c('dhs_year', 'v001'))
+write.csv(df, paste0(cleandatDir, '/New_082321/2018_mobility_DHS_variables_urban_malaria.csv'))
