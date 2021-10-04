@@ -518,3 +518,19 @@ for (i in 1:length(vars)) {
 j18 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  'Precipitation, 2010', 25)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'cluster_precipitation_july_2010.pdf'),j18, width = 8.5, height =5)
 
+
+# LGAshp = readOGR(file.path(DataDir, "shapefiles","Nigeria_LGAs_shapefile_191016"), layer ="NGA_LGAs",use_iconv=TRUE, encoding= "UTF-8")
+# LGA_sf = st_as_sf(LGAshp)
+
+
+# df_lagos = dplyr::filter(LGA_sf, (State %in% c('Lagos')))
+# map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 10','11-15', '16 - 20', '21 - 25', '26 - 30', '31 - 40', '41 - 50', '51 - 60', '61 - 70', '71 - 80', '81 - 90', '91 - 100'),
+#                    map_lagos$net_cut, 'net use rate')
+# 
+# map_lag + geom_text_repel(
+#   data = df_lagos,
+#   aes(label = LGA, geometry = geometry),color ='black',
+#   stat = "sf_coordinates",
+#   min.segment.length = 0, size = 3, force = 1)+ #geom_sf_text(aes(label=name_long))+
+#   xlab('')+
+#   ylab('')

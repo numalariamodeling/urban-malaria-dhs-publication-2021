@@ -28,7 +28,7 @@ library(stringr)
 #DHS data 
 
 files <- list.files(path = file.path(DataIn, 'DHS_survey_extract') , pattern = '.csv', full.names = TRUE, recursive = TRUE)
-files<- files[-grep('_0m_|_1000m_|_3000m_|_4000m_|Temp_covereates|DHS_18.csv|pop_density_|p_test_lagos_|pop_density_2000m_buffer_DHS_10_15_18.csv|pop_density_2km_buffer_DHS_10_15_18_30sec|building_density|elevation_|interview_month', files)]
+files<- files[-grep('_0m_|_1000m_|_3000m_|_4000m_|Temp_covereates|DHS_18.csv|pop_density_|p_test_lagos_|pop_density_2000m_buffer_DHS_10_15_18.csv|pop_density_2km_buffer_DHS_10_15_18_30sec|building_density|elevation_|interview_month|p_test_PfPR_urban_state_DHS_10_15_18|edu_a_all_state_DHS_PR_10_15_18', files)]
 df <-sapply(files, read.csv, simplify = F)
 df <- df %>% map_if(~ all(c('X') %in% colnames(.x)),~dplyr::select(., -X)) %>% 
   map_if(~ all(c('se') %in% colnames(.x)),~dplyr::select(., -se)) %>% 
@@ -56,7 +56,7 @@ df_interview_month <- df_interview_month %>% map_if(~ all(c('X') %in% colnames(.
   map_if(~ all(c('hv001') %in% colnames(.x)), ~rename(., v001 = hv001))
 
 df_interview_month <- df_interview_month %>%  map(~mutate(., dhs_year = str_split(.id, "_", simplify = T)[, 4]) ) %>%  map(~dplyr::select(., -.id)) 
-df_im <- df_interview_month[[1]] %>%  group_by(v001) %>%  mutate(first_interview_month= dplyr::first(interview_month)) %>%  dplyr::select(-c(interview_month)) %>%  distinct()
+df_im <- df_interview_month[[1]] %>%  group_by(v001, dhs_year) %>%  mutate(first_interview_month= dplyr::first(interview_month)) %>%  dplyr::select(-c(interview_month)) %>%  distinct()
 
 df <- df %>%  left_join(df_im, by = c('dhs_year', 'v001'))
 write.csv(df, paste0(cleandatDir, '/New_082321/all_DHS_variables_urban_malaria.csv'))

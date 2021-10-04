@@ -25,12 +25,139 @@ source("./other_functions/descriptive_analysis_functions.R")
 
 
 
+
 ## ----------------------------------------------------------------
-### Creating analysis data  
+### Read in computed DHS cluster data and generate related figures  
 ## ----------------------------------------------------------------
 #read in dhs file 
 dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
+dhs$positives_prop = round(dhs$positives/dhs$child_6_59_tested_malaria, 1)
 
+
+#figure 1
+p1 = igv.lm.point(dhs, dhs$num_child_6_59, dhs$child_6_59_tested_malaria,dhs$dhs_year,  "Survey year", 'Number of children 6 - 59 months', 'Number of children 6 - 59 months \n tested for malaria')
+p1= p1 +geom_smooth(method=lm, color = "black")+ theme(legend.position = 'none')
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_1_sample_overview.pdf'), p1, width = 13, height = 9)
+
+
+
+#values used in manuscript texts 
+table(dhs$dhs_year)
+nrow(!is.na(subset(dhs, dhs_year ==2010 & num_child_6_59 >=20)))
+nrow(!is.na(subset(dhs, dhs_year ==2015 & num_child_6_59 >=20)))
+nrow(!is.na(subset(dhs, dhs_year ==2018 & num_child_6_59 >=20)))
+
+#figure 2a
+df_tested = data.frame(values = dhs$child_6_59_tested_malaria, category = 'tested')
+df_positives = data.frame(values = dhs$positives, category = 'positives')
+df_all = rbind(df_tested, df_positives)
+p2 = hist_fun(df_all, df_all$values, df_all$category, 'Number of children 6 - 59 months', 'Count', c("Positive tests", "Tested"))
+
+
+
+#figure 2b
+#examine the number of children tested 
+p3 = igv.lm.point(dhs, dhs$child_6_59_tested_malaria, dhs$positives, dhs$dhs_year, 'Survey year', 'Number of children 6 - 59 months \n tested for malaria', 'Number of positive tests' )
+p3_ = p3 + geom_abline(slope=1, intercept=c(0,0), size = 0.9) +geom_smooth(method=lm, color = "black")
+
+
+
+#figure 2c
+#load spatial points
+sf18 = st_read(file.path(DHSData, "Downloads", "NG_2018_DHS_11072019_1720_86355/NGGE7BFL/NGGE7BFL.shp"),) 
+sf15 = st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NGGE71FL.shp"),) 
+sf10 = st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),) 
+sf_all = rbind(sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  rename(v001 = DHSCLUST)
+
+
+#data wrangling
+dhs_ = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year, net_use, net_use_child, positives_prop)
+map = sf_all %>% left_join(dhs_, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
+map$positives_cut = cut(map$positives_prop, breaks=c(0,0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
+df_count = map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
+map$net_cut = cut(map$net_use, breaks=c(0,10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100), include.lowest = TRUE)
+
+stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
+state_sf = st_as_sf(stateshp)
+
+
+#big map 
+map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Count[[1]], ')'), 
+                                           paste0('0.3 - 0.4',  ' (', df_count$Count[[2]], ')'), paste0('0.5 - 0.6',  ' (', df_count$Count[[3]], ')'), 
+                                           paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
+                                           'Missing data'),
+                   map$positives_cut, 'Test positivity rate (overall count)')
+
+
+#Lagos 
+df_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
+map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
+map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                   map_lagos$positives_cut, 'Test positivity rate')
+map_lag = map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
+
+
+
+
+#Anambra 
+df_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))
+map_anambra = dplyr::filter(map, (ADM1NAME %in% c('ANAMBRA')))
+map_anam = gmap_fun(df_anambra, map_anambra, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                    map_anambra$positives_cut, 'Test positivity rate')
+map_anam = map_anam + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Anambra')
+
+
+#rivers 
+df_rivers = dplyr::filter(state_sf, (NAME_1 %in% c('Rivers')))
+map_rivers = dplyr::filter(map, (ADM1NAME %in% c('RIVERS')))
+map_riv = gmap_fun(df_rivers, map_rivers, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                   map_rivers$positives_cut, 'Test positivity rate')
+map_riv = map_riv + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Rivers')
+
+
+patch1 = ((map_lag /(map_anam + map_riv))| map_big)+ plot_layout(ncol = 2)
+patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positivity_viz.pdf'), patch2, width = 13, height = 9)
+
+
+map_low_values = map %>% na.omit(positives) %>%  filter(positives_prop == 0) %>%  group_by(ADM1NAME) %>%  summarise(n())
+map_low = map_low_values %>%  filter(`n()` >15)
+cluster = map %>% na.omit(positives)
+
+
+
+#figure 3
+#trends by DHS year 
+trend_data= dhs
+
+trend_data$month_year = paste0(trend_data$first_interview_month, "_", trend_data$dhs_year)
+table(trend_data$month_year)
+
+trend_data_10 = trend_data[trend_data$first_interview_month ==10,]
+p_all_10 = gdensity_fun(trend_data_10, trend_data_10$positives_prop, trend_data_10$dhs_year, "Survey year", 
+                        'Test positivity rate for clusters sampled in october', 'Density')
+
+trend_data_11 = trend_data[trend_data$first_interview_month ==11,]
+p_all_11 = gdensity_fun(trend_data_11, trend_data_11$positives_prop, trend_data_11$dhs_year, "Survey year", 
+                        'Test positivity rate for clusters sampled in November', 'Density')
+
+
+trend_data_12 = trend_data[trend_data$first_interview_month ==12,]
+p_all_12 = gdensity_fun(trend_data_12, trend_data_12$positives_prop, trend_data_12$dhs_year, "Survey year", 
+                        'Test positivity rate for clusters sampled in November', 'Density')
+
+all_plots = p_all_10 / p_all_11 / p_all_12 +  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3_malaria_tests_positivity_trends.pdf'), all_plots, width = 13, height = 9)
+data = data.frame(pos =trend_data_12[trend_data_12$dhs_year == 2010,'positives_prop'])
+data_ = data %>%  filter(pos == 0)
+
+
+
+
+
+## ----------------------------------------------------------------
+### Creating analysis data  
+## ----------------------------------------------------------------
 #read in geospatial dataset and create final data 
 files = list.files(path = CsvDir, pattern = '.csv', full.names = TRUE, recursive = FALSE)
 files = files[-grep('all_DHS_variables_urban|2018_mobility_DHS_variables_urban_malaria', files)]
@@ -837,143 +964,6 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variab
 
 
 
-
-## ----------------------------------------------------------------
-### Read in computed DHS cluster data and generate related figures - will bring this up later during code cleaning   
-## ----------------------------------------------------------------
-dhs$positives_prop = round(dhs$positives/dhs$child_6_59_tested_malaria, 1)
-summary(dhs$positives_prop)
-
-#figure 1
-p1 = igv.lm.point(dhs$num_child_6_59, dhs$child_6_59_tested_malaria,dhs$dhs_year,  "Survey year", 'Number of children 6 - 59 months', 'Number of children 6 - 59 months \n tested for malaria')
-p1= p1 +geom_smooth(method=lm, color = "black")+ theme(legend.position = 'none')
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_1_sample_overview.pdf'), p1, width = 13, height = 9)
-
-
-
-#values used in manuscript texts 
-table(dhs$dhs_year)
-nrow(!is.na(subset(dhs, dhs_year ==2010 & num_child_6_59 >=20)))
-nrow(!is.na(subset(dhs, dhs_year ==2015 & num_child_6_59 >=20)))
-nrow(!is.na(subset(dhs, dhs_year ==2018 & num_child_6_59 >=20)))
-
-#figure 2a
-df_tested = data.frame(values = dhs$child_6_59_tested_malaria, category = 'tested')
-df_positives = data.frame(values = dhs$positives, category = 'positives')
-df_all = rbind(df_tested, df_positives)
-p2 = hist_fun(df_all, df_all$values, df_all$category, 'Number of children 6 - 59 months', 'Count', c("Positive tests", "Tested"))
-
-
-
-#figure 2b
-#examine the number of children tested 
-p3 = igv.lm.point(dhs$child_6_59_tested_malaria, dhs$positives, dhs$dhs_year, 'Survey year', 'Number of children 6 - 59 months \n tested for malaria', 'Number of positive tests' )
-p3_ = p3 + geom_abline(slope=1, intercept=c(0,0), size = 0.9) +geom_smooth(method=lm, color = "black")
-
-
-
-#figure 2c
-#load spatial points
-sf18 = st_read(file.path(DHSData, "Downloads", "NG_2018_DHS_11072019_1720_86355/NGGE7BFL/NGGE7BFL.shp"),) 
-sf15 = st_read(file.path(DHSData, "Downloads", "NG_2015_MIS_06192019/NGGE71FL/NGGE71FL.shp"),) 
-sf10 = st_read(file.path(DHSData, "Downloads", "NG_2010_MIS_06192019/NGGE61FL/NGGE61FL.shp"),) 
-sf_all = rbind(sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  rename(v001 = DHSCLUST)
-
-
-#data wrangling
-dhs = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year, net_use, net_use_child)
-map = sf_all %>% left_join(dhs, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
-map$positives_prop = round(map$positives/map$child_6_59_tested_malaria, 1)
-map$positives_cut = cut(map$positives_prop, breaks=c(0,0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
-df_count = map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
-map$net_cut = cut(map$net_use, breaks=c(0,10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100), include.lowest = TRUE)
-
-stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
-state_sf = st_as_sf(stateshp)
-
-# LGAshp = readOGR(file.path(DataDir, "shapefiles","Nigeria_LGAs_shapefile_191016"), layer ="NGA_LGAs",use_iconv=TRUE, encoding= "UTF-8")
-# LGA_sf = st_as_sf(LGAshp)
-
-#big map 
-map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Count[[1]], ')'), 
-                                           paste0('0.3 - 0.4',  ' (', df_count$Count[[2]], ')'), paste0('0.5 - 0.6',  ' (', df_count$Count[[3]], ')'), 
-                                           paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
-                                           'Missing data'),
-                   map$positives_cut, 'Test positivity rate (overall count)')
-
-
-#Lagos 
-df_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
-map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
-map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                   map_lagos$positives_cut, 'Test positivity rate')
-map_lag = map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
-
-
-# df_lagos = dplyr::filter(LGA_sf, (State %in% c('Lagos')))
-# map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 10','11-15', '16 - 20', '21 - 25', '26 - 30', '31 - 40', '41 - 50', '51 - 60', '61 - 70', '71 - 80', '81 - 90', '91 - 100'),
-#                    map_lagos$net_cut, 'net use rate')
-# 
-# map_lag + geom_text_repel(
-#   data = df_lagos,
-#   aes(label = LGA, geometry = geometry),color ='black',
-#   stat = "sf_coordinates",
-#   min.segment.length = 0, size = 3, force = 1)+ #geom_sf_text(aes(label=name_long))+
-#   xlab('')+
-#   ylab('')
-
-#Anambra 
-df_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))
-map_anambra = dplyr::filter(map, (ADM1NAME %in% c('ANAMBRA')))
-map_anam = gmap_fun(df_anambra, map_anambra, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                    map_anambra$positives_cut, 'Test positivity rate')
-map_anam = map_anam + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Anambra')
-
-
-#rivers 
-df_rivers = dplyr::filter(state_sf, (NAME_1 %in% c('Rivers')))
-map_rivers = dplyr::filter(map, (ADM1NAME %in% c('RIVERS')))
-map_riv = gmap_fun(df_rivers, map_rivers, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                   map_rivers$positives_cut, 'Test positivity rate')
-map_riv = map_riv + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Rivers')
-
-
-patch1 = ((map_lag /(map_anam + map_riv))| map_big)+ plot_layout(ncol = 2)
-patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positivity_viz.pdf'), patch2, width = 13, height = 9)
-
-
-map_low_values = map %>% na.omit(positives) %>%  filter(positives_prop == 0) %>%  group_by(ADM1NAME) %>%  summarise(n())
-map_low = map_low_values %>%  filter(`n()` >15)
-cluster = map %>% na.omit(positives)
-
-
-
-#figure 3
-#trends by DHS year 
-trend_data= dhs %>%  mutate(positives_prop = positives/child_6_59_tested_malaria)
-table(trend_data$first_interview_month)
-
-trend_data$month_year = paste0(trend_data$first_interview_month, "_", trend_data$dhs_year)
-table(trend_data$month_year)
-
-trend_data_10 = trend_data[trend_data$first_interview_month ==10,]
-p_all_10 = gdensity_fun(trend_data_10, trend_data_10$positives_prop, trend_data_10$dhs_year, "Survey year", 
-                        'Test positivity rate for clusters sampled in october', 'Density')
-
-trend_data_11 = trend_data[trend_data$first_interview_month ==11,]
-p_all_11 = gdensity_fun(trend_data_11, trend_data_11$positives_prop, trend_data_11$dhs_year, "Survey year", 
-                        'Test positivity rate for clusters sampled in November', 'Density')
-
-
-trend_data_12 = trend_data[trend_data$first_interview_month ==12,]
-p_all_12 = gdensity_fun(trend_data_12, trend_data_12$positives_prop, trend_data_12$dhs_year, "Survey year", 
-                        'Test positivity rate for clusters sampled in November', 'Density')
-
-all_plots = p_all_10 / p_all_11 / p_all_12 +  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3_malaria_tests_positivity_trends.pdf'), all_plots, width = 13, height = 9)
-data = data.frame(pos =trend_data_12[trend_data_12$dhs_year == 2010,'positives_prop'])
-data_ = data %>%  filter(pos == 0)
 
 
 

@@ -64,7 +64,7 @@ theme_corr <- function(){
         axis.text.y = element_text(size = 12, color = "black"))
 }
 
-igv.lm.point <- function(x, y, point_val, legend_title, xlab, ylab){
+igv.lm.point <- function(df, x, y, point_val, legend_title, xlab, ylab){
   plot <- ggplot(df, aes(x=x, y=y)) +
     geom_point(aes(fill=as.factor(point_val)), alpha=0.7, shape=21, size = 10) + 
     scale_fill_igv()+
