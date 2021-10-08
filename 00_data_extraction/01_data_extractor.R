@@ -52,6 +52,7 @@ dhs<- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
                             id=hv021, num_p=1,
                             edu_a = ifelse(hv106 %in% c(0, 1, 2), 0,ifelse(hv106 >= 8, NA, ifelse(hv106 == 2|3, 1, NA))),
                             age = ifelse(hv105 >= 98, NA, hv105),
+                            age_cat = ifelse(age <18, 1, 0),
                             median_age = age,
                             mean_age =age,
                             household_size = hv013,
@@ -72,8 +73,18 @@ dhs[[3]]$preg_women <- ifelse(dhs[[3]]$ha54 >= 8, NA, ifelse(dhs[[3]]$ha54 == 1,
 
 
 
+
+#
+## -----------------------------------------------
+### preliminary estimation with PfPR and DHS data 
+## -----------------------------------------------
+
 # create PR dataset by filtering for microscopy (denominator -hh selected for hemoglobin, child slept there last night and have result for test and urban area(hv025). PR is for children 6 - 59 months)
 pfpr_df <- dhs %>% map(~filter(., hv042 == 1 & hv103 == 1 & hc1 %in% c(6:59))) #& hml16 <59 & hml32 %in% c(0, 1,6)
+
+#compute number of household members per cluster 
+df_num <- dhs %>% map(~dplyr::select(., hv001, hv009)) %>%  map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,num_HH = sum(hv009))) %>% 
+  plyr::ldply() 
 
 #compute number of children 6 - 59 per cluster 
 df_num <- pfpr_df %>% map(~dplyr::select(., hv001, hc1)) %>%  map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,num_child_6_59 = n())) %>% 
@@ -85,8 +96,6 @@ write.csv(df_num, paste0(DataIn, "/num_children_6_59_months.csv"), row.names = F
 # create PR dataset by filtering for microscopy (denominator -hh selected for hemoglobin, child slept there last night and have result for test and urban area(hv025). PR is for children 6 - 59 months)
 pfpr_df <- dhs %>% map(~filter(., hv042 == 1 & hv103 == 1 & hc1 %in% c(6:59) & hml32 %in% c(0, 1,6))) #& hml16 <59 & hml32 %in% c(0, 1,6)
 
-
-
 #compute number of children tested for microscopy per cluster 
 df_test <- pfpr_df %>% map(~dplyr::select(., hv001, hml32)) %>%  map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,child_6_59_tested_malaria = n())) %>% 
   plyr::ldply() 
@@ -96,6 +105,11 @@ write.csv(df_test, paste0(DataIn, "/tested_malaria_children_6_59_months.csv"), r
 visitors_num <- dhs %>% map(~dplyr::select(., hv001, visitors)) %>%  map(~filter(., visitors == 0)) %>% map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,visitors = n())) %>% 
   plyr::ldply() 
 write.csv(visitors_num, paste0(DataIn, "/num_visitors_DHS_10_15_18.csv"), row.names = FALSE)
+
+
+
+
+
 
 ## -----------------------------------------
 ### estimation using all PR files 
@@ -119,15 +133,15 @@ write.csv(fin_df, paste0(DataIn, "/positive_microscopy_test_6_59_months.csv"))
 
 vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women')
 
-vars<- c('edu_a')
+vars<- c('age_cat')
 for (i in 1:length(vars)) {
-  col <- list(vars[i])
+  col <- list(vars[1])
   by <- list('hv001')
   df <- dhs %>% 
-    map(~drop_na(.,vars[i]))
+    map(~drop_na(.,vars[1]))
   df <- pmap(list(df,col,by), estim_prop)
   df <- plyr::ldply(df)
-  df[, vars[i]]<- df[, vars[i]]*100
+  df[, vars[1]]<- df[, vars[1]]*100
   write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
   
 }

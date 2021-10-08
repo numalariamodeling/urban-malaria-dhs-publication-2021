@@ -73,7 +73,7 @@ sf_all = rbind(sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  rename(v001 =
 #data wrangling
 dhs_ = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year, net_use, net_use_child, positives_prop)
 map = sf_all %>% left_join(dhs_, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
-map$positives_cut = cut(map$positives_prop, breaks=c(0,0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
+map$positives_cut = cut(map$positives_prop, breaks=c(0, 0.2, 0.3, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
 df_count = map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
 map$net_cut = cut(map$net_use, breaks=c(0,10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100), include.lowest = TRUE)
 
@@ -135,7 +135,7 @@ table(trend_data$month_year)
 
 trend_data_10 = trend_data[trend_data$first_interview_month ==10,]
 p_all_10 = gdensity_fun(trend_data_10, trend_data_10$positives_prop, trend_data_10$dhs_year, "Survey year", 
-                        'Test positivity rate for clusters sampled in october', 'Density')
+                        'Test positivity rate for clusters sampled in October', 'Density')
 
 trend_data_11 = trend_data[trend_data$first_interview_month ==11,]
 p_all_11 = gdensity_fun(trend_data_11, trend_data_11$positives_prop, trend_data_11$dhs_year, "Survey year", 
@@ -144,11 +144,11 @@ p_all_11 = gdensity_fun(trend_data_11, trend_data_11$positives_prop, trend_data_
 
 trend_data_12 = trend_data[trend_data$first_interview_month ==12,]
 p_all_12 = gdensity_fun(trend_data_12, trend_data_12$positives_prop, trend_data_12$dhs_year, "Survey year", 
-                        'Test positivity rate for clusters sampled in November', 'Density')
+                        'Test positivity rate for clusters sampled in December', 'Density')
 
 all_plots = p_all_10 / p_all_11 / p_all_12 +  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3_malaria_tests_positivity_trends.pdf'), all_plots, width = 13, height = 9)
-data = data.frame(pos =trend_data_12[trend_data_12$dhs_year == 2010,'positives_prop'])
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3_malaria_tests_positivity_trends.pdf'), all_plots, width = 7, height = 6)
+data = data.frame(pos =trend_data_12[trend_data_12$dhs_year == 2018,'positives_prop'])
 data_ = data %>%  filter(pos == 0)
 
 
@@ -197,6 +197,7 @@ df_sp = data.frame(v001 = df_geo[[1]]$v001, dhs_year = df_geo[[1]]$dhs_year, ele
 
 
 df_all <- left_join(dhs, df_sp, by =c('v001', 'dhs_year'))
+write.csv(df_all, file=file.path(CsvDir, 'final_dataset_multivariate_analysis', 'multivariate_analysis_dataset.csv'))
 
 #define variables to be used throughout analysis
 positives = df_all$positives 
@@ -212,7 +213,7 @@ edu_cat = cut(df_all$edu_a, breaks = c(0, 5, 10, 15, 100), include.lowest =TRUE)
 ### Socio-economic variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
 ## -----------------------------------------------------------------------------------------------------------------------
 
-#variable distribition and cumulative distribution 
+#variable distribution and cumulative distribution 
 dhs_social = data.frame(`Educational attainment` = df_all$edu_a, Wealth = df_all$wealth, `Improved flooring` =df_all$floor_type,
                         `Improved roofing materials` = df_all$roof_type, `Improved wall` = df_all$wall_type, `improved housing in 2000` =df_all$housing_2000_4000m,
                         `improved housing in 2015` = df_all$housing_2015_4000m) %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
@@ -262,6 +263,7 @@ p.mat = cor_pmat(dhs_social_ordered)
 
 corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
+corr
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_social.pdf'), corr, width = 13, height = 9)
 
 
@@ -352,7 +354,7 @@ p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_variable_distribution.pdf'), p, width = 14, height =9)
 
 #maps for categorical variable 
-clu_num_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
+clu_name_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
   mutate(NAME_1 = str_to_title(shstate), NAME_1 = ifelse(NAME_1 == 'Fct-Abuja', 'Federal Capital Territory',
                                                          ifelse(NAME_1 == 'Nasarawa', 'Nassarawa', NAME_1)))
 
@@ -360,14 +362,15 @@ clu_num_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
 stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
 state_sf = st_as_sf(stateshp)
 
-
+#map by state
 state_map = left_join(state_sf, clu_name_state, by =c('NAME_1'))
-state_map$nun_cut = cut(state_map$n, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80), include.lowest = TRUE)
+state_map$nun_cut = cut(state_map$n, breaks = c(0, 10, 21, 32, 43, 54, 76), include.lowest = TRUE)
 map=ggplot(state_map) +
   geom_sf(aes(fill = nun_cut))+ 
-  brightness(viridis::scale_fill_viridis(option="E", discrete =TRUE, labels = c('0 - 10', '11 - 20', '21 - 30', '31 - 40', '41 - 50', '51 - 60', '61 - 70', '71 - 80' )), 0.8)+
+  brightness(viridis::scale_fill_viridis(option="E", discrete =TRUE, labels = c('0 - 10', '11 - 21', '22 - 32', '33 - 43', '44 - 54', '55 - 76')), 0.8)+
   map_theme()+
   guides(fill = guide_legend(title= 'Number of clusters sampled per state', override.aes = list(size = 5)))
+map
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_state.pdf'), map, width = 14, height =9)
 
 
@@ -383,6 +386,7 @@ map=ggplot(geo_map) +
   brightness(viridis::scale_fill_viridis(option="E", discrete = TRUE), 0.8)+
   map_theme()+
   guides(fill = guide_legend(title= 'Number of clusters sampled per geopolitical region', override.aes = list(size = 5)))
+map
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_GPZ.pdf'), map, width = 14, height =9)
 
 
@@ -408,21 +412,21 @@ p.mat = cor_pmat(demo_numeric_reverse)
 
 corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
+corr
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_demo.pdf'), corr, width = 8, height = 5)
 
 
 
 #relationship with malaria positives
 dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
-is.na(dhs_demo_plot['Population.density'])<- dhs_demo_plot['Population.density'] > 3000
-is.na(dhs_demo_plot['U5.population.density'])<- dhs_demo_plot['U5.population.density'] > 10
-is.na(dhs_demo_plot['Median.age'])<- dhs_demo_plot['Median.age'] > 30
-is.na(dhs_demo_plot['Pregnant.women'])<- dhs_demo_plot['Pregnant.women'] > 30
+is.na(dhs_demo_plot['Population density'])<- dhs_demo_plot['Population density'] > 3000
+is.na(dhs_demo_plot['Population density,\n children 5 years and under'])<- dhs_demo_plot['Population density,\n children 5 years and under'] > 10
+is.na(dhs_demo_plot['Median age'])<- dhs_demo_plot['Median age'] > 30
+is.na(dhs_demo_plot['% of pregnant women'])<- dhs_demo_plot['% of pregnant women'] > 30
 dhs_demo_plot$rate = (dhs_demo_plot$positives/dhs_demo_plot$num_tested) 
 dhs_demo_plot = dhs_demo_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
-df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
-                       df_list$Pregnant.women, df_list$Female.population, df_list$Household.size, df_list$Median.age)
+df_list_ordered = list(df_list$`Population density`,df_list[[6]],df_list$`% of pregnant women`, df_list$`% of females`, df_list$`Median household size`, df_list$`Median age`)
 
 
 
@@ -444,12 +448,31 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_chopp
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_chopped_bondary.pdf'), p, width = 8.5, height =4.5)
 
 
+#malaria rate chopped boundary 
+plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
+                                            geom_point(shape=42, size= 3, color = "dodgerblue3", alpha = 0.5) +
+                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
+                                            theme_manuscript()+
+                                            labs(x = .y, y ='malaria positivity rate')+
+                                            guides(fill =FALSE, color =FALSE))}
+
+
+
+p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
+  theme(plot.tag = element_text(size = 12, face = 'bold'))
+p
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_bivariate_chopped_boundary.pdf'), p, width = 8.5, height =4.5)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_bivariate_chopped_boundary.png'), p, width = 8.5, height =4.5)
+
+
+#unadjusted positives full boundary 
 dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
 dhs_demo_plot$rate = (dhs_demo_plot$positives/dhs_demo_plot$num_tested) 
 dhs_demo_plot = dhs_demo_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
-df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
-                       df_list$Pregnant.women, df_list$Female.population, df_list$Household.size, df_list$Median.age)
+df_list_ordered = list(df_list$`Population density`,df_list[[6]],
+                       df_list$`% of pregnant women`, df_list$`% of females`, df_list$`Median household size`, df_list$`Median age`)
 
 
 
@@ -469,39 +492,6 @@ p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_
 p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_expanded_boundary.pdf'), p, width = 8.5, height =4.5)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_expanded_boundary.png'), p, width = 8.5, height =4.5)
-
-
-
-dhs_demo_plot = cbind(demo_numeric, dhs_year, positives, num_tested) 
-is.na(dhs_demo_plot['Population.density'])<- dhs_demo_plot['Population.density'] > 3000
-is.na(dhs_demo_plot['U5.population.density'])<- dhs_demo_plot['U5.population.density'] > 10
-is.na(dhs_demo_plot['Median.age'])<- dhs_demo_plot['Median.age'] > 30
-is.na(dhs_demo_plot['Pregnant.women'])<- dhs_demo_plot['Pregnant.women'] > 30
-dhs_demo_plot$rate = (dhs_demo_plot$positives/dhs_demo_plot$num_tested) 
-dhs_demo_plot = dhs_demo_plot  %>%  pivot_longer(!c(dhs_year, positives, num_tested, rate),names_to='x_label', values_to='values')
-df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
-df_list_ordered = list(df_list$Population.density,df_list$U5.population.density,
-                       df_list$Pregnant.women, df_list$Female.population, df_list$Household.size, df_list$Median.age)
-
-
-#rate chopped boundary 
-plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rate))+
-                                            geom_point(shape=42, size= 3, color = "dodgerblue3", alpha = 0.5) +
-                                            geom_smooth(aes(fill = "Trend"), se = FALSE, color = "darkred", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
-                                            geom_smooth(aes(color = "Confidence Interval"), fill = "darksalmon", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3))+
-                                            theme_manuscript()+
-                                            labs(x = .y, y ='malaria positivity rate')+
-                                            guides(fill =FALSE, color =FALSE))}
-
-
-
-p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
-  theme(plot.tag = element_text(size = 12, face = 'bold'))
-p
-
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_bivariate_chopped_boundary.pdf'), p, width = 8.5, height =4.5)
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_rate_bivariate_chopped_boundary.png'), p, width = 8.5, height =4.5)
-
 
 
 #relationship with demo categorical variables 
@@ -715,7 +705,7 @@ p=ggplot(df_access, aes(x=motor_travel_healthcare))+
     scale_y_continuous(name= 'Count', sec.axis=sec_axis(trans = ~./max_y, name = 'Cumulative percent', labels = function(x) format(x *100, digits=2, nsmall=0)))+
     theme_manuscript()+theme(legend.position = 'none')+
     xlab(expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))))
-  
+p
 
 dhs_access_plot = cbind(df_access, region, positives, num_tested) 
 dhs_access_plot$rate = (dhs_access_plot$positives/dhs_access_plot$num_tested) 
@@ -736,7 +726,7 @@ plots = df_list %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives)
 
 
 p_all=p +plots[[1]]
-
+p_all
 
 
 #chopped off boundaries 
@@ -844,7 +834,7 @@ df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surfac
 x=list('values')
 fill = list('dodgerblue3')
 color = list('dodgerblue3')
-xlab=list(expression(atop('Precipitation', paste('(meters depth)'))), expression(atop('Temperature', paste('(°C)'))),expression(atop('Surface soil', paste('moisture (GSM)'))),expression(atop('Distance to water', paste('bodies (meters)'))), expression(atop('Elevation', paste('(meters)'))),
+xlab=list(expression(atop('Total precipitation', paste('(meters depth)'))), expression(atop('Temperature', paste('(°C)'))),expression(atop('Surface soil', paste('moisture (GSM)'))),expression(atop('Distance to water', paste('bodies (meters)'))), expression(atop('Elevation', paste('(meters)'))),
           expression(atop('Enhanced Vegetation',  paste('Index'))))
 bins = list(25)
 
@@ -859,16 +849,16 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variab
 
 files <- list.files(path = file.path(GeoDir) , pattern = "month_07", full.names = TRUE, recursive = TRUE)
 files<-sapply(files, read.csv, simplify = F)
-preci_2010 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Precipitation, July 2010', paste('meters depth'))), 25)
-preci_2015 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Precipitation, July 2015', paste('meters depth'))), 25)
-preci_2018 = cdf_hist(df, 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Precipitation, July 2018', paste('meters depth'))), 25)
+preci_2010 = cdf_hist(files[[1]], 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Total precipitation, July 2010', paste('(meters depth)'))), 25)
+preci_2015 = cdf_hist(files[[2]], 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Total precipitation, July 2015', paste('(meters depth)'))), 25)
+preci_2018 = cdf_hist(files[[3]], 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Total precipitation, July 2018', paste('(meters depth)'))), 25)
 all_precip = preci_2010 + preci_2015 + preci_2018
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_precipitation_july_all_DHS.pdf'), all_precip, width = 8.5, height =3)
 
 
 
 #correlation 
-colnames(df_behave)= c('Precipitation',
+colnames(df_behave)= c('Total precipitation',
                        'Temperature','Surface soil moisture',
                        'Distance to water bodies', 'Elevation', "Enhanced Vegetation Index")
 df_env_reverse=df_env[,order(ncol(df_env):1)]
@@ -888,6 +878,7 @@ p.mat = cor_pmat(df_env_reverse)
 
 corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+ 
   theme_corr()
+corr
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_environmental.pdf'), corr, width = 8.5, height = 4.5)
 
 
