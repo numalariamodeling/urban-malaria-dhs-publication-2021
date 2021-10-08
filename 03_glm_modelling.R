@@ -52,7 +52,7 @@ map$wall_type
 ## -----------------------------------------
 
 #SES models with zero-inflation
-map2 = map %>% dplyr::select(positives, edu_a, wealth, housing_2015_4000m, roof_type,child_6_59_tested_malaria, lat, lon) %>%  na.omit()
+map2 = map %>% dplyr::select(positives, edu_a, wealth, housing_2015_4000m, roof_type,child_6_59_tested_malaria, lat, lon, first_interview_month, dhs_year) %>%  na.omit()
 m1 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3) + ns(housing_2015_4000m)+ ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
                 offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
 summary(m1)# AIC - 2049.4
@@ -80,4 +80,13 @@ summary(m3)# 1940.3
 
 m4 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+
                 offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID), data=map2,  ziformula=~1,family=poisson)
-summary(m4)# 1940.3
+summary(m4)# 1946.4
+
+#account for temporal effect 
+map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+levels(map2$month_year)
+map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+
+m5 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+
+                offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m5)#1923.7
