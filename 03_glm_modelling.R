@@ -138,16 +138,42 @@ m6 <- glmmTMB(positives~ns(pop_density_0m, 3) +
 summary(m6)# AIC - 2119.9
 
 m7 <- glmmTMB(positives~ns(pop_density_0m, 3) + 
-                + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) + + mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+                + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
 summary(m7)# AIC - 1982.1 
 
 m8 <- glmmTMB(positives~ns(pop_density_0m, 2) + 
-                + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) + + mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+                + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
 summary(m8)# AIC - 1980.1
 
 
 
 #behavioral factors 
-m1 <- glmmTMB(positives~ns(net_use, 3) + 
+m1 <- glmmTMB(positives~ns(net_use, 3) + ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                ns(ACT_use_U5)+
                  + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m1)# AIC - 
+summary(m1)# AIC - 1873.4
+
+
+m2 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3]) + 
+              ns(ACT_use_U5)+
+                + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
+summary(m2)# AIC - 1874.8 
+
+
+m3 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])
+                + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
+summary(m3)# AIC - 1875.2 
+
+
+m4 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m4)# AIC - 1757.4 
+
+
+m5 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                ns(ACT_use_U5)+
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m5)# AIC - 1756.4 
+
+
+#accessibility 
