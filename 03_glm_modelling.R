@@ -53,8 +53,6 @@ Moran.I(map$positives, response.dists.inv, na.rm = TRUE)# p=7.34987e-07, spatial
 
 #SES models with zero-inflation
 map2 = map %>% dplyr::select(positives, edu_a, wealth, housing_2015_4000m, roof_type,child_6_59_tested_malaria,
-                             pop_density_0m,pop_den_U5_FB_4000m,preg_women,all_female_sex,median_age,household_size,
-                             net_use, net_use_child, med_treat_fever, ACT_use_U5,
                              lat, lon, first_interview_month, dhs_year) %>%  na.omit()
 map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
 map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
@@ -66,7 +64,7 @@ map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be u
 #models 
 m1 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3) + ns(housing_2015_4000m)+ ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
                 offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m1)# AIC - 2049.4
+summary(m1)# AIC - 2049.5
 
 
 m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wall_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3]) + ns(housing_2015_4000m)+ ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
@@ -109,45 +107,63 @@ summary(m7)# did not run
 
 
 #demographic factors 
+map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,
+                             pop_density_0m,pop_den_U5_FB_4000m,preg_women,all_female_sex,median_age,household_size,
+                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+levels(map2$month_year)
+map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+
 m1 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_4000m, 3) + ns(preg_women, 3)+ ns(all_female_sex, 3)+ 
                 + ns(median_age, 3) + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m1)# AIC - 2124.5 
+summary(m1)# AIC -  2164.1
 
 
 m2 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_4000m, 3) + ns(all_female_sex, 3)+ 
                 + ns(median_age, 3) + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m2)# AIC - 2122.9
+summary(m2)# AIC -  2161.7 
 
 
 m3 <- glmmTMB(positives~ns(pop_density_0m, 3) + ns(all_female_sex, 3)+ 
                 + ns(median_age, 3) + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m3)# AIC - 2124.0
+summary(m3)# AIC - 2162.7
 
 
 m4 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_4000m, 3) + ns(all_female_sex, 3)+ 
                + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m4)# AIC -  2123.7 
+summary(m4)# AIC -   2163.7
 
 
 m5 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_4000m, 3) + 
                 + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m5)# AIC - 2120.4
+summary(m5)# AIC - 2159.9
 
 m6 <- glmmTMB(positives~ns(pop_density_0m, 3) + 
                 + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m6)# AIC - 2119.9
+summary(m6)# AIC -   2159.4
 
 m7 <- glmmTMB(positives~ns(pop_density_0m, 3) + 
                 + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
-summary(m7)# AIC - 1982.1 
+summary(m7)# AIC - 2072.7
 
 m8 <- glmmTMB(positives~ns(pop_density_0m, 2) + 
                 + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
-summary(m8)# AIC - 1980.1
+summary(m8)# AIC - 2015.1 
 
 
 
 #behavioral factors 
+map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,
+                             net_use, net_use_child, med_treat_fever, ACT_use_U5,
+                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+levels(map2$month_year)
+map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+
 m1 <- glmmTMB(positives~ns(net_use, 3) + ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
                 ns(ACT_use_U5)+
                  + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
@@ -167,13 +183,167 @@ summary(m3)# AIC - 1875.2
 
 m4 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])
               + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
-summary(m4)# AIC - 1757.4 
+summary(m4)# AIC - 1844.7 
 
 
 m5 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
                 ns(ACT_use_U5)+
               + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
-summary(m5)# AIC - 1756.4 
+summary(m5)# AIC - 1845.2
+
+
 
 
 #accessibility 
+map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,motorized_travel_healthcare_2019_2000m,
+                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+levels(map2$month_year)
+map2$ID2 <- factor(rep(1, nrow(map2)))# 
+
+
+m1 <- glmmTMB(positives~ ns(motorized_travel_healthcare_2019_2000m, 3)+
+                + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
+summary(m1)# AIC - 2215.5
+
+
+
+
+#environmental variables 
+map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,precipitation_monthly_0m,
+                             temperature_monthly_0m, soil_wetness_0m, dist_water_bodies_0m, 
+                             elevation_1000m, EVI_0m,
+                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+levels(map2$month_year)
+map2$ID2 <- factor(rep(1, nrow(map2)))# 
+
+
+m1 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3) + ns(temperature_monthly_0m, 3)+ ns(soil_wetness_0m, 3) +
+                ns(dist_water_bodies_0m, 3) + ns(elevation_1000m, 3) + ns(EVI_0m, 3)
+                + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
+summary(m1) #2155.2
+
+
+m2 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3) + ns(temperature_monthly_0m, 3)+ ns(soil_wetness_0m, 3) +
+                + ns(elevation_1000m, 3) + ns(EVI_0m, 3)
+              + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
+summary(m2) #2152.3
+
+
+
+m3 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3) + ns(soil_wetness_0m, 3) +
+                + ns(elevation_1000m, 3) + ns(EVI_0m, 3)
+              + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
+summary(m3) #2153.8
+
+
+m4 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3) + ns(temperature_monthly_0m, 3)+ ns(soil_wetness_0m, 3) +
+                + ns(elevation_1000m, 3) + ns(EVI_0m, 3)
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m4) #2063.3
+
+
+m5 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3) + ns(temperature_monthly_0m, 3) +
+                + ns(elevation_1000m, 3) + ns(EVI_0m, 3)
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m5) #2059.5
+
+
+
+m6 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3) + ns(temperature_monthly_0m, 3)  + ns(EVI_0m, 3)
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m6) #2057.7
+
+
+m7 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3)   + ns(EVI_0m, 3)
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m7) # 2054.2
+
+
+
+# all models 
+#SES
+m5 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+
+                offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m5)#AIC - 1923.7
+
+#demo
+m8 <- glmmTMB(positives~ns(pop_density_0m, 2) + 
+                + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m8)# AIC - 2015.1 
+
+
+#behavioral
+m4 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m4)# AIC - 1844.7 
+
+
+
+#environmental 
+m7 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3)   + ns(EVI_0m, 3)
+              + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m7) # 2054.2
+
+
+#all 
+map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,edu_a, wealth,pop_density_0m,median_age, med_treat_fever,
+                             precipitation_monthly_0m,
+                             EVI_0m,
+                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+levels(map2$month_year)
+map2$ID2 <- factor(rep(1, nrow(map2)))# 
+
+m1 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+ 
+                ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3)+
+              + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
+summary(m1) #1822.4 
+
+
+m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+ 
+                ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3)+
+                + offset(log(child_6_59_tested_malaria)) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m2) #1737.2
+saveRDS(m2, file=file.path(MultivarData, 'multivariate_model.rds'))
+
+#m2_simres <- simulateResiduals(m2)
+# plot(m2_simres)
+# summary(residuals(m2_simres))
+# 
+# 
+# 
+# All_models=MuMIn::dredge(m2)
+
+
+#autmate model selection 
+# map2 = map %>% dplyr::select(positives, edu_a, wealth, housing_2015_4000m, roof_type,child_6_59_tested_malaria,
+#                              pop_density_0m,pop_den_U5_FB_4000m,preg_women,all_female_sex,median_age,household_size,
+#                              net_use, net_use_child, med_treat_fever, ACT_use_U5,
+#                              motorized_travel_healthcare_2019_2000m, 
+#                              precipitation_monthly_0m,
+#                              temperature_monthly_0m, soil_wetness_0m, dist_water_bodies_0m, 
+#                              elevation_1000m, EVI_0m,
+#                              lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+# map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+# map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+# map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+# levels(map2$month_year)
+# map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+# 
+# m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+ 
+#                 ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+#                 ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3)+
+#                 + offset(log(child_6_59_tested_malaria)) +
+#                 mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+# summary(m2) 
