@@ -1045,3 +1045,37 @@ u_glm <- glm(y~ 1+ wealth_2+ edu_a + sex_f+  ACT_use_u5 + build_count +
 summary(u_glm)
 
 printCrudeAndAdjustedModel(u_glm)[-1,]
+
+
+
+
+#m2_simres <- simulateResiduals(m2)
+# plot(m2_simres)
+# summary(residuals(m2_simres))
+# 
+# 
+# 
+# All_models=MuMIn::dredge(m2)
+
+
+#autmate model selection 
+# map2 = map %>% dplyr::select(positives, edu_a, wealth, housing_2015_4000m, roof_type,child_6_59_tested_malaria,
+#                              pop_density_0m,pop_den_U5_FB_4000m,preg_women,all_female_sex,median_age,household_size,
+#                              net_use, net_use_child, med_treat_fever, ACT_use_U5,
+#                              motorized_travel_healthcare_2019_2000m, 
+#                              precipitation_monthly_0m,
+#                              temperature_monthly_0m, soil_wetness_0m, dist_water_bodies_0m, 
+#                              elevation_1000m, EVI_0m,
+#                              lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+# map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+# map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+# map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+# levels(map2$month_year)
+# map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+# 
+# m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+ 
+#                 ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+#                 ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3)+
+#                 + offset(log(child_6_59_tested_malaria)) +
+#                 mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+# summary(m2) 

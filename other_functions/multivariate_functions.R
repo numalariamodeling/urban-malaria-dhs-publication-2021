@@ -2,7 +2,7 @@
 list.of.packages <- c("tidyverse","ggplot2", "purrr", "stringr", "sp", "rgdal", "raster",
                       "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'rgeos', 'INLA', 
                       'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot', 'pscl', 'visreg', 
-                      'viridis', 'splines', 'shades', 'glmmTMB', 'ape', 'DHARMa', 'MuMIn')
+                      'viridis', 'splines', 'shades', 'glmmTMB')
 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]

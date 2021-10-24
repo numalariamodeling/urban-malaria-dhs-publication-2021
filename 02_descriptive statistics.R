@@ -89,6 +89,15 @@ map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Cou
                    map$positives_cut, 'Test positivity rate (overall count)')
 
 
+#Kano 
+df_kano = dplyr::filter(state_sf, (NAME_1 %in% c('Kano')))
+map_kano = dplyr::filter(map, (ADM1NAME %in% c('KANO')))
+map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                   map_lagos$positives_cut, 'Test positivity rate')
+map_lag = map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
+
+
+
 #Lagos 
 df_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
 map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
