@@ -588,7 +588,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_occupation_positive_
  
 #variable distribution and cumulative distribution 
 df_behave = data.frame(`Net use` = df_all$net_use, `Child net use` = df_all$net_use_child, `Medical treatment for fever` =df_all$med_treat_fever,
-                          `Effective fever treatment` = df_all$fever)
+                          `Effective fever treatment` = df_all$ACT_use_U5)
 
 df_behave_long = df_behave %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
 

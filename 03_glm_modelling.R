@@ -152,14 +152,20 @@ map = sf_all %>% left_join(dat, by=c('v001', 'dhs_year')) %>%  filter(LATNUM != 
 
 
 #behavioral factors 
-# map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,
-#                              net_use, net_use_child, med_treat_fever, ACT_use_U5,
-#                              lat, lon, first_interview_month, dhs_year) %>%  na.omit()
-# map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
-# map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
-# map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
-# levels(map2$month_year)
-# map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+m2 <- glmmTMB(positives~ns(ACT_use_U5), data =map, family=poisson)
+m3 <- glmmTMB(positives~ns(edu_a, 3), data =map, ziformula=~1, family=poisson)
+m4 <- glmmTMB(positives~ns(wealth, 3), data =map, ziformula=~1, family=poisson)
+m4 <- glmmTMB(positives~ns(housing_2015_4000m,3), data =map, ziformula=~1, family=poisson)
+ggeffects::ggpredict(m4,terms="housing_2015_4000m[all]")%>% plot(rawdata = TRUE, jitter = .01)
+summary(m4)
+map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,
+                             net_use, net_use_child, med_treat_fever, ACT_use_U5,
+                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
+map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
+map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
+levels(map2$month_year)
+map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
 # 
 # m1 <- glmmTMB(positives~ns(net_use, 3) + ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
 #                 ns(ACT_use_U5)+
@@ -292,7 +298,7 @@ map = sf_all %>% left_join(dat, by=c('v001', 'dhs_year')) %>%  filter(LATNUM != 
 map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,edu_a, wealth,pop_density_0m,median_age, med_treat_fever,
                              precipitation_monthly_0m,
                              EVI_0m,
-                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+                             lat, lon, first_interview_month, dhs_year) %>%  na.omit() %>%  st_drop_geometry()
 map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
 map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
 map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
@@ -306,19 +312,40 @@ map2$ID2 <- factor(rep(1, nrow(map2)))#
 # summary(m1) #1822.4 
 
 
-# m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+ 
-#                 ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
-#                 ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3)+
-#                 + offset(log(child_6_59_tested_malaria)) +
-#                 mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
-# summary(m2) #1737.2
+m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+
+                ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3)+
+                + offset(log(child_6_59_tested_malaria)) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m2) #1737.2
 
+
+#1737.2
 
 #generate marginal predictions
 # saveRDS(m2, file=file.path(MultivarData, 'multivariate_model.rds'))
-fin_mod <- readRDS(file=file.path(MultivarData, 'multivariate_model.rds'))
-ggeffects::ggpredict(fin_mod,terms="edu_a[all]", type ='zero_inflated')%>% plot(rawdata = TRUE, jitter = .01)
 
+
+fin_mod <- readRDS(file=file.path(MultivarData, 'multivariate_model.rds'))
+summary(fin_mod)
+ggeffects::ggpredict(m2,terms="edu_a[all]", type ='zero_inflated')%>% plot(rawdata = TRUE, jitter = .01)
+
+y = predict(fin_mod, map2, type = c('response'))
+
+map2$y = y 
+
+#plot predicted and actual values
+plot(map2$positives, map2$y)
+
+library("ggpubr")
+ggscatter(map2, x = "positives", y = "y", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Actual values", ylab = "Predicted values")
+
+ggplot(map2, aes(wealth, y)) +
+  geom_point(data = map2, aes(x =wealth, y = positives)) +
+  geom_smooth(data=map2, aes(x =wealth, y = y), method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
 
 
 # library(glmmTMB)
