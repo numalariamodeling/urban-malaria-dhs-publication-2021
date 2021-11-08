@@ -671,7 +671,7 @@ plots= df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=rat
                                                  geom_smooth(aes(fill = "Trend"), se = FALSE, color = "deeppink4", method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                                  geom_smooth(aes(color = "Confidence Interval"), fill = "deeppink", linetype = 0, method = 'glm', method.args = list(family = quasipoisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                                  theme_manuscript()+
-                                                 labs(x = .y, y ='malaria test positive rate')+
+                                                 labs(x = .y, y ='malaria positivity rate')+
                                                  guides(fill =FALSE, color =FALSE))}
 
 p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plot_annotation(tag_levels = 'A')& 

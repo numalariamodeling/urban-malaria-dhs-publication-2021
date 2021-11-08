@@ -1,5 +1,5 @@
 rm(list=ls())
-#memory.limit(size = 50000)
+memory.limit(size = 50000)
 
 ## -----------------------------------------
 ### Paths
@@ -160,7 +160,7 @@ ggeffects::ggpredict(m4,terms="housing_2015_4000m[all]")%>% plot(rawdata = TRUE,
 summary(m4)
 map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,
                              net_use, net_use_child, med_treat_fever, ACT_use_U5,
-                             lat, lon, first_interview_month, dhs_year) %>%  na.omit()
+                             lat, lon, first_interview_month, dhs_year, ) %>%  na.omit()
 map2$pos <- numFactor(scale(map2$lat), scale(map2$lon)) # first we need to create a numeric factor recording the coordinates of the sampled locations
 map2$ID <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
 map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
@@ -320,53 +320,130 @@ m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(m
 summary(m2) #1737.2
 
 
-#1737.2
+m3 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+
+                ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                ns(EVI_0m, 3)+
+                + offset(log(child_6_59_tested_malaria)) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+summary(m3) # 1734.9 
 
-#generate marginal predictions
-# saveRDS(m2, file=file.path(MultivarData, 'multivariate_model.rds'))
+m4 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+
+                ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                  ns(EVI_0m, 3)+ ns(temperature_monthly_0m, 3)
+                + offset(log(child_6_59_tested_malaria)) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2) , data=map2,  ziformula=~1,family=nbinom2)
+summary(m4) 
 
+# ------------------------------------------
+### Diagnostics 
+## -----------------------------------------
 
+library(effects)
+library(DHARMa)
 fin_mod <- readRDS(file=file.path(MultivarData, 'multivariate_model.rds'))
 summary(fin_mod)
 ggeffects::ggpredict(m2,terms="edu_a[all]", type ='zero_inflated')%>% plot(rawdata = TRUE, jitter = .01)
 
-y = predict(fin_mod, map2, type = c('response'))
+#fit_zinbinom <- update(fin_mod,family=nbinom2)
+#summary(fit_zinbinom)
+#saveRDS(fit_zinbinom, file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
 
-map2$y = y 
-
-#plot predicted and actual values
-plot(map2$positives, map2$y)
-
-library("ggpubr")
-ggscatter(map2, x = "positives", y = "y", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Actual values", ylab = "Predicted values")
-
-ggplot(map2, aes(wealth, y)) +
-  geom_point(data = map2, aes(x =wealth, y = positives)) +
-  geom_smooth(data=map2, aes(x =wealth, y = y), method = 'glm', method.args = list(family = poisson(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
+fit_zinbinom <- readRDS(file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
+summary(fit_zinbinom)
 
 
-# library(glmmTMB)
-# library(splines)
-# 
-# 
-# data_e <- data.frame(
-#   positives = c(3L, 2L, 0L, 7L, 0L, 5L, 0L, 3L, 6L, 0L, 2L, 0L, 2L, 3L, 2L, 14L, 1L, 3L, 3L, 0L), 
-#   values = c(86.1702127659574, 100, 81.0344827586207, 98.7341772151899, 97.5903614457831, 
-#              98.1308411214953, 96.551724137931, 100, 100, 96.045197740113, 99.1150442477876, 
-#              98.8888888888889, 100, 91.6279069767442, 33.3333333333333, 0, 
-#              92.3076923076923, 24, 0, 93.5483870967742))
-# m1 <- glmmTMB(
-#   positives ~ ns(values, 3, knots = seq(min(values), max(values), length = 4)[2:3]),
-#   data = data_e,
-#   ziformula =  ~ 1,
-#   family = poisson
-# )
-# 
-# head(insight::get_data(m1))
-# 
-# ggeffects::ggpredict(m1, terms="values [all]", type ='zero_inflated')
-# 
-# sessionInfo(package = NULL)
+simulationOutput <- simulateResiduals(fittedModel =fit_zinbinom, plot = F)
+pdf('diagnostic_plots_2.pdf')
+plot(simulationOutput)
+dev.off()
+
+#testDispersion(simulationOutput)
+#testZeroInflation(simulationOutput)
+
+#plotResiduals(simulationOutput, map2$edu_a)
+
+
+
+
+
+
+
+# ------------------------------------------
+### Effect plots 
+## -----------------------------------------
+
+library(patchwork)
+
+eff <- Effect('edu_a', fit_zinbinom)
+eff_dt = data.frame(eff)
+
+edu_a=ggplot(eff_dt,aes(edu_a, fit))+
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
+  geom_line(color = "firebrick",
+            size = 1)+ theme_manuscript()+
+  labs(x = '% with post-primary education', y ='malaria positives')
+
+eff <- Effect('wealth', fit_zinbinom)
+eff_dt = data.frame(eff)
+
+wealth=ggplot(eff_dt,aes(wealth, fit))+
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
+  geom_line(color = "firebrick",
+            size = 1)+ theme_manuscript()+
+  labs(x = '% in the rich wealth quintiles', y ='malaria positives')
+
+
+
+eff <- Effect('pop_density_0m', fit_zinbinom)
+eff_dt = data.frame(eff)
+
+pop_density=ggplot(eff_dt,aes(pop_density_0m, fit))+
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
+  geom_line(color = "firebrick",
+            size = 1)+ theme_manuscript()+
+  labs(x = 'All age population density', y ='malaria positives')
+
+
+
+eff <- Effect('median_age', fit_zinbinom)
+eff_dt = data.frame(eff)
+
+median_age=ggplot(eff_dt,aes(median_age, fit))+
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
+  geom_line(color = "firebrick",
+            size = 1)+ theme_manuscript()+
+  labs(x = 'Median_age', y ='malaria positives')
+
+
+
+eff <- Effect('med_treat_fever', fit_zinbinom)
+eff_dt = data.frame(eff)
+fever_treat=ggplot(eff_dt,aes(med_treat_fever, fit))+
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
+  geom_line(color = "firebrick",
+            size = 1)+ theme_manuscript()+
+  labs(x = '% of U5 children that sought
+      medical treatment for fever', y ='malaria positives')
+
+
+eff <- Effect('precipitation_monthly_0m', fit_zinbinom)
+eff_dt = data.frame(eff)
+precip=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
+  geom_line(color = "firebrick",
+            size = 1)+ theme_manuscript()+
+  labs(x = 'Total precipitation', y ='malaria positives')
+
+
+
+eff <- Effect('EVI_0m', fit_zinbinom)
+eff_dt = data.frame(eff)
+EVI=ggplot(eff_dt,aes(EVI_0m, fit))+
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
+  geom_line(color = "firebrick",
+            size = 1)+ theme_manuscript()+
+  labs(x = 'Enhanced Vegetation Index', y ='malaria positives')
+
+y=edu_a + wealth + pop_density+ median_age + fever_treat + precip+ EVI
+
+ggsave('multivariable_plots.pdf', y, width = 8, height = 6)
