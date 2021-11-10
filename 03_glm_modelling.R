@@ -378,17 +378,17 @@ eff <- Effect('edu_a', fit_zinbinom)
 eff_dt = data.frame(eff)
 
 edu_a=ggplot(eff_dt,aes(edu_a, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
-  geom_line(color = "firebrick",
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+  geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
-  labs(x = '% with post-primary education', y ='malaria positives')
+  labs(x = '% with post-primary education', y ='malaria positives', title = "Multivariate")
 
 eff <- Effect('wealth', fit_zinbinom)
 eff_dt = data.frame(eff)
 
 wealth=ggplot(eff_dt,aes(wealth, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
-  geom_line(color = "firebrick",
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+  geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
   labs(x = '% in the rich wealth quintiles', y ='malaria positives')
 
@@ -398,8 +398,8 @@ eff <- Effect('pop_density_0m', fit_zinbinom)
 eff_dt = data.frame(eff)
 
 pop_density=ggplot(eff_dt,aes(pop_density_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
-  geom_line(color = "firebrick",
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+  geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
   labs(x = 'All age population density', y ='malaria positives')
 
@@ -409,8 +409,8 @@ eff <- Effect('median_age', fit_zinbinom)
 eff_dt = data.frame(eff)
 
 median_age=ggplot(eff_dt,aes(median_age, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
-  geom_line(color = "firebrick",
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+  geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
   labs(x = 'Median_age', y ='malaria positives')
 
@@ -419,8 +419,8 @@ median_age=ggplot(eff_dt,aes(median_age, fit))+
 eff <- Effect('med_treat_fever', fit_zinbinom)
 eff_dt = data.frame(eff)
 fever_treat=ggplot(eff_dt,aes(med_treat_fever, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
-  geom_line(color = "firebrick",
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+  geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
   labs(x = '% of U5 children that sought
       medical treatment for fever', y ='malaria positives')
@@ -429,8 +429,8 @@ fever_treat=ggplot(eff_dt,aes(med_treat_fever, fit))+
 eff <- Effect('precipitation_monthly_0m', fit_zinbinom)
 eff_dt = data.frame(eff)
 precip=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
-  geom_line(color = "firebrick",
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+  geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
   labs(x = 'Total precipitation', y ='malaria positives')
 
@@ -439,8 +439,8 @@ precip=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
 eff <- Effect('EVI_0m', fit_zinbinom)
 eff_dt = data.frame(eff)
 EVI=ggplot(eff_dt,aes(EVI_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
-  geom_line(color = "firebrick",
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+  geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
   labs(x = 'Enhanced Vegetation Index', y ='malaria positives')
 
@@ -536,11 +536,11 @@ EVI_b=ggplot(eff_dt,aes(EVI_0m, fit))+
 
 
 
-#merging multivarite and bivariate plots side by side
-plot_aragn = ggarrange(edu_a, NULL, edu_b, wealth, NULL, wealth_b,
-                       pop_density, NULL, pop_density_b, median_age, NULL, median_age_b,
-                       fever_treat, NULL, fever_treat_b, precip, NULL, precip_b,
-                       EVI, NULL, EVI_b,
+#merging and arranging multivariate and bivariate plots side by side
+plot_aragn = ggarrange(edu_b, NULL, edu_a, wealth_b, NULL, wealth,
+                       pop_density_b, NULL, pop_density, median_age_b, NULL, median_age,
+                       fever_treat_b, NULL, fever_treat, precip_b, NULL, precip,
+                       EVI_b, NULL, EVI,
                        nrow = 7, ncol= 3, widths = c(1,0.05,1))
 
 plot_aragn
