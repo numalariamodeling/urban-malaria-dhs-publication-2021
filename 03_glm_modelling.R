@@ -351,6 +351,9 @@ ggeffects::ggpredict(m2,terms="edu_a[all]", type ='zero_inflated')%>% plot(rawda
 fit_zinbinom <- readRDS(file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
 summary(fit_zinbinom)
 
+#save results 
+result_df <- as.data.frame(tidy(fit_zinbinom)) %>% filter(effect == "fixed")
+write.csv(result_df, "result_df.csv")
 
 simulationOutput <- simulateResiduals(fittedModel =fit_zinbinom, plot = F)
 pdf('diagnostic_plots_2.pdf')
@@ -381,7 +384,8 @@ edu_a=ggplot(eff_dt,aes(edu_a, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
-  labs(x = '% with post-primary education', y ='malaria positives', title = "Multivariate")
+  #ylim(0, 5)+
+  labs(x = '% with post-primary education', y ='malaria positives')
 
 eff <- Effect('wealth', fit_zinbinom)
 eff_dt = data.frame(eff)
@@ -390,6 +394,7 @@ wealth=ggplot(eff_dt,aes(wealth, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+  #ylim(0, 4)+
   labs(x = '% in the rich wealth quintiles', y ='malaria positives')
 
 
@@ -412,7 +417,8 @@ median_age=ggplot(eff_dt,aes(median_age, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
-  labs(x = 'Median_age', y ='malaria positives')
+  #ylim(0, 6)+
+  labs(x = 'Median age', y ='malaria positives')
 
 
 
@@ -422,6 +428,7 @@ fever_treat=ggplot(eff_dt,aes(med_treat_fever, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+  #ylim(0, 3.5)+
   labs(x = '% of U5 children that sought
       medical treatment for fever', y ='malaria positives')
 
@@ -432,6 +439,7 @@ precip=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+  #ylim(0, 5)+
   labs(x = 'Total precipitation', y ='malaria positives')
 
 
@@ -442,6 +450,7 @@ EVI=ggplot(eff_dt,aes(EVI_0m, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+ ###ylim(0, 10)+
   labs(x = 'Enhanced Vegetation Index', y ='malaria positives')
 
 y=edu_a + wealth + pop_density+ median_age + fever_treat + precip+ EVI
@@ -450,14 +459,14 @@ ggsave('multivariable_plots.pdf', y, width = 8, height = 6)
 
 
 #bivariate analysis
-bm1 <- glmmTMB(positives~ns(edu_a, 3), data =map2, family=nbinom2)
-bm2 <- glmmTMB(positives~ns(wealth, 3), data =map2, ziformula=~1, family=nbinom2)
-bm3 <- glmmTMB(positives~ns(pop_density_0m,2), data =map2, ziformula=~1, family=nbinom2)
-bm4 <- glmmTMB(positives~ns(median_age, 2), data =map2, ziformula=~1, family=nbinom2)
-bm5 <- glmmTMB(positives~ns(precipitation_monthly_0m, 2), data =map2, ziformula=~1, family=nbinom2)
-bm6 <- glmmTMB(positives~ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3]), data =map2, ziformula=~1, family=nbinom2)
-bm7 <- glmmTMB(positives~ns(EVI_0m,3), data =map2, ziformula=~1, family=nbinom2)
 
+bm1 <- glmmTMB(positives~ns(edu_a, 3), data =map, family=nbinom2)
+bm2 <- glmmTMB(positives~ns(wealth, 3), data =map, ziformula=~1, family=nbinom2)
+bm3 <- glmmTMB(positives~ns(pop_density_0m,2), data =map, ziformula=~1, family=nbinom2)
+bm4 <- glmmTMB(positives~ns(median_age, 2), data =map, ziformula=~1, family=nbinom2)
+bm5 <- glmmTMB(positives~ns(precipitation_monthly_0m, 2), data =map, ziformula=~1, family=nbinom2)
+bm6 <- glmmTMB(positives~ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3]), data =map2, ziformula=~1, family=nbinom2)
+bm7 <- glmmTMB(positives~ns(EVI_0m,3), data =map, ziformula=~1, family=nbinom2)
 
 #Bivariate effect plots
 eff <- Effect('edu_a', bm1)
@@ -467,7 +476,8 @@ edu_b=ggplot(eff_dt,aes(edu_a,fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
-  labs(x = '% with post-primary education', y ='malaria positives', title = "Bivariate")
+  #ylim(0, 5)+
+  labs(x = '% with post-primary education', y ='malaria positives', title = "negative bi")
 
 edu_b
 
@@ -480,6 +490,7 @@ wealth_b=ggplot(eff_dt,aes(wealth, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+  #ylim(0, 4)+
   labs(x = '% in the rich wealth quintiles', y ='malaria positives')
 
 wealth_b
@@ -503,7 +514,8 @@ median_age_b=ggplot(eff_dt,aes(median_age, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
-  labs(x = 'Median_age', y ='malaria positives')
+  #ylim(0, 6)+
+  labs(x = 'Median age', y ='malaria positives')
 
 
 eff <- Effect('precipitation_monthly_0m', bm5)
@@ -512,6 +524,7 @@ precip_b=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+  #ylim(0, 5)+
   labs(x = 'Total precipitation', y ='malaria positives')
 
 
@@ -521,6 +534,7 @@ fever_treat_b=ggplot(eff_dt,aes(med_treat_fever, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+  #ylim(0, 3.5)+
   labs(x = '% of U5 children that sought
       medical treatment for fever', y ='malaria positives')
 
@@ -532,9 +546,13 @@ EVI_b=ggplot(eff_dt,aes(EVI_0m, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
   geom_line(color = "maroon",
             size = 1)+ theme_manuscript()+
+ ###ylim(0, 10)+
   labs(x = 'Enhanced Vegetation Index', y ='malaria positives')
 
 
+y=edu_b + wealth_b + pop_density_b+ median_age_b + fever_treat_b + precip_b+ EVI_b
+
+ggsave('bivariable_plots.pdf', y, width = 8, height = 6)
 
 #merging and arranging multivariate and bivariate plots side by side
 plot_aragn = ggarrange(edu_b, NULL, edu_a, wealth_b, NULL, wealth,
