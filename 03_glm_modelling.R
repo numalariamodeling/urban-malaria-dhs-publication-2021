@@ -314,9 +314,8 @@ map2$ID2 <- factor(rep(1, nrow(map2)))#
 
 m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+
                 ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
-                ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3)+
-                + offset(log(child_6_59_tested_malaria)) +
-                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+                ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), offset=log(child_6_59_tested_malaria), data=map2,  ziformula=~1,family=poisson)
 summary(m2) #1737.2
 
 
@@ -327,18 +326,35 @@ m3 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(m
                 mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
 summary(m3) # 1734.9 
 
+
 m4 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+
                 ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
-                  ns(EVI_0m, 3)+ ns(temperature_monthly_0m, 3)
-                + offset(log(child_6_59_tested_malaria)) +
-                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2) , data=map2,  ziformula=~1,family=nbinom2)
-summary(m4) 
+                ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), offset=log(child_6_59_tested_malaria), data=map2,  ziformula=~1,family=nbinom2)
+summary(m4)
+saveRDS(m4, file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
+# 1738.2113
+
+m5 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+
+                ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                ns(precipitation_monthly_0m, 3) + ns(EVI_0m, 3) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), offset=log(child_6_59_tested_malaria), data=map2,  ziformula=~1,family=nbinom1)
+summary(m5)
+saveRDS(m5, file=file.path(MultivarData, 'multivariate_model_nbinom1.rds'))
+
+#1728.6
+
+m6 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ns(pop_density_0m, 2) + ns(median_age, 2)+
+                ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3])+
+                  ns(EVI_0m, 3)+ ns(temperature_monthly_0m, 3) +
+                mat(pos + 0 | ID) + ar1(month_year + 0 | ID2) ,offset=log(child_6_59_tested_malaria), data=map2,  ziformula=~1,family=nbinom2)
+summary(m6) 
 
 # ------------------------------------------
 ### Diagnostics 
 ## -----------------------------------------
 
-library(effects)
+
 library(DHARMa)
 fin_mod <- readRDS(file=file.path(MultivarData, 'multivariate_model.rds'))
 summary(fin_mod)
@@ -348,11 +364,11 @@ ggeffects::ggpredict(m2,terms="edu_a[all]", type ='zero_inflated')%>% plot(rawda
 #summary(fit_zinbinom)
 #saveRDS(fit_zinbinom, file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
 
-fit_zinbinom <- readRDS(file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
-summary(fit_zinbinom)
+#fit_zinbinom <- readRDS(file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
+#summary(fit_zinbinom)
 
 
-simulationOutput <- simulateResiduals(fittedModel =fit_zinbinom, plot = F)
+simulationOutput <- simulateResiduals(fittedModel =m5, plot = F)
 pdf('diagnostic_plots_2.pdf')
 plot(simulationOutput)
 dev.off()
@@ -371,10 +387,11 @@ dev.off()
 # ------------------------------------------
 ### Effect plots 
 ## -----------------------------------------
-
+library(effects)
+library(jtools)
 library(patchwork)
 
-eff <- Effect('edu_a', fit_zinbinom)
+eff <- Effect('edu_a', m5)
 eff_dt = data.frame(eff)
 
 edu_a=ggplot(eff_dt,aes(edu_a, fit))+
@@ -383,7 +400,7 @@ edu_a=ggplot(eff_dt,aes(edu_a, fit))+
             size = 1)+ theme_manuscript()+
   labs(x = '% with post-primary education', y ='malaria positives')
 
-eff <- Effect('wealth', fit_zinbinom)
+eff <- Effect('wealth', m5)
 eff_dt = data.frame(eff)
 
 wealth=ggplot(eff_dt,aes(wealth, fit))+
@@ -394,8 +411,9 @@ wealth=ggplot(eff_dt,aes(wealth, fit))+
 
 
 
-eff <- Effect('pop_density_0m', fit_zinbinom)
+eff <- Effect('pop_density_0m', m5, offset=mean)
 eff_dt = data.frame(eff)
+
 
 pop_density=ggplot(eff_dt,aes(pop_density_0m, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
@@ -405,7 +423,7 @@ pop_density=ggplot(eff_dt,aes(pop_density_0m, fit))+
 
 
 
-eff <- Effect('median_age', fit_zinbinom)
+eff <- Effect('median_age', m5)
 eff_dt = data.frame(eff)
 
 median_age=ggplot(eff_dt,aes(median_age, fit))+
@@ -416,7 +434,7 @@ median_age=ggplot(eff_dt,aes(median_age, fit))+
 
 
 
-eff <- Effect('med_treat_fever', fit_zinbinom)
+eff <- Effect('med_treat_fever', m5)
 eff_dt = data.frame(eff)
 fever_treat=ggplot(eff_dt,aes(med_treat_fever, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
@@ -426,7 +444,7 @@ fever_treat=ggplot(eff_dt,aes(med_treat_fever, fit))+
       medical treatment for fever', y ='malaria positives')
 
 
-eff <- Effect('precipitation_monthly_0m', fit_zinbinom)
+eff <- Effect('precipitation_monthly_0m', m5)
 eff_dt = data.frame(eff)
 precip=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
@@ -436,7 +454,7 @@ precip=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
 
 
 
-eff <- Effect('EVI_0m', fit_zinbinom)
+eff <- Effect('EVI_0m', m5)
 eff_dt = data.frame(eff)
 EVI=ggplot(eff_dt,aes(EVI_0m, fit))+
   geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "steelblue2")+
