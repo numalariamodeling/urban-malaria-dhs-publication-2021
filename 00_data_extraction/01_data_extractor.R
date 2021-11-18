@@ -17,8 +17,12 @@ DHSData <- file.path(DataDir, 'DHS')
 RastDir <- file.path(DataDir, "Raster_files")
 DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'DHS_survey_extract')
 GeoDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'geospatial_covariates')
+shapes <- file.path(NuDir, 'data', 'nigeria_shapefiles')
 
-
+# dhs <- read.files(shapes, "*V1.shp$", 'Nigeria', shapefile)
+# dhs_kano <- st_as_sf(dhs[[1]]) %>%  filter(state == 'Kano')
+# dhs_kano_res <- dhs_kano  %>%  filter(landuse == 'Residential')
+# plot(dhs_kano_res)
 # -----------------------------------------
 ### Required functions and settings
 ## -----------------------------------------
@@ -792,7 +796,7 @@ for (i in 1:length(vars)) {
 
 #precipitation era
 
-#loading temp era rasters in months when DHIS/MIS was conducted
+#loading era rasters in months when DHIS/MIS was conducted
 files <- list.files(path = file.path(RastDir, "rainfall_monthly"), pattern = "*.tif$", full.names = TRUE, recursive = TRUE)
 raster <- sapply(files, raster, simplify = F)
 
