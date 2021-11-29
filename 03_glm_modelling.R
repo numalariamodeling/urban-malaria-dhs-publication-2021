@@ -106,8 +106,8 @@ summary(m6)# AIC -1924.2
 # comparing model AICs
 models <- list(m1, m2, m3, m4, m4, m5, m6)
 
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
-                 model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
+aics_ses <- data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
+                               model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
 
 #___________________________________________________________________________________________
 
@@ -163,25 +163,11 @@ summary(m8)# AIC - 2015.1
 # comparing model AICs
 models <- list(m1, m2, m3, m4, m4, m5, m6, m7, m8)
 
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
-                 model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
+aics_demo <- data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
+                               model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
 #___________________________________________________________________________________________
 
 #behavioral factors 
-m2 <- glmmTMB(positives~ns(ACT_use_U5), data =map, family=poisson)
-m3 <- glmmTMB(positives~ns(edu_a, 3), data =map, ziformula=~1, family=poisson)
-m4 <- glmmTMB(positives~ns(wealth, 3), data =map, ziformula=~1, family=poisson)
-m4 <- glmmTMB(positives~ns(housing_2015_4000m,3), data =map, ziformula=~1, family=poisson)
-
-
-# comparing model AICs
-models <- list(m2, m3, m4, m4)
-
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
-                 model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
-
-ggeffects::ggpredict(m4,terms="housing_2015_4000m[all]")%>% plot(rawdata = TRUE, jitter = .01)
-summary(m4)
 map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,
                              net_use, net_use_child, med_treat_fever, ACT_use_U5,
                              lat, lon, first_interview_month, dhs_year, ) %>%  na.omit()
@@ -221,8 +207,9 @@ summary(m5)# AIC - 1845.2
 # comparing model AICs
 models <- list(m1, m2, m3, m4, m4, m5)
 
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
+aics_behav <- data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
                  model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
+
 #___________________________________________________________________________________________
 #accessibility 
 map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,motorized_travel_healthcare_2019_2000m,
@@ -240,7 +227,7 @@ summary(m1)# AIC - 2215.5
 # comparing model AICs
 models <- list(m1)
 
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
+aics_acc <-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
                  model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
 
 #___________________________________________________________________________________________
@@ -304,7 +291,7 @@ summary(m7) # 2054.2
 # comparing model AICs
 models <- list(m1, m2, m3, m4, m4, m5, m6, m7)
 
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
+aics_env <-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
                  model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
 
 
@@ -317,7 +304,8 @@ summary(m5)#AIC - 1923.7
 
 #demo
 m8 <- glmmTMB(positives~ns(pop_density_0m, 2) + 
-                 + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
+                 + ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + 
+                ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
 summary(m8)# AIC - 2015.1 
 
 
@@ -337,12 +325,12 @@ summary(m7) # 2054.2
 # comparing model AICs
 models <- list(m5, m2, m8, m4, m7, m5)
 
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
-                 model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
+aics_all_models <- data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
+                                    model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
 
 
 #___________________________________________________________________________________________
-# all models 
+# 
 #all 
 map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,edu_a, wealth,pop_density_0m,median_age, med_treat_fever,
                              precipitation_monthly_0m,
@@ -395,34 +383,36 @@ summary(m5)
 # comparing model AICs
 models <- list(m1, m2, m3, m4, m4, m5, m6, m7)
 
-data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
+aics_all <- data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
                  model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
+
 
 
 
 ########################################## Final Model ###################################################################################################
 #_____________________________________________________________________________________________________________________________________________________________
 
+#Selecting final model based on AIC comparison 
+dplyr::bind_rows(aics_all, aics_all_models, aics_env, aics_acc, aics_behav, aics_demo, aics_ses)
+
+#m5 seem to have the best aic of 1728.6, hence is selected as the final model
+
+
+#save model summary results 
+result_df <- as.data.frame(tidy(m5)) %>% filter(effect == "fixed")
+write.csv(result_df, "result_df.csv")
+
 #Saving final model
-saveRDS(m5, file=file.path(MultivarData, 'multivariate_model_nbinom1.rds'))
+saveRDS(m5, file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
 
 
 # ------------------------------------------
 ### Diagnostics 
 ## -----------------------------------------
 
-fin_mod <- readRDS(file=file.path(MultivarData, 'multivariate_model.rds'))
-summary(fin_mod)
-
-ggeffects::ggpredict(m2,terms="edu_a[all]", type ='zero_inflated')%>% plot(rawdata = TRUE, jitter = .01)
-
-
 fit_zinbinom <- readRDS(file=file.path(MultivarData, 'multivariate_model_nbinom2.rds'))
 summary(fit_zinbinom)
 
-#save results 
-result_df <- as.data.frame(tidy(fit_zinbinom)) %>% filter(effect == "fixed")
-write.csv(result_df, "result_df.csv")
 
 simulationOutput <- simulateResiduals(fittedModel =m5, plot = F)
 pdf('diagnostic_plots_2.pdf')
@@ -439,10 +429,10 @@ dev.off()
 
 vars <- list('edu_a', 'wealth', 'pop_density_0m', 'median_age', 'med_treat_fever',
              'precipitation_monthly_0m', 'EVI_0m')
-lables <- list('% with post-primary education (adjusted)', '% in the rich wealth quintiles (adjusted)',
-               'All age population density', 'Median age (adjusted)', '% of U5 children that sought
-      medical treatment for fever (adjusted)', 'Total precipitation (adjusted)', 'Total precipitation (adjusted)',
-               'Enhanced Vegetation Index (adjusted)')
+lables <- list('% with post-primary education', '% in the rich wealth quintiles',
+               'All age population density', 'Median age', '% of U5 children that sought
+      medical treatment for fever', 'Total precipitation', 'Total precipitation',
+               'Enhanced Vegetation Index')
 y_lim <- list(4.53, 4.6, 40, 6.1, 3.5, 3, 7.5)
 
 p <- list()
@@ -452,107 +442,18 @@ for (i in 1:7) {
   pt = ggplot(eff_dt,aes_string(vars[[i]], 'fit'))+ 
     geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
     geom_line(color = "maroon", size = 1)+ theme_manuscript()+ 
-    labs(x = lables[[i]], y ='malaria positives')
+    labs(x = paste0(as.character(lables[[i]]), ' ', as.character('(adjusted)')), y ='malaria positives')
   p[[i]]<- pt
   
 }
 
-edu_a + wealth + pop_density+ median_age + fever_treat + precip+ EVI
 y=p[[1]]+ p[[2]] + p[[3]] + p[[4]] + p[[5]] + p[[6]] + p[[7]]
 ggsave('multivariable_plots.pdf', y, width = 8, height = 6)
 
 
 
-
-eff <- Effect('edu_a', fit_zinbinom)
-eff_dt = data.frame(eff)
-
-edu_a=ggplot(eff_dt,aes(edu_a, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  #ylim(0, 4.53)+
-  labs(x = '% with post-primary education (adjusted)', y ='malaria positives')
-
-eff <- Effect('wealth', fit_zinbinom)
-eff_dt = data.frame(eff)
-
-wealth=ggplot(eff_dt,aes(wealth, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  #ylim(0, 4.6)+
-  labs(x = '% in the rich wealth quintiles (adjusted)', y ='malaria positives')
-
-
-
-eff <- Effect('pop_density_0m', fit_zinbinom)
-eff_dt = data.frame(eff)
-
-
-pop_density=ggplot(eff_dt,aes(pop_density_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 40) +
-  labs(x = 'All age population density', y ='malaria positives')
-
-
-pop_density_cm=ggplot(eff_dt,aes(pop_density_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 4) +
-  labs(x = 'All age population density (chopped)', y ='malaria positives')
-
-
-eff <- Effect('median_age', fit_zinbinom)
-eff_dt = data.frame(eff)
-
-median_age=ggplot(eff_dt,aes(median_age, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 6.1)+
-  labs(x = 'Median age (adjusted)', y ='malaria positives')
-
-
-
-eff <- Effect('med_treat_fever', fit_zinbinom)
-eff_dt = data.frame(eff)
-fever_treat=ggplot(eff_dt,aes(med_treat_fever, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 3.5)+
-  labs(x = '% of U5 children that sought
-      medical treatment for fever (adjusted)', y ='malaria positives')
-
-
-eff <- Effect('precipitation_monthly_0m', fit_zinbinom)
-eff_dt = data.frame(eff)
-precip=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 3)+
-  labs(x = 'Total precipitation (adjusted)', y ='malaria positives')
-
-
-
-eff <- Effect('EVI_0m', fit_zinbinom)
-eff_dt = data.frame(eff)
-EVI=ggplot(eff_dt,aes(EVI_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
- ylim(0, 7.5)+
-  labs(x = 'Enhanced Vegetation Index (adjusted)', y ='malaria positives')
-
-y=edu_a + wealth + pop_density+ median_age + fever_treat + precip+ EVI
-
-ggsave('multivariable_plots.pdf', y, width = 8, height = 6)
-
+########################################## Bivariate analysis############################################################
+#__________________________________________________________________________________________________________________________
 
 #bivariate analysis
 
@@ -560,103 +461,28 @@ bm1 <- glmmTMB(positives~ns(edu_a, 3), data =map, family=nbinom2)
 bm2 <- glmmTMB(positives~ns(wealth, 3), data =map, ziformula=~1, family=nbinom2)
 bm3 <- glmmTMB(positives~ns(pop_density_0m,2), data =map, ziformula=~1, family=nbinom2)
 bm4 <- glmmTMB(positives~ns(median_age, 2), data =map, ziformula=~1, family=nbinom2)
-bm5 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3), data =map, ziformula=~1, family=nbinom2)
 val = map %>%  drop_na(med_treat_fever)
-bm6 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3]), data =val, ziformula=~1, family=nbinom2)
-bm7 <- glmmTMB(positives~ns(EVI_0m,3), data =map, ziformula=~1, family=nbinom2)
+bm5 <- glmmTMB(positives~ ns(med_treat_fever, knots = seq(min(med_treat_fever),max(med_treat_fever),length =4)[2:3]), data =val, ziformula=~1, family=nbinom2)
+bm6 <- glmmTMB(positives~ns(precipitation_monthly_0m, 3), data =map, ziformula=~1, family=nbinom2)
+bm7 <- glmmTMB(positives~ns(EVI_0m,3), data =map, ziformula=~1, family=nbinom2) 
 
 #Bivariate effect plots
-eff <- Effect('edu_a', bm1)
-eff_dt = data.frame(eff)
+bi_models <- list(bm1, bm2, bm3, bm4, bm5, bm6, bm7)
 
-edu_b=ggplot(eff_dt,aes(edu_a,fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  labs(x = '% with post-primary education (unadjusted)', y ='malaria positives')
+b <- list()
+for (i in 1:7) { 
+  eff <- Effect(vars[[i]], bi_models[[i]])
+  eff_dt <- data.frame(eff)
+  pt = ggplot(eff_dt,aes_string(vars[[i]], 'fit'))+ 
+    geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
+    geom_line(color = "maroon", size = 1)+ theme_manuscript()+ 
+    labs(x = paste0(as.character(lables[[i]]), ' ', as.character('(unadjusted)')), y ='malaria positives')
+  b[[i]]<- pt
+  
+}
 
-edu_b
-
-
-
-eff <- Effect('wealth', bm2)
-eff_dt = data.frame(eff)
-
-wealth_b=ggplot(eff_dt,aes(wealth, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 4.6)+
-  labs(x = '% in the rich wealth quintiles (unadjusted)', y ='malaria positives')
-
-wealth_b
-
-eff <- Effect('pop_density_0m', bm3)
-eff_dt = data.frame(eff)
-
-pop_density_b=ggplot(eff_dt,aes(pop_density_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  labs(x = 'All age population density', y ='malaria positives')
-
-pop_density_b
-
-
-pop_density_c=ggplot(eff_dt,aes(pop_density_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 4)+
-  labs(x = 'All age population density (chopped)', y ='malaria positives')
-
-pop_density_c
-
-
-eff <- Effect('median_age', bm4)
-eff_dt = data.frame(eff)
-
-median_age_b=ggplot(eff_dt,aes(median_age, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  #ylim(0, 6)+
-  labs(x = 'Median age', y ='malaria positives')
-
-
-eff <- Effect('precipitation_monthly_0m', bm5)
-eff_dt = data.frame(eff)
-precip_b=ggplot(eff_dt,aes(precipitation_monthly_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  #ylim(0, 5)+
-  labs(x = 'Total precipitation (unadjusted)', y ='malaria positives')
-
-
-eff <- Effect('med_treat_fever', bm6)
-eff_dt = data.frame(eff)
-fever_treat_b=ggplot(eff_dt,aes(med_treat_fever, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
-  ylim(0, 3.5) + 
-  labs(x = '% of U5 children that sought
-      medical treatment for fever (unadjusted)', y ='malaria positives')
-
-
-
-eff <- Effect('EVI_0m', bm7)
-eff_dt = data.frame(eff)
-EVI_b=ggplot(eff_dt,aes(EVI_0m, fit))+
-  geom_ribbon(aes(ymin=lower, ymax=upper), alpha =0.2, fill = "springgreen1")+
-  geom_line(color = "maroon",
-            size = 1)+ theme_manuscript()+
- ###ylim(0, 10)+
-  labs(x = 'Enhanced Vegetation Index (unadjusted)', y ='malaria positives')
-
-
-y=edu_b + wealth_b + pop_density_b+ median_age_b + fever_treat_b + precip_b+ EVI_b
+b_plots=b[[1]]+ b[[2]] + b[[3]] + b[[4]] + b[[5]] + b[[6]] + b[[7]]
+b_plots
 
 ggsave('bivariable_plots.pdf', y, width = 8, height = 6)
 
@@ -683,18 +509,16 @@ p=(precip_b +precip)/ (EVI_b+EVI) + plot_annotation(tag_levels = 'A')&
 ggsave(paste0(ResultDir, '/research_plots/updated_figures/', Sys.Date(), '_bivariate_multivariable_enironmental.pdf'), p, width = 7, height=5)
 
 
-p=(pop_density_c +precip)
-
-#+ precip_b + precip + fever_treat_b + fever_treat + EVI_b + EVI
+#p=(pop_density_c +precip)
 
 
-plot_aragn = ggarrange(edu_b, NULL, edu_a, wealth_b, NULL, wealth,
-                       pop_density_b, NULL, pop_density, median_age_b, NULL, median_age,
-                       fever_treat_b, NULL, fever_treat, precip_b, NULL, precip,
-                       EVI_b, NULL, EVI,
+plot_arang = ggarrange(b[[1]], NULL, p[[1]], b[[2]], NULL, p[[2]],
+                       b[[3]], NULL, p[[3]], b[[4]], NULL, p[[4]],
+                       b[[5]], NULL, p[[5]], b[[6]], NULL, p[[6]],
+                       b[[7]], NULL, p[[7]],
                        nrow = 7, ncol= 3, widths = c(1,0.05,1))
 
-plot_aragn
+plot_arang
 ggsave('bivariate_multivariable_plots.pdf', plot_aragn, width = 8.5, height = 13.33)
 
 
