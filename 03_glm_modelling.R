@@ -165,7 +165,7 @@ models <- list(m1, m2, m3, m4, m4, m5, m6, m7, m8)
 
 aics_demo <- data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
                                model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
-#___________________________________________________________________________________________
+
 
 #behavioral factors 
 map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,
