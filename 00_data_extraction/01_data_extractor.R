@@ -19,10 +19,7 @@ DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 GeoDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'geospatial_covariates')
 shapes <- file.path(NuDir, 'data', 'nigeria_shapefiles')
 
-# dhs <- read.files(shapes, "*V1.shp$", 'Nigeria', shapefile)
-# dhs_kano <- st_as_sf(dhs[[1]]) %>%  filter(state == 'Kano')
-# dhs_kano_res <- dhs_kano  %>%  filter(landuse == 'Residential')
-# plot(dhs_kano_res)
+
 # -----------------------------------------
 ### Required functions and settings
 ## -----------------------------------------
