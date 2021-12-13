@@ -57,53 +57,40 @@ map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
 levels(map2$month_year)
 map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
 
-
 #models 
-m1 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3) + ns(housing_2015_4000m)+ 
-                ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
-                offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson)
-summary(m1)# AIC - 2049.5
-# 
-# 
-m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wall_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3]) + 
-                ns(housing_2015_4000m)+ ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
-                offset(log(child_6_59_tested_malaria)), data=map,  ziformula=~1,family=poisson)
-summary(m2)#AIC - 2075.7
 
-
+ses_mods <- list(m1 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3) + ns(housing_2015_4000m)+ 
+                                 ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
+                                 offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson),
+                 m2 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wall_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3]) + 
+                                 ns(housing_2015_4000m)+ ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
+                                 offset(log(child_6_59_tested_malaria)), data=map,  ziformula=~1,family=poisson))
 
 #formal test of spatial autocorrelation
 sims <- simulateResiduals(m1)
 testSpatialAutocorrelation(sims, map2$lat, map2$lon, plot = FALSE)
 
 
-
 #account for spatial dependence
 
-m3 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3) + ns(housing_2015_4000m)+ 
-                ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
-                offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID), data=map2,  ziformula=~1,family=poisson) 
-summary(m3)# AIC - 1940.3
-# 
-m4 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+
-                offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID), data=map2,  ziformula=~1,family=poisson)
-summary(m4)# AIC - 1946.4
+ses_s_mods <- list(m3 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3) + ns(housing_2015_4000m)+ 
+                                   ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3])+
+                                   offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID), data=map2,  ziformula=~1,family=poisson),
+                   m4 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID), 
+                                 data=map2,  ziformula=~1,family=poisson),
+                   m5 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID) + 
+                                   ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson),
+                   m6 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ + ns(housing_2015_4000m)+ 
+                                   ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3]) +offset(log(child_6_59_tested_malaria)) +
+                                   mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson))
 
-#account for temporal effect
-m5 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+
-                offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), 
-              data=map2,  ziformula=~1,family=poisson)
-summary(m5)#AIC - 1923.7
-# 
-# 
-m6 <- glmmTMB(positives~ns(edu_a, 3)+ ns(wealth, 3)+ + ns(housing_2015_4000m)+ 
-                ns(roof_type, knots = seq(min(roof_type),max(roof_type),length =4)[2:3]) +
-                 offset(log(child_6_59_tested_malaria)) + mat(pos + 0 | ID) + 
-                ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
-summary(m6)# AIC -1924.2
+ses_models <- list(m1, m2, m3, m4, m4, m5, m6)
+lapply(ses_models , summary)
+
+#m1 AIC - 2049.5, m2 AIC - 2075.7, m3 AIC - 1940.3, m4 AIC - 1946.4, m5 AIC - 1923.7, m6 AIC -1924.2
+
 
 # comparing model AICs
-models <- list(m1, m2, m3, m4, m4, m5, m6)
 
 aics_ses <- data.frame(cbind(ldply(models, function(x) cbind(AIC = AIC(x))),
                                model = sapply(1:length(models), function(x) deparse(formula(models[[x]])))))
@@ -118,7 +105,7 @@ map2$month_year = factor(paste(map2$first_interview_month, '_', map2$dhs_year))
 levels(map2$month_year)
 map2$ID2 <- factor(rep(1, nrow(map2)))# then create a dummy group factor to be used as a random term
 
-demo_ms <- list(m1 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_4000m, 3) + ns(preg_women, 3)+ ns(all_female_sex, 3)
+demo_mods <- list(m1 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_4000m, 3) + ns(preg_women, 3)+ ns(all_female_sex, 3)
                               + ns(median_age, 3) + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson),
                 m2 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_4000m, 3) + ns(all_female_sex, 3)
                               + ns(median_age, 3) + offset(log(child_6_59_tested_malaria)), data=map2,  ziformula=~1,family=poisson),
@@ -136,12 +123,12 @@ demo_ms <- list(m1 <- glmmTMB(positives~ns(pop_density_0m, 3)+ ns(pop_den_U5_FB_
                 m8 <- glmmTMB(positives~ns(pop_density_0m, 2) +
                                 ns(median_age, 2) + offset(log(child_6_59_tested_malaria)) +  mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), 
                               data=map2,  ziformula=~1,family=poisson)) 
-lapply(demo_ms , summary)
+lapply(demo_mods , summary)
 # m1 AIC =  2164.1, M2 AIC =  2161.7, M3 AIC = 2162.7, M4 AIC = 2163.7, M5  AIC = 2159.9, M6 AIC = 2159.4, M7 AIC = 2072.7, M8 AIC = 2015.1
 
 # comparing model AICs
-aics_demo <- data.frame(cbind(ldply(demo_ms , function(x) cbind(AIC = AIC(x))),
-                               model = sapply(1:length(demo_ms), function(x) deparse(formula(demo_ms[[x]])))))
+aics_demo <- data.frame(cbind(ldply(demo_mods , function(x) cbind(AIC = AIC(x))),
+                               model = sapply(1:length(demo_mods), function(x) deparse(formula(demo_mods[[x]])))))
 
 
 #behavioral factors 
@@ -193,7 +180,6 @@ acc_models <- list(m1)
 aics_acc <-data.frame(cbind(ldply(acc_models, function(x) cbind(AIC = AIC(x))),
                  model = sapply(1:length(acc_models), function(x) deparse(formula(acc_models[[x]])))))
 
-#___________________________________________________________________________________________
 
 #environmental variables 
 map2 = map %>% dplyr::select(positives, child_6_59_tested_malaria,precipitation_monthly_0m,temperature_monthly_0m,soil_wetness_0m, 
@@ -398,18 +384,4 @@ p=(precip_b +precip)/ (EVI_b+EVI) + plot_annotation(tag_levels = 'A')&
   theme(plot.tag = element_text(size = 12, face = 'bold'), legend.position = 'bottom')
 ggsave(paste0(ResultDir, '/research_plots/updated_figures/', Sys.Date(), '_bivariate_multivariable_enironmental.pdf'), p, width = 7, height=5)
 
-
-#p=(pop_density_c +precip)
-
-
-plot_arang = ggarrange(b[[1]], NULL, p[[1]], b[[2]], NULL, p[[2]],
-                       b[[3]], NULL, p[[3]], b[[4]], NULL, p[[4]],
-                       b[[5]], NULL, p[[5]], b[[6]], NULL, p[[6]],
-                       b[[7]], NULL, p[[7]],
-                       nrow = 7, ncol= 3, widths = c(1,0.05,1))
-
-plot_arang
-ggsave('bivariate_multivariable_plots.pdf', plot_aragn, width = 8.5, height = 13.33)
-
-
-
+##END
