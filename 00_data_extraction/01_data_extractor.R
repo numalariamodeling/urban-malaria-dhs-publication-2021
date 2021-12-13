@@ -9,7 +9,7 @@ memory.limit(size = 50000)
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
-ProjectDir <- file.path(NuDir, "data", 'nigeria_dhs' , 'data_analysis')
+ProjectDir <- file.path(NuDir, "data", 'nigeria','nigeria_dhs' , 'data_analysis')
 DataDir <- file.path(ProjectDir, 'data')
 ResultDir =file.path(ProjectDir, "results", "research_plots")
 GlobDir <- file.path(DataDir, 'africa_health_district_climate', 'climate', 'global')
@@ -149,6 +149,7 @@ write.csv(fin_df, paste0(DataIn, "/positive_microscopy_test_6_59_months.csv"))
 #proportions 
 
 vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women', 'net_use_access')
+vars <- c('net_use_access')
 
 #vars<- c('age_cat')
 for (i in 1:length(vars)) {
