@@ -15,6 +15,10 @@ DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
                     'cleaned_cluster_covariates_all', 'New_082321')
 MultivarData <- file.path(DataIn, 'final_dataset_multivariate_analysis')
 
+library(sf)
+library(dplyr)
+
+
 # ------------------------------------------
 ### Required functions and settings
 ## -----------------------------------------
