@@ -7,7 +7,7 @@ rm(list=ls())
 
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
-NGDir <-file.path(NuDir, "data", "nigeria_dhs",  "data_analysis")
+NGDir <-file.path(NuDir, "data", 'nigeria', "nigeria_dhs",  "data_analysis")
 DataDir <-file.path(NGDir, "data")
 ResultDir <-file.path(NGDir, "results")
 DHSData <- file.path(DataDir, 'DHS')

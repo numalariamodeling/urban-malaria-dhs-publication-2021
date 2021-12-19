@@ -9,7 +9,7 @@ memory.limit(size = 50000)
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
 NuDir <- file.path(Drive, "Box", "NU-malaria-team")
-ProjectDir <- file.path(NuDir, "data", 'nigeria_dhs' , 'data_analysis')
+ProjectDir <- file.path(NuDir, "data", 'nigeria','nigeria_dhs' , 'data_analysis')
 DataDir <- file.path(ProjectDir, 'data')
 ResultDir =file.path(ProjectDir, "results", "research_plots")
 GlobDir <- file.path(DataDir, 'africa_health_district_climate', 'climate', 'global')
@@ -19,10 +19,7 @@ DataIn <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_cova
 GeoDir <- file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covariates', 'geospatial_covariates')
 shapes <- file.path(NuDir, 'data', 'nigeria_shapefiles')
 
-# dhs <- read.files(shapes, "*V1.shp$", 'Nigeria', shapefile)
-# dhs_kano <- st_as_sf(dhs[[1]]) %>%  filter(state == 'Kano')
-# dhs_kano_res <- dhs_kano  %>%  filter(landuse == 'Residential')
-# plot(dhs_kano_res)
+
 # -----------------------------------------
 ### Required functions and settings
 ## -----------------------------------------
@@ -44,26 +41,42 @@ dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', read_d
 ## -----------------------------------------
 
 #create a variables for wealth and housing quality, sex, net use, survey design and educational attainment  for all years
-dhs<- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
-                            floor_type = ifelse(hv213 >= 98, NA, ifelse(hv213 %in% c(30, 31, 33, 34, 35),1, 0)),
-                                              wall_type = ifelse(hv214 >= 98, NA , ifelse (hv214 %in% c(30, 31, 33, 34,35),1, 0)),
-                            roof_type = ifelse(hv215 >= 98, NA, ifelse(hv215 %in% c(31),1, 0)),
-                            housing_q = ifelse(floor_type == 1 & wall_type == 1 & roof_type == 1,1, 0),
-                            all_female_sex = ifelse(hc27 == 1,0, 1), 
-                            female_child_sex = all_female_sex,
-                            net_use = ifelse(hml12 %in% c(1,2), 1,0),
-                            wt=hv005/1000000,strat=hv022,
-                            id=hv021, num_p=1,
-                            edu_a = ifelse(hv106 %in% c(0, 1, 2), 0,ifelse(hv106 >= 8, NA, ifelse(hv106 == 2|3, 1, NA))),
-                            age = ifelse(hv105 >= 98, NA, hv105),
-                            age_cat = ifelse(age <18, 1, 0),
-                            median_age = age,
-                            mean_age =age,
-                            household_size = hv013,
-                            p_test = ifelse(hml32 > 1, NA, hml32),
-                            U5_pop = ifelse(hc1 %in% c(0:59), 1, 0),
-                            region = hv024, interview_month = hv006,
-                          visitors = hv102)) %>% 
+dhs <- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
+                           floor_type = ifelse(hv213 >= 98, NA, ifelse(hv213 %in% c(30, 31, 33, 34, 35),1, 0)),
+                           wall_type = ifelse(hv214 >= 98, NA , ifelse (hv214 %in% c(30, 31, 33, 34,35),1, 0)),
+                           roof_type = ifelse(hv215 >= 98, NA, ifelse(hv215 %in% c(31),1, 0)),
+                           housing_q = ifelse(floor_type == 1 & wall_type == 1 & roof_type == 1,1, 0),
+                           all_female_sex = ifelse(hc27 == 1,0, 1), 
+                           female_child_sex = all_female_sex,
+                           net_use = ifelse(hml12 %in% c(1,2), 1,0),
+                           wt=hv005/1000000,strat=hv022,
+                           id=hv021, num_p=1,
+                           edu_a = ifelse(hv106 %in% c(0, 1, 2), 0,ifelse(hv106 >= 8, NA, ifelse(hv106 == 2|3, 1, NA))),
+                           age = ifelse(hv105 >= 98, NA, hv105),
+                           age_cat = ifelse(age <18, 1, 0),
+                           median_age = age,
+                           mean_age =age,
+                           household_size = hv013,
+                           p_test = ifelse(hml32 > 1, NA, hml32),
+                           U5_pop = ifelse(hc1 %in% c(0:59), 1, 0),
+                           region = hv024, interview_month = hv006,
+                           visitors = hv102, 
+                           #Computing net use given access
+                           potuse = hml1*2,
+                           defacto_pop = hv013,
+                           potuse_ajusted = ifelse(potuse > defacto_pop, defacto_pop, potuse)))%>%
+  map(~filter(., hv103 == 1)) %>%
+  map(~group_by(., hhid)) %>%
+  map(~dplyr::arrange(., hhid)) %>%
+  map(~mutate(., access=potuse_ajusted/defacto_pop,
+              indi = defacto_pop - potuse_ajusted,
+              net_use =ifelse(hml12 %in% c(1,2),"1", "0")))%>%
+  map(~dplyr::arrange(., hhid,net_use)) %>%
+  map(~mutate(., access2 =c(rep(0, unique(indi)),rep(1, unique(potuse_ajusted))),
+              access3 = ifelse(access2=="0" & net_use == "1", 
+                               "1", ifelse(access2 == "1" & net_use == "1", "1", 
+                                           ifelse(access2 == "0" & net_use== "0", "0", ifelse(access2=='1' & net_use == '0', '1','')))),
+              net_use_access = ifelse(net_use==1 & access3 == 1, 1,0))) %>%
   map(~filter(., hv025 == 1)) %>% #filtering to urban areas only 
   map(~dplyr::select(., -c(hv013, hv105, hv106, hv021, hv005, hv022, hml12, hc27, hv215, hv214, hv213, hv270, hv024, hv006)))
 
@@ -135,9 +148,10 @@ write.csv(fin_df, paste0(DataIn, "/positive_microscopy_test_6_59_months.csv"))
 
 #proportions 
 
-vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women')
+vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women', 'net_use_access')
+vars <- c('net_use_access')
 
-vars<- c('age_cat')
+#vars<- c('age_cat')
 for (i in 1:length(vars)) {
   col <- list(vars[1])
   by <- list('hv001')

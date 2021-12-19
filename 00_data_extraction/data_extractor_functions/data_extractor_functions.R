@@ -47,6 +47,11 @@ result.median<- function(var, var1, design) {
 
 
 
+result.sum<- function(var, var1, design) {
+  p_est<-svyby(formula=make.formula(var), by=make.formula(var1), FUN=svytotal, design, quantiles=0.5, ci=TRUE, vartype="ci", na.rm=T)
+}
+
+
 #estimation functions 
 estim_prop <- function(df, col, by){
   svy_mal <- svydesign.fun(df)
@@ -63,6 +68,11 @@ estim_mean <- function(df, col, by){
 estim_median <- function(df, col, by){
   svy_mal <- svydesign.fun(df)
   clu_est <- result.median(col, by, design=svy_mal)
+}
+
+estim_sum <- function(df, col, by){
+  svy_mal <- svydesign.fun(df)
+  clu_est <- result.sum(col, by, design=svy_mal)
 }
 
 

@@ -170,6 +170,50 @@ forest_fun = function(data, color1, color2, xname, breaks, labels){
     theme_manuscript()
 }
 
+
+
+
+plots_fun <- function(y_var, color_point, color_smooth, fill_smooth, reg_fam, y_lab){
+  plots = df_list_ordered %>% {map2(., xlab, ~ggplot(.x,aes_string(x='values', y=y_var))+
+                                      geom_point(shape=42, size= 3, color = color_point, alpha = 0.5) +
+                                      geom_smooth(aes(fill = "Trend"), se = FALSE, color = color_smooth, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                      geom_smooth(aes(color = "Confidence Interval"), fill = fill_smooth, linetype = 0, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
+                                      theme_manuscript()+
+                                      labs(x = .y, y = y_lab)+
+                                      guides(fill =FALSE, color =FALSE))}
+}
+
+
+
+
+plots_fun2 <- function(df, y_var, color_point, color_smooth, fill_smooth, reg_fam, y_lab){
+  plots = df %>% {map2(., xlab, ~ggplot(.x,aes_string(x='values', y=y_var))+
+                         geom_point(shape=42, size= 3, color = color_point, alpha = 0.5) +
+                         geom_smooth(aes(fill = "Trend"), se = FALSE, color = color_smooth, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3))+
+                         geom_smooth(aes(color = "Confidence Interval"), fill = fill_smooth, linetype = 0, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3))+
+                         theme_manuscript()+
+                         labs(x = .y, y = y_lab)+
+                         guides(fill =FALSE, color =FALSE))}
+}
+
+plots_fun3 <- function(y_var, color_point, color_smooth, fill_smooth, reg_fam, x_lab1, y_lab){
+  plots = df_list %>% {purrr::map2(., xlab, ~ggplot(.x,aes_string(x='values', y=y_var))+
+                                geom_point(shape=42, size= 3, color = color_point, alpha = 0.5) +
+                                geom_smooth(aes(fill = "Trend"), se = FALSE, color = color_smooth, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                geom_smooth(aes(color = "Confidence Interval"), fill = fill_smooth, linetype = 0, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
+                                theme_manuscript()+
+                                labs(x = x_lab1, y =y_lab)+
+                                guides(fill =FALSE, color =FALSE))}
+}
+
+plots_para <- function(xlist, fill_list, color_list, bin_list){
+  x=list(xlist)
+  fill = list(fill_list)
+  color = list(color_list)
+  bins = list(bin_list)
+}
+
+
 #x <- c("tidyverse","INLA", "ggplot2", "ggpubr",  "rgdal", "sp", "sf", "tmap", 
 #'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "patchwork", "gdata",'cowplot', 'mmtable2', 'ggsci') #"inlabru","rebus"
 
