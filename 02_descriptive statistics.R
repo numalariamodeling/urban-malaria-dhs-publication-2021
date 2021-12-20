@@ -100,39 +100,15 @@ map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Cou
 
 
 #Kano 
-df_kano = dplyr::filter(state_sf, (NAME_1 %in% c('Kano')))
-map_kano = dplyr::filter(map, (ADM1NAME %in% c('KANO')))
-map_kano = gmap_fun(df_kano, map_kano, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                   map_kano$positives_cut, 'Test positivity rate')
-map_kano = map_kano + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Kano')
-
-
+map_kano <- state_map(state_sf, NAME_1, 'Kano', ADM1NAME,'KANO', map, positives_cut, 'Test positivity rate')
 
 #Lagos 
-df_lagos = dplyr::filter(state_sf, (NAME_1 %in% c('Lagos')))
-map_lagos = dplyr::filter(map, (ADM1NAME %in% c('LAGOS')))
-map_lag = gmap_fun(df_lagos, map_lagos, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                   map_lagos$positives_cut, 'Test positivity rate')
-map_lag = map_lag + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Lagos')
-
-
-
+map_lag <- state_map(state_sf, NAME_1, 'Lagos', ADM1NAME,'LAGOS', map, positives_cut, 'Test positivity rate')
 
 #Anambra 
-df_anambra = dplyr::filter(state_sf, (NAME_1 %in% c('Anambra')))
-map_anambra = dplyr::filter(map, (ADM1NAME %in% c('ANAMBRA')))
-map_anam = gmap_fun(df_anambra, map_anambra, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                    map_anambra$positives_cut, 'Test positivity rate')
-map_anam = map_anam + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Anambra')
-
-
+map_anam  <- state_map(state_sf, NAME_1, 'Anambra', ADM1NAME,'ANAMBRA', map, positives_cut, 'Test positivity rate')
 #rivers 
-df_rivers = dplyr::filter(state_sf, (NAME_1 %in% c('Rivers')))
-map_rivers = dplyr::filter(map, (ADM1NAME %in% c('RIVERS')))
-map_riv = gmap_fun(df_rivers, map_rivers, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                   map_rivers$positives_cut, 'Test positivity rate')
-map_riv = map_riv + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab('Rivers')
-
+map_riv <- state_map(state_sf, NAME_1, 'Rivers', ADM1NAME,'RIVERS', map, positives_cut, 'Test positivity rate')
 
 patch1 = ((map_lag /(map_anam + map_riv))| map_big)+ plot_layout(ncol = 2)
 patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
@@ -142,7 +118,6 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positiv
 map_low_values = map %>% na.omit(positives) %>%  filter(positives_prop == 0) %>%  group_by(ADM1NAME) %>%  summarise(n())
 map_low = map_low_values %>%  filter(`n()` >15)
 cluster = map %>% na.omit(positives)
-
 
 
 #figure 3
@@ -287,7 +262,6 @@ corr
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_social.pdf'), corr, width = 13, height = 9)
 
 
-
 #relationship with malaria positives
 dhs_social_plot = cbind(dhs_social, dhs_year, positives, num_tested)
 dhs_social_plot$rate = (dhs_social_plot$positives/dhs_social_plot$num_tested) 
@@ -298,7 +272,7 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$improved.housing.in.2015)
 
 
-plots <- plots_fun('positives', "#f64b77", "#644128", "#a56c56", poisson,"malaria positives")
+plots <- plots_fun(df_list_ordered,'positives', "#f64b77", "#644128", "#a56c56", poisson,"malaria positives")
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]] + plots[[7]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -308,7 +282,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.pdf
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.png'), p, width = 8, height =7)
 
 #rate
-plots <- plots_fun('rate', "#f64b77", "#644128", "#a56c56", quasipoisson, "malaria positivity rate")
+plots <- plots_fun(df_list_ordered,'rate', "#f64b77", "#644128", "#a56c56", quasipoisson, "malaria positivity rate", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[7]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -589,7 +563,7 @@ df_list = split(dhs_behave_plot, dhs_behave_plot$x_label)
 df_list_ordered = list(df_list$`% of individuals using bednets given access`,df_list$`% of individuals using bednets`,df_list$`% of children using bednets`, df_list[[3]], df_list[[4]])
 
 #unadjusted positives
-plots <- plots_fun('positives', "purple2", "deeppink4", "deeppink", poisson,"malaria positives")
+plots <- plots_fun(df_list_ordered,'positives', "purple2", "deeppink4", "deeppink", poisson,"malaria positives", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -599,7 +573,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_
 
 
 #rate
-plots <- plots_fun('rate', "purple2", "deeppink4", "deeppink", quasipoisson,"malaria positivity rate")
+plots <- plots_fun(df_list_ordered,'rate', "purple2", "deeppink4", "deeppink", quasipoisson,"malaria positivity rate", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
 
 p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -622,7 +596,6 @@ p = p+ plot_layout(guides = "collect")+ plot_annotation(tag_levels = 'A')&
 p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives_region.pdf'), p, width = 8.5, height =7)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives_region.png'), p, width = 8.5, height =7)
-
 
 
 ## --------------------------------------------------------------------------------------------------------------------------
@@ -651,7 +624,7 @@ xlab=list('Motorized travel time to health care')
 
 #unadjusted positives
 
-plots <- plots_fun3('positives', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),"malaria positives")
+plots <- plots_fun3(df_list,'positives', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),"malaria positives")
 
 p_all=p +plots[[1]]
 p_all
@@ -664,7 +637,7 @@ dhs_access_plot$rate = (dhs_access_plot$positives/dhs_access_plot$num_tested)
 dhs_access_plot = dhs_access_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_access_plot, dhs_access_plot$x_label)
 
-plots <- plots_fun3('positives', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),"malaria positives")
+plots <- plots_fun3(df_list,'positives', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),"malaria positives")
 
 p_all2 = p_all + plots[[1]]
 
@@ -675,7 +648,7 @@ dhs_access_plot = dhs_access_plot  %>%  pivot_longer(!c(region, positives, num_t
 df_list = split(dhs_access_plot, dhs_access_plot$x_label)
 
 
-plots <- plots_fun3('rate', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),'malaria positivity rate')
+plots <- plots_fun3(df_list,'rate', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),'malaria positivity rate')
 
 p_all3 = p_all2 +  plots[[1]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -788,7 +761,7 @@ df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surfac
                        df_list$Elevation, df_list$Enhanced.Vegetation.Index)
 
 #unadjusted positives
-plots <- plots_fun('positives', "slateblue4", "yellow4", "yellow1", poisson,"malaria positives")
+plots <- plots_fun(df_list_ordered,'positives', "slateblue4", "yellow4", "yellow1", poisson,"malaria positives", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -811,7 +784,7 @@ xlab=list(expression(atop('Precipitation', paste('(meters depth)'))), expression
           expression(atop('Enhanced Vegetation',  paste('Index'))))
 
 
-plots <- plots_fun('rate', "slateblue4", "yellow4", "yellow4", quasipoisson,"malaria positivity rate")
+plots <- plots_fun(df_list_ordered,'rate', "slateblue4", "yellow4", "yellow4", quasipoisson,"malaria positivity rate", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
