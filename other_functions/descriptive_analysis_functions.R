@@ -173,8 +173,8 @@ forest_fun = function(data, color1, color2, xname, breaks, labels){
 
 
 
-plots_fun <- function(y_var, color_point, color_smooth, fill_smooth, reg_fam, y_lab){
-  plots = df_list_ordered %>% {map2(., xlab, ~ggplot(.x,aes_string(x='values', y=y_var))+
+plots_fun <- function(df, y_var, color_point, color_smooth, fill_smooth, reg_fam, y_lab){
+  plots = df %>% {map2(., xlab, ~ggplot(.x,aes_string(x='values', y=y_var))+
                                       geom_point(shape=42, size= 3, color = color_point, alpha = 0.5) +
                                       geom_smooth(aes(fill = "Trend"), se = FALSE, color = color_smooth, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                       geom_smooth(aes(color = "Confidence Interval"), fill = fill_smooth, linetype = 0, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x), length =4)[2:3]))+
@@ -196,8 +196,8 @@ plots_fun2 <- function(df, y_var, color_point, color_smooth, fill_smooth, reg_fa
                          guides(fill =FALSE, color =FALSE))}
 }
 
-plots_fun3 <- function(y_var, color_point, color_smooth, fill_smooth, reg_fam, x_lab1, y_lab){
-  plots = df_list %>% {purrr::map2(., xlab, ~ggplot(.x,aes_string(x='values', y=y_var))+
+plots_fun3 <- function(df, y_var, color_point, color_smooth, fill_smooth, reg_fam, x_lab1, y_lab){
+  plots = df %>% {purrr::map2(., xlab, ~ggplot(.x,aes_string(x='values', y=y_var))+
                                 geom_point(shape=42, size= 3, color = color_point, alpha = 0.5) +
                                 geom_smooth(aes(fill = "Trend"), se = FALSE, color = color_smooth, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
                                 geom_smooth(aes(color = "Confidence Interval"), fill = fill_smooth, linetype = 0, method = 'glm', method.args = list(family = reg_fam(link = "log")), formula = y ~ ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))+
@@ -213,6 +213,17 @@ plots_para <- function(xlist, fill_list, color_list, bin_list){
   bins = list(bin_list)
 }
 
+
+
+state_map <- function(sf, NAME_1, state, ADM1NAME, STATE, map_df, plotted_col, title){
+  df = dplyr::filter(sf, (NAME_1 %in% c(state)))
+  map_name = dplyr::filter(map_df, (ADM1NAME %in% c(STATE)))
+  map_name = gmap_fun(df, map_name, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                      map_name$ploted_col, title)
+  map_name = map_name + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab(state)
+  
+  
+}
 
 #x <- c("tidyverse","INLA", "ggplot2", "ggpubr",  "rgdal", "sp", "sf", "tmap", 
 #'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "patchwork", "gdata",'cowplot', 'mmtable2', 'ggsci') #"inlabru","rebus"
