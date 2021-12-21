@@ -60,28 +60,12 @@ dhs <- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
                            p_test = ifelse(hml32 > 1, NA, hml32),
                            U5_pop = ifelse(hc1 %in% c(0:59), 1, 0),
                            region = hv024, interview_month = hv006,
-                           visitors = hv102, 
-                           #Computing net use given access
-                           potuse = hml1*2,
-                           defacto_pop = hv013,
-                           potuse_ajusted = ifelse(potuse > defacto_pop, defacto_pop, potuse)))%>%
-  map(~filter(., hv103 == 1)) %>%
-  map(~group_by(., hhid)) %>%
-  map(~dplyr::arrange(., hhid)) %>%
-  map(~mutate(., access=potuse_ajusted/defacto_pop,
-              indi = defacto_pop - potuse_ajusted,
-              net_use =ifelse(hml12 %in% c(1,2),"1", "0")))%>%
-  map(~dplyr::arrange(., hhid,net_use)) %>%
-  map(~mutate(., access2 =c(rep(0, unique(indi)),rep(1, unique(potuse_ajusted))),
-              access3 = ifelse(access2=="0" & net_use == "1", 
-                               "1", ifelse(access2 == "1" & net_use == "1", "1", 
-                                           ifelse(access2 == "0" & net_use== "0", "0", ifelse(access2=='1' & net_use == '0', '1','')))),
-              net_use_access = ifelse(net_use==1 & access3 == 1, 1,0))) %>%
+                           visitors = hv102)) %>%
   map(~filter(., hv025 == 1)) %>% #filtering to urban areas only 
   map(~dplyr::select(., -c(hv013, hv105, hv106, hv021, hv005, hv022, hml12, hc27, hv215, hv214, hv213, hv270, hv024, hv006)))
 
 
-
+#are we using the defacto population to compute all the wealth variables? Is that a reasonable choice
 
 #creating variable for computing pregnant women proportions 
 dhs[[1]]$preg_women <- ifelse(dhs[[1]]$sh09 >= 8 , NA, ifelse(dhs[[1]]$sh09 == 1, 1, 0))
