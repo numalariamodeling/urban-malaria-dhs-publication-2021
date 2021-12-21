@@ -368,7 +368,7 @@ dhs <- map(dhs, st_as_sf) %>%  map(~filter(.x, URBAN_RURA == "U")) %>% map(sf:::
 
 
 #pop density extraction with just columbia data 
-pop_density <- rast_ex_fun(RastDir, "NGA_pop_density", "*deg.tif$", 'gpw_v4', 'pop_den_', dhs, 'gpw_v4', 'pop_density_', "_DHS_10_15_18.csv")
+pop_density <- rast_ex_fun(RastDir, "NGA_pop_density", "*deg.tif$", 'gpw_v4', 'pop_den_', dhs, contains('gpw_v4'), 'pop_density_', "_DHS_10_15_18.csv")
 
 
 #pop density extraction with general FB data 
@@ -386,45 +386,45 @@ distance_to_water <- rast_ex_fun(RastDir, "distance_to_water_bodies", "*water.ti
                                  'dist_water_bodies_', "_DHS_10_15_18.csv")
 
 #Housing 2000
-housing_2000 <- rast_ex_fun(RastDir, "housing_nature", "*GA.tiff$", '2000', 'housing_2000_', dhs, 'Nature', 'housing_2000_',"_DHS_10_15_18.csv")
+housing_2000 <- rast_ex_fun(RastDir, "housing_nature", "*GA.tiff$", '2000', 'housing_2000_', dhs, contains('Nature'), 'housing_2000_',"_DHS_10_15_18.csv")
 
 #Housing 2015
-housing_2015 <- rast_ex_fun(RastDir, "housing_nature", "*GA.tiff$", '2015', 'housing_2015_', dhs, 'Nature', 'housing_2015_',"_DHS_10_15_18.csv")
+housing_2015 <- rast_ex_fun(RastDir, "housing_nature", "*GA.tiff$", '2015', 'housing_2015_', dhs, contains('Nature'), 'housing_2015_',"_DHS_10_15_18.csv")
 
 #elevation - World Bank  
-elevation <- rast_ex_fun(RastDir, "elevation", "*ELE.tif$", 'ELE', 'elevation_', dhs, 'ELE', 'elevation_', "_DHS_10_15_18.csv")
+elevation <- rast_ex_fun(RastDir, "elevation", "*ELE.tif$", 'ELE', 'elevation_', dhs, contains('ELE'), 'elevation_', "_DHS_10_15_18.csv")
 
 #access to cities_
-access_cities <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", '2015_accessibility', 'access_to_cities_', dhs, '2015_accessibility', 
+access_cities <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", '2015_accessibility', 'access_to_cities_', dhs, contains('2015_accessibility'), 
                              'access_to_cities_', "_DHS_10_15_18.csv")
 
 
 #minutes to travel one metre 2015, friction decompressed
-friction_decompressed <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'Decompressed', 'minutes_travel_metre_2015_', dhs, 'Decompressed', 
+friction_decompressed <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'Decompressed', 'minutes_travel_metre_2015_', dhs, contains('Decompressed'), 
                              "friction_decompressed_", "_DHS_10_15_18.csv")
 
 #minutes to travel one metre 2019, motorized friction surface 
-motorized_friction <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'motorized_friction', 'minutes_travel_metre_2019_', dhs, 'motorized_friction', 
+motorized_friction <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'motorized_friction', 'minutes_travel_metre_2019_', dhs, contains('motorized_friction'), 
                              'motorized_friction_', "_DHS_10_15_18.csv")
 
 
 #motorized travel to healthcare 2019 
-motorized_travel <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'motorized_travel_', 'motorized_travel_healthcare_2019_', dhs, 'motorized_travel_', 
+motorized_travel <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'motorized_travel_', 'motorized_travel_healthcare_2019_', dhs, contains('motorized_travel_'), 
                                   'motorized_travel_', "_DHS_10_15_18.csv")
 
 
 #walking only friction, minutes walking one metre
-walking_only_friction <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'walking_only_friction_', 'minutes_walking_metre_', dhs, 'walking_only_friction_', 
+walking_only_friction <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'walking_only_friction_', 'minutes_walking_metre_', dhs, contains('walking_only_friction_'), 
                                 'walking_only_friction_', "_DHS_10_15_18.csv")
 
 
 #walking_only_travel_time_to_healthcare 
-walking_travel <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'only_travel', 'minutes_walk_healthcare_', dhs, 'only_travel', 
+walking_travel <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'only_travel', 'minutes_walk_healthcare_', dhs, contains('only_travel'), 
                                 'walking_travel_', "_DHS_10_15_18.csv")
 
 
 #building density 
-buildings <- rast_ex_fun(RastDir, "NGA_buildings_v1_1", "*ity.tif$", 'buildings', 'building_density_', dhs, 'buildings', 
+buildings <- rast_ex_fun(RastDir, "NGA_buildings_v1_1", "*ity.tif$", 'buildings', 'building_density_', dhs, contains('buildings'), 
                               'building_density_', "_DHS_10_15_18.csv")
 
 
