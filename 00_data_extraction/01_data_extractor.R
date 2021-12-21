@@ -149,7 +149,6 @@ write.csv(fin_df, paste0(DataIn, "/positive_microscopy_test_6_59_months.csv"))
 #proportions 
 
 vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women', 'net_use_access')
-vars <- c('net_use_access')
 
 #vars<- c('age_cat')
 for (i in 1:length(vars)) {
@@ -168,51 +167,23 @@ dhs[[1]]$state <- as_label(dhs[[1]]$shstate)
 dhs[[2]]$state <- as_label(dhs[[2]]$shstate)
 dhs[[3]]$state <- as_label(dhs[[3]]$shstate)
 
-vars<- c('edu_a')
+vars <- c('edu_a', 'mean_age', 'median_age', 'household_size')
+srvy_fun <- list(estim_prop, estim_mean, estim_median, estim_median)
+stat_clu <- list('state', 'hv001', 'hv001', 'hv001')
+muilt <- c(100, 1, 1, 1)
+
+
 for (i in 1:length(vars)) {
   col <- list(vars[i])
-  by <- list('state')
+  by <- list(stat_clu[[i]])
   df <- dhs%>% 
     map(~drop_na(.,vars[i]))
-  df <- pmap(list(df,col,by), estim_prop)
+  df <- pmap(list(df,col,by), srvy_fun[[i]])
   df <- plyr::ldply(df)
-  df[, vars[i]]<- df[, vars[i]]*100
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_state_DHS_PR_10_15_18.csv")))
+  df[, vars[i]]<- df[, vars[i]]*muilt[[i]]
+  write.csv(df, file =file.path(down, paste0(vars[i], "_all_state_DHS_PR_10_15_18.csv")))
   
 }
-
-#mean
-
-vars <- c('mean_age')
-
-for (i in 1:length(vars)) {
-  col <- list(vars[i])
-  by <- list('hv001')
-  df <- dhs %>% 
-    map(~drop_na(.,vars[i]))
-  df <-  pmap(list(df,col,by), estim_mean)
-  df <- plyr::ldply(df)
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
-  
-}
-
-
-
-#median
-
-vars <- c()#'median_age', 'household_size'
-
-for (i in 1:length(vars)) {
-  col <- list(vars[i])
-  by <- list('hv001')
-  df <- dhs %>% 
-    map(~drop_na(.,vars[i]))
-  df <- pmap(list(df,col,by), estim_median)
-  df <- plyr::ldply(df)
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
-  
-}
-
 
 
 # month of state, region, month of survey by cluster 
