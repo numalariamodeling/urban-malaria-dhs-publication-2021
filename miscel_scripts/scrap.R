@@ -1079,3 +1079,44 @@ printCrudeAndAdjustedModel(u_glm)[-1,]
 #                 + offset(log(child_6_59_tested_malaria)) +
 #                 mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
 # summary(m2) 
+
+
+
+# 
+# #total slept_in population
+# vars <- c('slept_in_pop')
+# 
+# for (i in 1:length(vars)) {
+#   col <- list(vars[i])
+#   by <- list('hv001')
+#   df <- dhs %>% 
+#     map(~drop_na(.,vars[i]))
+#   df <-  pmap(list(df,col,by), estim_sum)
+#   df <- plyr::ldply(df)
+#   #write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
+#   
+# }
+# 
+# slept_in_pop <- df
+# 
+# #NET use
+# vars <- c('net_use')
+# 
+# for (i in 1:length(vars)) {
+#   col <- list(vars[i])
+#   by <- list('hv001')
+#   df <- dhs %>% 
+#     map(~drop_na(.,vars[i]))
+#   df <-  pmap(list(df,col,by), estim_prop)
+#   df <- plyr::ldply(df)
+#   #write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
+#   
+# }
+# 
+# net_use <- df
+# 
+# 
+# df_all <- left_join(clust_pop, net_ownership, by= c('hv001','.id'))%>% left_join(net_use, by = c('hv001','.id')) %>%
+#   left_join(slept_in_pop, by = c('hv001','.id')) %>%  mutate(itnby2 = net_ownership*2) %>% 
+#   mutate(itn_acces =  itnby2/slept_in_pop)%>%  mutate(net_use_access =  (net_use/itn_acces)) 
+
