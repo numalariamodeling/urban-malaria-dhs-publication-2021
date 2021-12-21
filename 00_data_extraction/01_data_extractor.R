@@ -72,9 +72,6 @@ dhs[[1]]$preg_women <- ifelse(dhs[[1]]$sh09 >= 8 , NA, ifelse(dhs[[1]]$sh09 == 1
 dhs[[2]]$preg_women <- ifelse(dhs[[2]]$sh09 >= 8, NA, ifelse(dhs[[2]]$sh09 == 1, 1, 0))
 dhs[[3]]$preg_women <- ifelse(dhs[[3]]$ha54 >= 8, NA, ifelse(dhs[[3]]$ha54 == 1, 1, 0))
 
-
-
-
 #
 ## -----------------------------------------------
 ### preliminary estimation with PfPR and DHS data 
@@ -106,10 +103,6 @@ write.csv(df_test, paste0(DataIn, "/tested_malaria_children_6_59_months.csv"), r
 visitors_num <- dhs %>% map(~dplyr::select(., hv001, visitors)) %>%  map(~filter(., visitors == 0)) %>% map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,visitors = n())) %>% 
   plyr::ldply() 
 write.csv(visitors_num, paste0(DataIn, "/num_visitors_DHS_10_15_18.csv"), row.names = FALSE)
-
-
-
-
 
 
 ## -----------------------------------------
@@ -186,9 +179,6 @@ for (i in 1:length(vars)){
   write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
   }
 }
-
-
-
 
 
 ## -----------------------------------------------------------------------------
@@ -279,7 +269,6 @@ for (i in 1:length(vars)) {
 }
 
 
-
 ## ----------------------------------------------------
 ### estimation using the 2018 IR file 
 ## ----------------------------------------------------
@@ -312,37 +301,22 @@ dhs[[1]]$know_vul <- ifelse(dhs[[1]]$s1108ai == 1 & dhs[[1]]$s1108ba == 1 & dhs[
 
 #proportions 
 
-vars <- c('know_vul', 'agri_worker_partner', 'last_work_partner', 'agri_worker_woman', 'agri_worker_both', 'last_work_woman', 'seasonal_work_woman' , 'duration_travel_woman')
+vars <- c('know_vul', 'agri_worker_partner', 'last_work_partner', 'agri_worker_woman', 'agri_worker_both',
+          'last_work_woman', 'seasonal_work_woman' , 'duration_travel_woman', 'trips_woman')
 
+srvy_fun <- rep(list(estim_prop, estim_median), times = c(8,1))
+muilt <- c(rep(100, 8), 1)
 
-
-for (i in 1:length(vars)) {
-col <- list(vars[i])
-by <- list('v001')
-df <- dhs %>% 
-  map(~drop_na(.,vars[i]))
-df <- pmap(list(df,col,by), estim_prop)
-df <- plyr::ldply(df)
-df[, vars[i]]<- df[, vars[i]]*100
-write.csv(df, file =file.path(DataIn, paste0(vars[i], "_IR_DHS_18.csv")))
-}
-
-
-
-
-#median
-
-vars <- c('trips_woman')
 
 for (i in 1:length(vars)) {
   col <- list(vars[i])
   by <- list('v001')
   df <- dhs %>% 
     map(~drop_na(.,vars[i]))
-  df <- pmap(list(df,col,by), estim_median)
+  df <- pmap(list(df,col,by), srvy_fun[[i]])
   df <- plyr::ldply(df)
+  df[, vars[i]]<- df[, vars[i]]*muilt[[i]]
   write.csv(df, file =file.path(DataIn, paste0(vars[i], "_IR_DHS_18.csv")))
-  
 }
 
 
@@ -365,11 +339,11 @@ dhs <- dhs %>% map(~mutate(., trips_man = ifelse(mv167 >=97, NA, mv167), #Number
                            seasonal_work_man = ifelse(mv732 == 2, 1, ifelse(mv732 ==9, NA, 0)))) #if man is a seasonal worker or not 
 
 
-
 #proportions 
 
-vars <- c('agri_worker_man', 'last_work_man', 'seasonal_work_man' , 'duration_travel_man')
-
+vars <- c('agri_worker_man', 'last_work_man', 'seasonal_work_man' , 'duration_travel_man', 'trips_man')
+srvy_fun <- rep(list(estim_prop, estim_median), times = c(4,1))
+muilt <- c(rep(100, 4), 1)
 
 
 for (i in 1:length(vars)) {
@@ -377,28 +351,11 @@ for (i in 1:length(vars)) {
   by <- list('mv001')
   df <- dhs %>% 
     map(~drop_na(.,vars[i]))
-  df <- pmap(list(df,col,by), estim_prop)
+  df <- pmap(list(df,col,by), srvy_fun[[i]])
   df <- plyr::ldply(df)
-  df[, vars[i]]<- df[, vars[i]]*100
+  df[, vars[i]]<- df[, vars[i]]*muilt[[i]]
   write.csv(df, file =file.path(DataIn, paste0(vars[i], "_MR_DHS_18.csv")))
 }
-
-
-#median
-
-vars <- c('trips_man')
-
-for (i in 1:length(vars)) {
-  col <- list(vars[i])
-  by <- list('mv001')
-  df <- dhs %>% 
-    map(~drop_na(.,vars[i]))
-  df <- pmap(list(df,col,by), estim_median)
-  df <- plyr::ldply(df)
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_MR_DHS_18.csv")))
-  
-}
-
 
 
 ## ----------------------------------------------------
@@ -410,293 +367,68 @@ dhs <- read.files(DHSData, "*FL.shp$", 'NGGE61FL|NGGE71FL|NGGE7BFL', shapefile) 
 dhs <- map(dhs, st_as_sf) %>%  map(~filter(.x, URBAN_RURA == "U")) %>% map(sf:::as_Spatial)
 
 
-
-# buffers of interest
-
-vars <- c(0, 1000, 2000, 3000, 4000)
-
-
-
 #pop density extraction with just columbia data 
-
-files <- list.files(path = file.path(DataDir, "Raster_files") , pattern = "*deg.tif$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('gpw_v4', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- c(paste0('pop_den_', as.character(vars[i]), 'm'))
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('gpw_v4')))
-  df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
-  write.csv(df, file =file.path(GeoDir, paste0('pop_density_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
+pop_density <- rast_ex_fun(RastDir, "NGA_pop_density", "*deg.tif$", 'gpw_v4', 'pop_den_', dhs, 'gpw_v4', 'pop_density_', "_DHS_10_15_18.csv")
 
 
 #pop density extraction with general FB data 
-
-raster_3 <- raster(file.path(RastDir, "facebook_pop_density/nga_general_2020.tif"))
-raster <- list(raster_3)
-
-
-
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('pop_den_FB_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('nga')))
-  df <- plyr::ldply(df) %>% select(-c(ID))
-  write.csv(df, file =file.path(GeoDir, paste0('pop_density_FB_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
+pop_density_fb <- rast_ex_fun(RastDir, "facebook_pop_density", "*20.tif$", 'nga_general', 'pop_den_FB_', dhs, starts_with('nga'), 
+                              'pop_density_FB_', "_DHS_10_15_18.csv")
 
 
 #pop density extraction with U5 FB data 
-
-raster <- raster(file.path(RastDir, "facebook_pop_density/nga_children_under_five_2020.tif"))
-raster <- list(raster)
-
-
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('pop_den_U5_FB_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('nga')))
-  df <- plyr::ldply(df) %>% select(-c(ID))
-  write.csv(df, file =file.path(GeoDir, paste0('pop_density_U5_FB_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
+pop_density_fb_u5 <- rast_ex_fun(RastDir, "facebook_pop_density", "*20.tif$", 'nga_children', 'pop_den_U5_FB_', dhs, starts_with('nga'), 
+                              'pop_density_U5_FB_', "_DHS_10_15_18.csv")
 
 
 #distance to water bodies  
-
-raster <- raster(file.path(RastDir, "distance_to_water_bodies/distance_to_water.tif"))
-raster <- list(raster)
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('dist_water_bodies_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('distance')))
-  df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
-  write.csv(df, file =file.path(GeoDir, paste0('dist_water_bodies_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
+distance_to_water <- rast_ex_fun(RastDir, "distance_to_water_bodies", "*water.tif$", 'distance', 'dist_water_bodies_', dhs, starts_with('distance'), 
+                                 'dist_water_bodies_', "_DHS_10_15_18.csv")
 
 #Housing 2000
-#loading raster files
-
-files <- list.files(path = file.path(RastDir , "housing_nature") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('2000', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('housing_2000_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Nature')))
-  df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('housing_2000_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
+housing_2000 <- rast_ex_fun(RastDir, "housing_nature", "*GA.tiff$", '2000', 'housing_2000_', dhs, 'Nature', 'housing_2000_',"_DHS_10_15_18.csv")
 
 #Housing 2015
-#loading raster files
-
-files <- list.files(path = file.path(RastDir , "housing_nature") ,pattern = "*GA.tiff$",full.names = TRUE, recursive = TRUE)
-files<- files[(grep('2015', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('housing_2015_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Nature')))
-  df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('housing_2015_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
-
+housing_2015 <- rast_ex_fun(RastDir, "housing_nature", "*GA.tiff$", '2015', 'housing_2015_', dhs, 'Nature', 'housing_2015_',"_DHS_10_15_18.csv")
 
 #elevation - World Bank  
-#loading raster files
-
-files <- list.files(path = file.path(RastDir, "elevation") ,pattern = "*ELE.tif$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('ELE', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('elevation_', as.character(vars[[i]]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[[i]]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('ELE')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('elevation_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
+elevation <- rast_ex_fun(RastDir, "elevation", "*ELE.tif$", 'ELE', 'elevation_', dhs, 'ELE', 'elevation_', "_DHS_10_15_18.csv")
 
 #access to cities_
-#loading raster files
+access_cities <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", '2015_accessibility', 'access_to_cities_', dhs, '2015_accessibility', 
+                             'access_to_cities_', "_DHS_10_15_18.csv")
 
-files <- list.files(path = file.path(RastDir , "accessibility") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('2015_accessibility', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('access_to_cities_', as.character(2000), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, 2000), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('2015_accessibility')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('access_to_cities_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-hist(df$access_to_cities_2000m)
 
 #minutes to travel one metre 2015, friction decompressed
-
-
-files <- list.files(path = file.path(RastDir , "accessibility") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('Decompressed', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('minutes_travel_metre_2015_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Decompressed')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('friction_decompressed_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
-
+friction_decompressed <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'Decompressed', 'minutes_travel_metre_2015_', dhs, 'Decompressed', 
+                             "friction_decompressed_", "_DHS_10_15_18.csv")
 
 #minutes to travel one metre 2019, motorized friction surface 
-#loading raster files
-
-files <- list.files(path = file.path(RastDir , "accessibility") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('motorized_friction', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('minutes_travel_metre_2019_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('motorized_friction')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('motorized_friction_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
+motorized_friction <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'motorized_friction', 'minutes_travel_metre_2019_', dhs, 'motorized_friction', 
+                             'motorized_friction_', "_DHS_10_15_18.csv")
 
 
 #motorized travel to healthcare 2019 
-
-files <- list.files(path = file.path(RastDir , "accessibility") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('motorized_travel_', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('motorized_travel_healthcare_2019_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('motorized_travel_')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('motorized_travel_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
+motorized_travel <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'motorized_travel_', 'motorized_travel_healthcare_2019_', dhs, 'motorized_travel_', 
+                                  'motorized_travel_', "_DHS_10_15_18.csv")
 
 
 #walking only friction, minutes walking one metre
-
-#loading raster files
-
-files <- list.files(path = file.path(RastDir , "accessibility") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('walking_only_friction_', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('minutes_walking_metre_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('walking_only_friction_')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('walking_only_friction_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
+walking_only_friction <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'walking_only_friction_', 'minutes_walking_metre_', dhs, 'walking_only_friction_', 
+                                'walking_only_friction_', "_DHS_10_15_18.csv")
 
 
 #walking_only_travel_time_to_healthcare 
-
-files <- list.files(path = file.path(RastDir , "accessibility") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('only_travel', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('minutes_walk_healthcare_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('only_travel')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('walking_travel_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
+walking_travel <- rast_ex_fun(RastDir, "accessibility", "*GA.tiff$", 'only_travel', 'minutes_walk_healthcare_', dhs, 'only_travel', 
+                                'walking_travel_', "_DHS_10_15_18.csv")
 
 
 #building density 
-
-files <- list.files(path = file.path(RastDir , "NGA_buildings_v1_1") ,pattern = "*ity.tif$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('buildings', files))]
-raster<-sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('building_density_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('buildings')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('building_density_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
+buildings <- rast_ex_fun(RastDir, "NGA_buildings_v1_1", "*ity.tif$", 'buildings', 'building_density_', dhs, 'buildings', 
+                              'building_density_', "_DHS_10_15_18.csv")
 
 
 ## Geospatial data monthly extraction 
-
-
 
 #dhs clusters by year and month of sampling 
 
@@ -722,85 +454,23 @@ dhs <- sapply(c(dhs_2010, dhs_2015, dhs_2018), sf:::as_Spatial, simplify = F)
 names(dhs)
 
 
-#EVI rasters 
-files <- list.files(path = file.path(RastDir , "EVI") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
-raster <- sapply(files, raster, simplify = F)
+#EVI rasters in months when DHIS/MIS was conducted
 
+evi <- rast_ex_fun_time(RastDir, "EVI", "*.tif$", 'EVI_', dhs, contains('EVI'), 'EVI_', "_DHS_10_15_18.csv")
 
-for (i in 1:length(vars)) {
-  var_name <- paste0('EVI_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('EVI')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
-  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1) #use descending to get data for the second month for sensitivity analysis 
-  write.csv(df, file = file.path(GeoDir, paste0('EVI_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
+#temperature era5 in months when DHIS/MIS was conducted
 
-
-
-#temperature era5
-
-#loading temp era rasters in months when DHIS/MIS was conducted
-
-files <- list.files(path = file.path(RastDir, "temperature_monthly") ,pattern = "*.tif$", full.names = TRUE, recursive = TRUE)
-raster <- sapply(files, raster, simplify = F)
-
-
-#temp extraction
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('temp_survey_month_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('temp')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
-  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
-  write.csv(df, file = file.path(GeoDir, paste0('temp_survey_month_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-
+tenp_era <- rast_ex_fun_time(RastDir, "temperature_monthly", "*.tif$", 'temp_survey_month_', dhs, contains('temp'), 'temp_survey_month_', "_DHS_10_15_18.csv")
 
 #precipitation era
 
-#loading era rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(RastDir, "rainfall_monthly"), pattern = "*.tif$", full.names = TRUE, recursive = TRUE)
-raster <- sapply(files, raster, simplify = F)
+prec_era <- rast_ex_fun_time(RastDir, "rainfall_monthly", "*.tif$", 'preci_monthly_', dhs, contains('rainfall'), 'precip_monthly_', "_DHS_10_15_18.csv")
 
+#precip extraction in months when DHIS/MIS was conducted
 
-#precip extraction
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('preci_monthly_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
-  df <- df %>% map(~rename_with(., .fn=~paste0(var_name), .cols = contains('rainfall')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
-  write.csv(df, file = file.path(GeoDir, paste0('precip_monthly_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
-
-#still trying to figure out why 2010 amd 2018 observations are less when the csv is generated
-#End
+prec_era <- rast_ex_fun_time(RastDir, "rainfall_monthly", "*.tif$", 'preci_monthly_', dhs, contains('rainfall'), 'precip_monthly_', "_DHS_10_15_18.csv")
 
 #soil surface wetness
 
-#loading soil surface wetness rasters in months when DHIS/MIS was conducted
-files <- list.files(path = file.path(RastDir, "surface_soil_wetness") ,pattern = "*.tif$", full.names = TRUE, recursive = FALSE)
-raster <- sapply(files, raster, simplify = F)
-
-
-for (i in 1:length(vars)) {
-  var_name <- paste0('soil_wetness_', as.character(vars[i]), 'm')
-  df <- map2(dhs, raster, get_crs)
-  df <- pmap(list(raster, df, vars[i]), extract_fun_month)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('GIOVANNI')))
-  df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
-  write.csv(df, file = file.path(GeoDir, paste0('soil_wetness_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
-}
+prec_era <- rast_ex_fun_time(RastDir, "surface_soil_wetness", "*.tif$", 'soil_wetness_', dhs, contains('GIOVANNI'), 'soil_wetness_', "_DHS_10_15_18.csv")
 
