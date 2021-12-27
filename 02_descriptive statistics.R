@@ -33,7 +33,7 @@ dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header 
 dhs$positives_prop = round(dhs$positives/dhs$child_6_59_tested_malaria, 1) %>% as.numeric
 
 
-#figure 1
+#figure 1a
 dhs = dhs %>%drop_na(positives)
 df=data.frame(x=c('2010', '2015', '2018'), y =c(81, 136, 560))
 pdf('clusters_dhs.pdf')
@@ -44,7 +44,7 @@ barplot(height=df$y, names=df$x,
 )
 dev.off()
 
-
+#figure 1b
 p1 = igv.lm.point(dhs, dhs$num_child_6_59, dhs$child_6_59_tested_malaria,dhs$dhs_year,  "Survey year", 'Number of children 6 - 59 months', 'Number of children 6 - 59 months \n tested for malaria')
 p1= p1 +geom_smooth(method=lm, color = "black")+ theme(legend.position = 'none')
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_1_sample_overview.pdf'), p1, width = 13, height = 9)
@@ -107,11 +107,12 @@ map_lag <- state_map(state_sf, NAME_1, 'Lagos', ADM1NAME,'LAGOS', map, positives
 
 #Anambra 
 map_anam  <- state_map(state_sf, NAME_1, 'Anambra', ADM1NAME,'ANAMBRA', map, positives_cut, 'Test positivity rate')
+
 #rivers 
 map_riv <- state_map(state_sf, NAME_1, 'Rivers', ADM1NAME,'RIVERS', map, positives_cut, 'Test positivity rate')
 
-patch1 = ((map_lag /(map_anam + map_riv))| map_big)+ plot_layout(ncol = 2)
-patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
+patch1 = ( map_big|(map_lag /(map_anam + map_riv)))+ plot_layout(ncol = 2)
+    patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positivity_viz.pdf'), patch2, width = 13, height = 9)
 
 
