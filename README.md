@@ -48,7 +48,7 @@ To replicate the findings, we extract data from various sources, namely, Demogra
 2. [01_file_cleaner.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/01_file_cleaner.R) This script cleans and merges the variaous extracted scripts into two CSVs. 
 
 ### Descriptive analysis
-3. [03_glm_modelling.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/02_descriptive%20statistics.R) This script loads the cleaned data and conducts descriptive analysis for both the main manuscript and the suplement publication. This script is also associated with a script containing all functions used. 
+3. [02_descriptive statistics.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/02_descriptive%20statistics.R) This script loads the cleaned data and conducts descriptive analysis for both the main manuscript and the suplement publication. This script is also associated with a script containing all functions used. 
 
 <!-- ROADMAP -->
 ## Roadmap
