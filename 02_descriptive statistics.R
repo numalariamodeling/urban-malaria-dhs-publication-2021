@@ -112,7 +112,7 @@ map_anam  <- state_map(state_sf, NAME_1, 'Anambra', ADM1NAME,'ANAMBRA', map, pos
 map_riv <- state_map(state_sf, NAME_1, 'Rivers', ADM1NAME,'RIVERS', map, positives_cut, 'Test positivity rate')
 
 patch1 = ( map_big|(map_lag /(map_anam + map_riv)))+ plot_layout(ncol = 2)
-    patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
+patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positivity_viz.pdf'), patch2, width = 13, height = 9)
 
 
@@ -219,7 +219,7 @@ dhs_social = data.frame(`Educational attainment` = df_all$edu_a, Wealth = df_all
                         `Improved roofing materials` = df_all$roof_type, `Improved wall` = df_all$wall_type, `improved housing in 2000` =df_all$housing_2000_4000m,
                         `improved housing in 2015` = df_all$housing_2015_4000m) %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
                                                                                              improved.housing.in.2015= improved.housing.in.2015*100) 
-
+#Figure 4
 dhs_social_long = dhs_social %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
 
 df_list =split(dhs_social_long, dhs_social_long$x_label)
@@ -242,7 +242,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distr
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'social_variable_distribution.png'), p, width =8, height =7)
 
 #correlation 
-
+#Supplement pub. figure 1
 dhs_social_ordered = dhs_social[, order(ncol(dhs_social):1)] %>%  mutate(improved.housing.in.2000 = improved.housing.in.2000*100,
                                                                                             improved.housing.in.2015= improved.housing.in.2015*100)
 #replace nas with their means 
@@ -272,7 +272,7 @@ df_list_ordered = list(df_list$Educational.attainment,df_list$Wealth,
                        df_list$Improved.flooring, df_list$Improved.roofing.materials, df_list$Improved.wall, df_list$improved.housing.in.2000,
                        df_list$improved.housing.in.2015)
 
-
+#Supplement pub. figure 2
 plots <- plots_fun(df_list_ordered,'positives', "#f64b77", "#644128", "#a56c56", poisson,"malaria positives")
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]] + plots[[7]]+ plot_annotation(tag_levels = 'A')& 
@@ -282,8 +282,9 @@ p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.pdf'), p, width = 8, height =7)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social.png'), p, width = 8, height =7)
 
-#rate
-plots <- plots_fun(df_list_ordered,'rate', "#f64b77", "#644128", "#a56c56", quasipoisson, "malaria positivity rate", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
+#Supplement pub. figure 3
+#rate 
+plots <- plots_fun(df_list_ordered,'rate', "#f64b77", "#644128", "#a56c56", quasipoisson, "malaria positivity rate")
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plots[[7]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -298,7 +299,8 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_bivariate_social_rat
 #variable distribution and cumulative distribution 
 demo_numeric = data.frame(`Population density` = df_all$pop_density_0m, `U5 population density` = df_all$pop_den_U5_FB_4000m, `Pregnant women` =df_all$preg_women,
                         `Female population` = df_all$all_female_sex, `Household size` = df_all$household_size, `Median age` =df_all$median_age)
-                      
+ 
+#Figure 5 A-F                   
 demo_numeric_long = demo_numeric %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
 
 df_list =split(demo_numeric_long, demo_numeric_long$x_label)
@@ -326,6 +328,7 @@ clu_name_state = df_all %>%  group_by(shstate) %>%  summarise(n = n()) %>%
 stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_1",use_iconv=TRUE, encoding= "UTF-8")
 state_sf = st_as_sf(stateshp)
 
+#Figure 5 G
 #map by state
 state_map = left_join(state_sf, clu_name_state, by =c('NAME_1'))
 state_map$nun_cut = cut(state_map$n, breaks = c(0, 10, 21, 32, 43, 54, 76), include.lowest = TRUE)
@@ -337,7 +340,7 @@ map=ggplot(state_map) +
 map
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_clusters_by_state.pdf'), map, width = 14, height =9)
 
-
+#Figure 5 H
 #map by geopolitical region
 clu_num_geo = df_all %>%  group_by(region) %>%  summarise(n = n())
 clu_num_geo_ = left_join(df_all, clu_num_geo, by=c('region')) %>%  dplyr::select(region, shstate, n) %>%  
@@ -355,6 +358,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_distribution_cluster
 
 
 #correlation
+#supplementpub Figure 4
 colnames(demo_numeric)= c('Population density',
                                   'Population density,\n children 5 years and under','% of pregnant women',
                                   '% of females', 'Median household size',
@@ -393,7 +397,7 @@ df_list = split(dhs_demo_plot, dhs_demo_plot$x_label)
 df_list_ordered = list(df_list$`Population density`,df_list[[6]],df_list$`% of pregnant women`, df_list$`% of females`, df_list$`Median household size`, df_list$`Median age`)
 
 
-
+#supplementpub Figure 5
 #unadjusted positives chopped boundary 
 plots <- plots_fun2(df_list_ordered, 'positives', "dodgerblue3", "darkred", "darksalmon", poisson,"malaria positives")
 
@@ -404,7 +408,7 @@ p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_chopped_bondary.png'), p, width = 8.5, height =4.5)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_demo_bivariate_chopped_bondary.pdf'), p, width = 8.5, height =4.5)
 
-
+#supplementpub Figure 6
 #malaria rate chopped boundary 
 plots <- plots_fun2(df_list_ordered, 'rate', "dodgerblue3", "darkred", "darksalmon", quasipoisson,"malaria positivity rate")
 
@@ -424,7 +428,7 @@ df_list_ordered = list(df_list$`Population density`,df_list[[6]],
                        df_list$`% of pregnant women`, df_list$`% of females`, df_list$`Median household size`, df_list$`Median age`)
 
 
-
+#supplementpub Figure 7
 #unadjusted positives expanded boundary 
 plots <- plots_fun2(df_list_ordered, 'positives', "dodgerblue3", "darkred", "darksalmon", poisson,"malaria positives")
 
@@ -444,6 +448,7 @@ state_dat$names = rownames(state_dat)
 state_dat = state_dat %>%  mutate(lci = coefficient - std_error, uci = coefficient + std_error) %>% 
   filter(names !='(Intercept)') %>%  mutate(index = 1:36)
 
+#supplementpub Figure 8
 #effect plot - state  
 xname <- expression(paste("Slope estimate"))
 p = forest_fun(state_dat, '#644128', "#a56c56", xname, 1:36, state_dat$names)
@@ -456,10 +461,10 @@ GPZ_dat$names = rownames(GPZ_dat)
 GPZ_dat = GPZ_dat %>%  mutate(lci = coefficient - std_error, uci = coefficient + std_error) %>% 
   filter(names !='(Intercept)') %>%  mutate(index = 1:5)
 
+#supplementpub Figure 9
 #effect plot - GPZ 
 p = forest_fun(GPZ_dat, "forestgreen", "darkseagreen", xname,1:5, GPZ_dat$names)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_slope_estimate_GPZ_comparison.pdf'), p, width = 8.5, height =4.5)
-
 
 
 #2018 data alone 
@@ -489,7 +494,7 @@ dhs_occ_plot = df_18_all  %>% dplyr::select(positives, agri_worker_partner,seaso
 df_list = split(dhs_occ_plot , dhs_occ_plot$x_label)
 
 
-
+#supplementpub Figure 10
 #unadjusted positives chopped boundary 
 plots <- plots_fun2(df_list, 'positives', "dodgerblue3", "darkred", "darksalmon", poisson,"malaria positives")
 
@@ -510,6 +515,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_occupation_positive_
 df_behave = data.frame(`Net use access` = df_all$net_use_access,`Net use` = df_all$net_use, `Child net use` = df_all$net_use_child, `Medical treatment for fever` =df_all$med_treat_fever,
                           `Effective fever treatment` = df_all$ACT_use_U5)
 
+#Figure 6
 df_behave_long = df_behave %>%  pivot_longer(everything(),names_to='x_label', values_to='values')
 
 df_list =split(df_behave_long, df_behave_long$x_label)
@@ -531,7 +537,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_distribution.png'), p, width = 8.5, height =4.5)
 
 
-
+#supplementpub Figure 11
 #correlation 
 colnames(df_behave)= c('% of individuals using bednets given access','% of individuals using bednets',
                        '% of children using bednets','% of U5 children that sought \n  medical treatment for fever',
@@ -556,7 +562,7 @@ corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_behave.pdf'), corr, width = 8.5, height = 4.5)
 
 
-
+#supplementpub Figure 12
 dhs_behave_plot = cbind(df_behave, region, positives, num_tested) 
 dhs_behave_plot$rate = (dhs_behave_plot$positives/dhs_behave_plot$num_tested) 
 dhs_behave_plot = dhs_behave_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
@@ -564,7 +570,7 @@ df_list = split(dhs_behave_plot, dhs_behave_plot$x_label)
 df_list_ordered = list(df_list$`% of individuals using bednets given access`,df_list$`% of individuals using bednets`,df_list$`% of children using bednets`, df_list[[3]], df_list[[4]])
 
 #unadjusted positives
-plots <- plots_fun(df_list_ordered,'positives', "purple2", "deeppink4", "deeppink", poisson,"malaria positives", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
+plots <- plots_fun(df_list_ordered,'positives', "purple2", "deeppink4", "deeppink", poisson,"malaria positives")
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -572,7 +578,7 @@ p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.pdf'), p, width = 8.5, height =4.5)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_bivariate_positives.png'), p, width = 8.5, height =4.5)
 
-
+#supplementpub Figure 13
 #rate
 plots <- plots_fun(df_list_ordered,'rate', "purple2", "deeppink4", "deeppink", quasipoisson,"malaria positivity rate", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
 
@@ -582,7 +588,7 @@ p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_rate_bivariate_positives.pdf'), p, width = 8.5, height =4.5)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_rate_bivariate_positives.png'), p, width = 8.5, height =4.5)
 
-
+#supplementpub Figure 14
 #region adjustment 
 plots = df_list_ordered %>%  {purrr::map2(., xlab, ~ggplot(.x,aes(x=values, y=positives, color=region, group = region, fill=region))+
                                             geom_point(shape=42, size= 5, alpha = 0.7) +
@@ -603,7 +609,8 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_
 ### Accessibility factors variable distribution, cumulative distribution, correlation and relationship with malaria prevalence 
 ## --------------------------------------------------------------------------------------------------------------------------
 
-#variable distribution and cumulative distribution 
+#Figure 7
+#variable distribution and cumulative distribution
 df_access = data.frame(`motor_travel_healthcare` = df_all$motorized_travel_healthcare_2019_2000m)
 hist=ggplot(df_access, aes(x =motor_travel_healthcare))+geom_histogram(alpha = 0.4, position="identity", bins=30)
 max_y=max(ggplot_build(hist)$data[[1]]$count)
@@ -627,7 +634,7 @@ xlab=list('Motorized travel time to health care')
 
 plots <- plots_fun3(df_list,'positives', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),"malaria positives")
 
-p_all=p +plots[[1]]
+p_all= plots[[1]]
 p_all
 
 
@@ -648,7 +655,7 @@ dhs_access_plot$rate = (dhs_access_plot$positives/dhs_access_plot$num_tested)
 dhs_access_plot = dhs_access_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
 df_list = split(dhs_access_plot, dhs_access_plot$x_label)
 
-
+##supplementpub Figure 15
 plots <- plots_fun3(df_list,'rate', "turquoise4", "tan4", "tan3", poisson, expression(atop('Motorized travel time to health care', paste('in minutes, 2019'))),'malaria positivity rate')
 
 p_all3 = p_all2 +  plots[[1]]+ plot_annotation(tag_levels = 'A')& 
@@ -712,14 +719,14 @@ df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surfac
 xlab=list(expression(atop('Total precipitation', paste('(meters depth)'))), expression(atop('Temperature', paste('(°C)'))),expression(atop('Surface soil', paste('moisture (GSM)'))),expression(atop('Distance to water', paste('bodies (meters)'))), expression(atop('Elevation', paste('(meters)'))),
           expression(atop('Enhanced Vegetation',  paste('Index'))))
 
-
+#Figure 8
 p = pmap(list(df_list_ordered,'dodgerblue3', 'dodgerblue3', 'values', xlab, 25), cdf_hist)
 p=p[[1]]+ p[[2]]+ p[[3]]+p[[4]] + p[[5]]+ p[[6]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
 p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_distribution.pdf'), p, width = 8.5, height =5)
 
-
+#supplementpub Figure 16
 files <- list.files(path = file.path(GeoDir) , pattern = "month_07", full.names = TRUE, recursive = TRUE)
 files<-sapply(files, read.csv, simplify = F)
 preci_2010 = cdf_hist(files[[1]], 'dodgerblue3', 'dodgerblue3','precipitation0m',  expression(atop('Total precipitation, July 2010', paste('(meters depth)'))), 25)
@@ -728,9 +735,9 @@ preci_2018 = cdf_hist(files[[3]], 'dodgerblue3', 'dodgerblue3','precipitation0m'
 all_precip = preci_2010 + preci_2015 + preci_2018
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_precipitation_july_all_DHS.pdf'), all_precip, width = 8.5, height =3)
 
-
+#supplementpub Figure 17
 #correlation 
-colnames(df_behave)= c('Total precipitation',
+colnames(df_env)= c('Total precipitation',
                        'Temperature','Surface soil moisture',
                        'Distance to water bodies', 'Elevation', "Enhanced Vegetation Index")
 df_env_reverse=df_env[,order(ncol(df_env):1)]
@@ -753,7 +760,7 @@ corr= ggcorrplot(corr, lab = TRUE, legend.title = "Correlation coefficient")+
 corr
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), 'correlation_coefficients_environmental.pdf'), corr, width = 8.5, height = 4.5)
 
-
+#supplementpub Figure 18
 dhs_env_plot = cbind(df_env, region, positives, num_tested) 
 dhs_env_plot$rate = (dhs_env_plot$positives/dhs_env_plot$num_tested) 
 dhs_env_plot = dhs_env_plot  %>%  pivot_longer(!c(region, positives, num_tested, rate),names_to='x_label', values_to='values')
@@ -762,7 +769,7 @@ df_list_ordered = list(df_list$Precipitation,df_list$Temperature, df_list$Surfac
                        df_list$Elevation, df_list$Enhanced.Vegetation.Index)
 
 #unadjusted positives
-plots <- plots_fun(df_list_ordered,'positives', "slateblue4", "yellow4", "yellow1", poisson,"malaria positives", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
+plots <- plots_fun(df_list_ordered,'positives', "slateblue4", "yellow4", "yellow1", poisson,"malaria positives")
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
@@ -770,7 +777,7 @@ p
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_bivariate_positives.pdf'), p, width = 8.5, height =4.5)
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_environmental_variable_bivariate_positives.png'), p, width = 8.5, height =4.5)
 
-
+#supplement pub Figure 19
 #rate
 dhs_env_plot = cbind(df_env, region, positives, num_tested) 
 is.na(dhs_env_plot$Precipitation) = dhs_env_plot$Precipitation > 400
@@ -785,7 +792,7 @@ xlab=list(expression(atop('Precipitation', paste('(meters depth)'))), expression
           expression(atop('Enhanced Vegetation',  paste('Index'))))
 
 
-plots <- plots_fun(df_list_ordered,'rate', "slateblue4", "yellow4", "yellow4", quasipoisson,"malaria positivity rate", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
+plots <- plots_fun(df_list_ordered,'rate', "slateblue4", "yellow4", "yellow4", quasipoisson,"malaria positivity rate")
 
 p<- plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plots[[6]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
