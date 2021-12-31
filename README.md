@@ -39,16 +39,28 @@ All data is extracted and analyzed using [R](https://www.r-project.org/)
 ### Prerequisites
 Install [R](https://www.r-project.org/) then [RStudio](https://www.rstudio.com/) an integrated development environment for R and Python, with a console, syntax-highlighting editor that supports direct code execution, and tools for plotting, history, debugging and workspace management. 
 
-<!-- USAGE EXAMPLES -->
+<!-- Data extraction and cleaning -->
 ### Data extraction and cleaning
-To replicate the findings, we extract data from various sources, namely, Demographic Health surveys for the years 2010, 2015, 2018, and various rasters. Note that this proccess takes considerable amount of time. However you can skip the step and procced to step on and run a pre extracted and cleaned CSV.
+To replicate the findings, we extract data from various sources, namely, Demographic Health surveys for the years 2010, 2015, 2018, and various rasters. Note that this proccess takes considerable amount of time. However you can skip the step and procced to Descriptive analysis step and run a pre extracted and cleaned CSV.
 
-1. [01_data_extractor.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/00_data_extraction/01_data_extractor.R) This script extracts and stores the extracted data into several CSV files. 
+1. [data_extractor_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/00_data_extraction/data_extractor_functions/data_extractor_functions.R) This script loads functions and libraries used to extract the data used for analysis. 
 
-2. [01_file_cleaner.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/01_file_cleaner.R) This script cleans and merges the variaous extracted scripts into two CSVs. 
+2. [01_data_extractor.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/00_data_extraction/01_data_extractor.R) This script extracts and stores the extracted data into several CSV files. This script is also associated with a script containing all functions used. 
 
+3. [01_file_cleaner.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/01_file_cleaner.R) This script cleans and merges the variaous extracted scripts into two CSVs. 
+
+<!-- Descriptive analysis -->
 ### Descriptive analysis
-3. [02_descriptive statistics.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/02_descriptive%20statistics.R) This script loads the cleaned data and conducts descriptive analysis for both the main manuscript and the suplement publication. This script is also associated with a script containing all functions used. 
+4. [descriptive_analysis_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/descriptive_analysis_functions.R) This script loads functions and libraries used to conduct descriptive analysis.
+
+5. [02_descriptive statistics.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/02_descriptive%20statistics.R) This script loads the cleaned data and conducts descriptive analysis for both the main manuscript and the suplement publication. This script is also associated with a script containing all functions used. The script also exports a CSV file used for GLM modeling analyis
+
+<!-- GLM Modeling analysis -->
+### GLM Modeling analysis
+6. [multivariate_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/multivariate_functions.R) This script loads functions and libraries used to conduct GLM analysis.
+
+7. [03_glm_modelling.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/03_glm_modelling.R) This script loads pre-cleaned  CSV data and conducts GLM modeling analysis for both the main manuscript and the suplement publication. 
+
 
 <!-- ROADMAP -->
 ## Roadmap
