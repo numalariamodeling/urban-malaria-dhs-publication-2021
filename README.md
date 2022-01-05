@@ -14,13 +14,11 @@
       <a href="#Getting-Started-With-The-Descriptive-Modeling-Framework">Getting Started With The Descriptive Modeling Framework</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#Data-extraction-and-cleaning">Data extraction and cleaning</a></li>
+        <li><a href="#Descriptive-analysis">Descriptive analysis</a></li>
+        <li><a href="#GLM Modeling-analysis">GLM Modeling analysis</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
