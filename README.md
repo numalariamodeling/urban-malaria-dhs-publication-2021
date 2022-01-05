@@ -16,7 +16,7 @@
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#Data-extraction-and-cleaning">Data extraction and cleaning</a></li>
         <li><a href="#Descriptive-analysis">Descriptive analysis</a></li>
-        <li><a href="#GLM Modeling-analysis">GLM Modeling analysis</a></li>
+        <li><a href="#GLM-Modeling-analysis">GLM Modeling analysis</a></li>
       </ul>
     </li>
     <li><a href="#contact">Contact</a></li>
