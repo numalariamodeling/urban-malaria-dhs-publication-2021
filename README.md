@@ -64,11 +64,10 @@ To replicate the findings, we extract data from various sources, namely, Demogra
 
 <!-- CONTACT -->
 ## Contact
-For all other inquiries, contact Ifeoma Ozodiegwu, [ Research Assistant Professor, Northwestern University (NU).](https://www.feinberg.northwestern.edu/faculty-profiles/az/profile.html?xid=52373) Email -[ifeoma.ozodiegwu@northwestern.edu](ifeoma.ozodiegwu@northwestern.edu)
+For inquiries, contact Ifeoma Ozodiegwu, [ Research Assistant Professor, Northwestern University (NU).](https://www.feinberg.northwestern.edu/faculty-profiles/az/profile.html?xid=52373) Email -[ifeoma.ozodiegwu@northwestern.edu](ifeoma.ozodiegwu@northwestern.edu) or Chilo Chiziba, [Research Assistant @ NU Malaria Modeling Team](https://www.numalariamodeling.org/team.html)
 
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
-- [Ifeoma Ozodiegwu - Principal Investigator @ NU Malaria Modeling Team](https://www.feinberg.northwestern.edu/faculty-profiles/az/profile.html?xid=52373)
 - [Jaline Gerardin - Principal Investigator @ NU Malaria Modeling Team](https://www.feinberg.northwestern.edu/faculty-profiles/az/profile.html?xid=44305)
 - [Ousmane Diallo @ NU Malaria Modeling Team](https://www.numalariamodeling.org/team.html)
 - [Amelia Bertozzi-Villa @ Institute for Disease Modeling](https://www.idmod.org/user/146)
