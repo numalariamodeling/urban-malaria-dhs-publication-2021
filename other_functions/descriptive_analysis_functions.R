@@ -215,12 +215,13 @@ plots_para <- function(xlist, fill_list, color_list, bin_list){
 
 
 
-state_map <- function(sf, NAME_1, state, ADM1NAME, STATE, map_df, plotted_col, title){
-  df = dplyr::filter(sf, (NAME_1 %in% c(state)))
-  map_name = dplyr::filter(map_df, (ADM1NAME %in% c(STATE)))
-  map_name = gmap_fun(df, map_name, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
-                      map_name$ploted_col, title)
-  map_name = map_name + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab(state)
+state_map <- function(state, STATE_NAME, title){
+  df = dplyr::filter(state_sf, (NAME_1 %in% c(state)))
+  STATE <- STATE_NAME
+  map_name = dplyr::filter(map, (ADM1NAME %in% c(STATE)))
+  map_state = gmap_fun(df, map_name, labels=c('0 - 0.2', '0.3 - 0.4', '0.5 - 0.6', '0.7 - 0.8', '0.9 - 1.0', 'Missing data'),
+                      map_name$positives_cut, title)
+  map_state = map_state + theme(legend.position = 'none', panel.border = element_rect(colour = "black", fill=NA, size=0.5))+ xlab(state)
   
   
 }
