@@ -100,16 +100,16 @@ map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Cou
 
 
 #Kano 
-map_kano <- state_map(state_sf, NAME_1, 'Kano', ADM1NAME,'KANO', map, positives_cut, 'Test positivity rate')
+map_kano <- state_map('Kano', 'KANO', 'Test positivity rate')
 
 #Lagos 
-map_lag <- state_map(state_sf, NAME_1, 'Lagos', ADM1NAME,'LAGOS', map, positives_cut, 'Test positivity rate')
+map_lag <- state_map('Lagos', 'LAGOS', 'Test positivity rate')
 
 #Anambra 
-map_anam  <- state_map(state_sf, NAME_1, 'Anambra', ADM1NAME,'ANAMBRA', map, positives_cut, 'Test positivity rate')
+map_anam <- state_map('Anambra', 'ANAMBRA', 'Test positivity rate')
 
 #rivers 
-map_riv <- state_map(state_sf, NAME_1, 'Rivers', ADM1NAME,'RIVERS', map, positives_cut, 'Test positivity rate')
+map_riv <- state_map('Rivers', 'RIVERS', 'Test positivity rate')
 
 patch1 = ( map_big|(map_lag /(map_anam + map_riv)))+ plot_layout(ncol = 2)
 patch2 = (p2+ p3_)/ patch1 + plot_layout(nrow = 2)+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
@@ -580,7 +580,7 @@ ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_behavioral_variable_
 
 #supplementpub Figure 13
 #rate
-plots <- plots_fun(df_list_ordered,'rate', "purple2", "deeppink4", "deeppink", quasipoisson,"malaria positivity rate", ns(x, 3, knots = seq(min(x),max(x),length =4)[2:3]))
+plots <- plots_fun(df_list_ordered,'rate', "purple2", "deeppink4", "deeppink", quasipoisson,"malaria positivity rate")
 
 p= plots[[1]]+plots[[2]]+ plots[[3]]+ plots[[4]]+ plots[[5]]+ plot_annotation(tag_levels = 'A')& 
   theme(plot.tag = element_text(size = 12, face = 'bold'))
