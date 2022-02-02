@@ -73,7 +73,7 @@ DataIn<-file.path(Drive, "Downloads")
 dhs_ir <- read.files(DataDir, "*NGIR.*\\.DTA", 'NGIR7AFL', read_dta)  #reads in the IR files
 
 
-look_for(dhs[[1]], "assistance:")
+look_for(dhs_ir[[1]], "ward")
 
 #create a variable for skilled antenatal provision, problem accessing healthcare
 dhs_ir <- dhs_ir %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
@@ -86,8 +86,10 @@ dhs_ir <- dhs_ir %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
   map(~filter(., midx_1 == 1)) %>% #filtering to the last antenatal only
   map(~filter(., v025 == 1)) #filtering to urban areas only 
 
-prob<- dhs[[1]] %>% dplyr::select(v467b, v467c, v467d, v467f, access_prob, any_anc_sum,any_anc, ski_prov, 
+prob <- dhs_ir[[1]] %>% dplyr::select(v467b, v467c, v467d, v467f, access_prob, any_anc_sum,any_anc, ski_prov, 
                                   m2a_1, m2b_1, m2c_1, m2d_1, m2e_1, m2f_1, m2g_1, m2h_1, m2i_1, m2j_1, m2k_1, m2l_1, m2m_1,m2n_1)
+
+ddd <- dhs_ir[[1]]
 
 vars <- c('ski_prov', 'access_prob')
 
@@ -95,7 +97,7 @@ vars <- c('ski_prov', 'access_prob')
 for (i in 1:length(vars)) {
   col <- list(vars[i])
   by <- list('v001')
-  df <- dhs %>% 
+  df <- dhs_ir %>% 
     map(~drop_na(.,vars[i]))
   df <- pmap(list(df,col,by), estim_prop)
   df <- plyr::ldply(df)
@@ -107,10 +109,10 @@ for (i in 1:length(vars)) {
 
 
 #load data PR data for social, behavioral, intervention coverage, and malaria
-dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL', read_dta)  #reads in the IR files
+dhs_pr <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL', read_dta)  #reads in the IR files
 
 #create a variable for skilled antenatal provision
-dhs <- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
+dhs_pr <- dhs_pr %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
                            edu_a = ifelse(hv106 %in% c(0, 1, 2), 0,ifelse(hv106 >= 8, NA, ifelse(hv106 == 2|3, 1, NA))),
                            p_test = ifelse(hml32 > 1, NA, hml32),
                            net_use = ifelse(hml12 %in% c(1,2), 1,0),
@@ -124,7 +126,7 @@ vars <- c('wealth','edu_a', 'p_test', 'net_use')
 for (i in 1:length(vars)) {
   col <- list(vars[i])
   by <- list('hv001')
-  df <- dhs %>% 
+  df <- dhs_pr %>% 
     map(~drop_na(.,vars[i]))
   df <- pmap(list(df,col,by), estim_prop)
   df <- plyr::ldply(df)
@@ -193,24 +195,6 @@ states <- dhs[[1]]%>% dplyr::select(v001, sstate) %>% filter(duplicated(v001) ==
 
 df_states <- df %>% left_join(states, by="v001") %>% filter(sstate == 100|sstate == 210) %>% mutate(sstate = ifelse(sstate== 100,'kano', 'oyo'))
 
-#plot two histograms in same graph at state level
-
-#define data
-x1 = df_states %>% filter(sstate == 'kano') 
-x1 <- x1$ski_prov
-x2 = df_states %>% filter(sstate == 'oyo')
-x2 <- x2$ski_prov
-
-#plot two histograms in same graph; The figure gets saved in  ANC folder
-pdf('Skiled ANC in Kano and Oyo states.pdf')
-hist(x1, col=rgb(0,0,1,0.2), xlim=c(0, 1), ylim=c(0, 10),
-     xlab='Values', ylab='Frequency', main='Skiled ANC in Oyo state')
-hist(x2, col=rgb(1,0,0,0.2), add=TRUE)
-legend('topleft', c('Kano', 'Oyo'),
-       fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
-
-
-dev.off()
 
 
 #state agregates
@@ -228,28 +212,6 @@ for (i in 1:length(vars)) {
 
 df_state <- df_state %>% filter(sstate == 100|sstate == 210) %>% mutate(sstate = ifelse(sstate== 100,'kano', 'oyo'))
 
-
-#plot two histograms in same graph; The figure gets saved in  ANC folder
-
-state_p <- ggplot(df_state, aes(x=sstate, y=ski_prov, fill=sstate)) +
-  geom_bar(stat="identity")+theme_minimal()+
-  geom_text(aes(label = sprintf("%0.2f", round(ski_prov, digits = 2), vjust=1.6, color="white", size = 6))) +
-  scale_fill_manual(values=c("#E69F00", "#56B4E9")) + labs(fill = "State")+
-  theme(legend.title.align=0.5,
-        legend.title=element_text(size=14, colour = 'black'), 
-        legend.text =element_text(size = 12, colour = 'black'),
-        legend.key.height = unit(0.65, "cm"),
-        plot.title = element_text(hjust = 0.5),
-        panel.grid.major = element_blank(),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12),
-        axis.title.x = element_text(size = 14),axis.title.y = element_text(size = 14))+
-  labs (title = 'State level proporttion of skilled antenatal care provision', size=50) +
-  xlab("State") +
-  ylab("Proportion of skilled antenatal care")
-state_p
-
-ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'State_level_hist.pdf'), state_p, width = 14, height =9)
 
 #metro level maps
 
@@ -280,6 +242,82 @@ df_18_fin_oyo <- left_join(df_states, sf18, by = "v001") %>% filter(LONGNUM > 0.
 df_18_fin_oyo <- st_as_sf(df_18_fin_oyo)
 
 points_within_oyo_metro <- df_18_fin_oyo %>% st_transform (4326)%>% filter(LONGNUM > 3.540555) %>% filter(LATNUM < 7.676494) 
+
+#plot two histograms in same graph at state level
+
+#define data
+x1 = df_states %>% filter(sstate == 'kano') 
+x1 <- x1$ski_prov
+x2 = df_states %>% filter(sstate == 'oyo')
+x2 <- x2$ski_prov
+
+#plot two histograms in same graph; The figure gets saved in  ANC folder
+pdf('Skiled ANC in Kano and Oyo states.pdf')
+hist(x1, col=rgb(0,0,1,0.2), xlim=c(0, 1), ylim=c(0, 10),
+     xlab='Values', ylab='Frequency', main='Skiled ANC in Oyo state')
+hist(x2, col=rgb(1,0,0,0.2), add=TRUE)
+legend('topleft', c('Kano', 'Oyo'),
+       fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
+
+
+dev.off()
+
+
+Ibadan_kano_metro <- dplyr::bind_rows(points_within_oyo_metro, points_within_kano_metro)
+
+#define data
+x1 = Ibadan_kano_metro %>% filter(sstate == 'kano') 
+x1 <- x1$ski_prov
+x2 = Ibadan_kano_metro %>% filter(sstate == 'oyo')
+x2 <- x2$ski_prov
+#plot two histograms in same graph; The figure gets saved in  ANC folder
+pdf('Ibadan_kano_metro_level_skiled_anc.pdf')
+hist(x1, col=rgb(0,0,1,0.2), xlim=c(0, 1), ylim=c(0, 10),
+     xlab='Proportion', ylab='Frequency', main='Ibadan and kano metro skiled antenatal care provision')
+hist(x2, col=rgb(1,0,0,0.2), add=TRUE)
+legend('topleft', c('Ibadan', 'Kano_metro'),
+       fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
+
+
+dev.off()
+
+
+#bar plots
+barplt_fun <- function(dataframe, plot_title, xlab_title, ylab_title){
+  ggplot(dataframe, aes(x=sstate, y=ski_prov, fill=sstate)) +
+  geom_bar(stat="identity")+theme_minimal()+
+  geom_text(aes(label = sprintf("%0.2f", round(ski_prov, digits = 2), vjust=1.6, color="white", size = 6))) +
+  scale_fill_manual(values=c("#E69F00", "#56B4E9")) + labs(fill = "Lacation")+
+  theme(legend.title.align=0.5,
+        legend.title=element_text(size=14, colour = 'black'), 
+        legend.text =element_text(size = 12, colour = 'black'),
+        legend.key.height = unit(0.65, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.grid.major = element_blank(),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 14),axis.title.y = element_text(size = 14))+
+  labs (title = plot_title, size=50) +
+  xlab(xlab_title) +
+  ylab(ylab_title)
+}
+
+#state level
+state_plot <- barplt_fun(df_state, "State level proportion of skilled antenatal care provision", "State", "Proportion of skilled antenatal care")
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'State_level_barplot.pdf'), state_p, width = 14, height =9)
+
+#Ibadan and kano metro level
+
+
+Ibadan_kano_mean <- Ibadan_kano_metro %>% dplyr::group_by(sstate) %>% dplyr::summarize(ski_prov = mean(ski_prov))%>%
+  mutate(sstate=str_replace(sstate, 'kano','kano metro')) %>% mutate(sstate=str_replace(sstate, 'oyo','Ibadan'))
+
+
+metro_plot <- barplt_fun(Ibadan_kano_mean, "Ibadan and kano metro level proportion of skilled antenatal care provision", "Location", 
+                         "Proportion of skilled antenatal care")
+
+
 
 
 
@@ -339,7 +377,7 @@ oyo_map_metro
 map_fun2 <- function(polygon_name,sec_fill, point_data, var_n, aes_names, title, label1, label2, label3, label4, label5){
   point_data[[var_n]] = cut(point_data[[var_n]], breaks=c(0.5, 0.6, 0.7, 0.8, 0.9, 1), include.lowest = TRUE)
   p= ggplot() + 
-    geom_sf(data =polygon_name, aes(fill = mean_pop))+
+    geom_sf(data =polygon_name, aes(fill = mean_pop, alpha = 0.2))+
     #geom_sf(data =polygon_name2, fill= sec_fill)+
     geom_text_repel(
       data = polygon_name,
@@ -351,7 +389,7 @@ map_fun2 <- function(polygon_name,sec_fill, point_data, var_n, aes_names, title,
           axis.text.y = ggplot2::element_blank(),
           axis.ticks = ggplot2::element_blank(),
           rect = ggplot2::element_blank(),
-          plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
+          plot.background = ggplot2::element_rect(fill = "white"), 
           legend.title.align=0.5,
           legend.title=element_text(size=16, colour = 'black'), 
           legend.text =element_text(size = 12, colour = 'black'),
@@ -361,7 +399,7 @@ map_fun2 <- function(polygon_name,sec_fill, point_data, var_n, aes_names, title,
     labs (title = title, x = "values", size=25) +
     xlab("") +
     ylab("")+
-    guides(color=guide_legend(title = "", override.aes = list(size = 5)))+
+    guides(color=guide_legend(title = "ANC proportion", override.aes = list(size = 5)))+
     scale_color_manual(values = c('darkred', "#E7B800","green4", 'deepskyblue'), 
                        labels = c(label1, label2, label3, label4, label5))
   
@@ -384,7 +422,6 @@ oyo_map_metro
 
 
 #State level maps
-
 
 #read in state shape file 
 stateshp = readOGR(file.path(DataDir, "shapefiles","Nigeria_LGAs_shapefile_191016"), layer ="gadm36_NGA_2",use_iconv=TRUE, encoding= "UTF-8")
