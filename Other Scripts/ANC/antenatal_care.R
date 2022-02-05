@@ -10,7 +10,7 @@ memory.limit(size = 50000)
 list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr",  "stringr", "sp", "rgdal", "raster",
                       "lubridate", "RColorBrewer","sf",   "labelled", "plotrix", "arules", "foreign",
                       "fuzzyjoin", "splitstackshape", "magrittr", "caTools", "sjlabelled", "raster", "rlist", 'rgeos',  'ggpubr',
-                      'cowplot', 'gridExtra', 'lme4', "patchwork", 'ggsci', 'glue', 'ggrepel')
+                      'cowplot', 'gridExtra', 'lme4', "patchwork", 'ggsci', 'glue', 'ggrepel', 'reshape2', 'viridis')
 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -70,10 +70,10 @@ DataIn<-file.path(Drive, "Downloads")
 
 
 #load data IR data ANC varaible 
-dhs_ir <- read.files(DataDir, "*NGIR.*\\.DTA", 'NGIR7AFL', read_dta)  #reads in the IR files
+dhs_ir <- read.files(DataDir2, "*NGIR.*\\.DTA", 'NGIR7AFL', read_dta)  #reads in the IR files
 
 
-look_for(dhs_ir[[1]], "ward")
+look_for(dhs_ir[[1]], "assistance:")
 
 #create a variable for skilled antenatal provision, problem accessing healthcare
 dhs_ir <- dhs_ir %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
@@ -86,7 +86,7 @@ dhs_ir <- dhs_ir %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
   map(~filter(., midx_1 == 1)) %>% #filtering to the last antenatal only
   map(~filter(., v025 == 1)) #filtering to urban areas only 
 
-prob <- dhs_ir[[1]] %>% dplyr::select(v467b, v467c, v467d, v467f, access_prob, any_anc_sum,any_anc, ski_prov, 
+prob <- dhs_ir[[1]] %>% dplyr::select(bidx_1,midx_2,v467b, v467c, v467d, v467f, access_prob, any_anc_sum,any_anc, ski_prov, 
                                   m2a_1, m2b_1, m2c_1, m2d_1, m2e_1, m2f_1, m2g_1, m2h_1, m2i_1, m2j_1, m2k_1, m2l_1, m2m_1,m2n_1)
 
 ddd <- dhs_ir[[1]]
@@ -181,17 +181,10 @@ df <- left_join(df[[1]], df[[2]], by = 'v001') %>% left_join(df[[3]], by = 'v001
   left_join(df[[5]], by = 'v001') %>% left_join(df[[6]], by = 'v001')
 
 
-#_________________________
-#Visuals
-#_________________________
 
-#load data IR data ANC varaible 
-dhs <- read.files(DataDir, "*NGIR.*\\.DTA", 'NGIR7AFL', read_dta)  #reads in the IR files
-
-#shapaefiles
 
 #filtering oyo and Kano states only 
-states <- dhs[[1]]%>% dplyr::select(v001, sstate) %>% filter(duplicated(v001) == FALSE) 
+states <- dhs_ir[[1]]%>% dplyr::select(v001, sstate) %>% filter(duplicated(v001) == FALSE) 
 
 df_states <- df %>% left_join(states, by="v001") %>% filter(sstate == 100|sstate == 210) %>% mutate(sstate = ifelse(sstate== 100,'kano', 'oyo'))
 
@@ -213,6 +206,11 @@ for (i in 1:length(vars)) {
 df_state <- df_state %>% filter(sstate == 100|sstate == 210) %>% mutate(sstate = ifelse(sstate== 100,'kano', 'oyo'))
 
 
+
+#_________________________
+#Visuals
+#_________________________
+
 #metro level maps
 
 ward_pop <- read_csv(file.path(DataDir2, 'nigeria_wardpop', 'GRID3_ward_admin_pop.csv')) %>% dplyr::select(ward_name, mean) %>%
@@ -222,7 +220,7 @@ Ibadan_metro <- read_sf(file.path(DataDir2, 'kano_ibadan_shape_files', 'Ibadan_m
 Ibadan_metro <- left_join(Ibadan_metro, ward_pop, by = 'WardName') %>% filter(duplicated(WardName) == FALSE)
 
 
-kano_metro <-  read_sf(file.path(DataDir2, 'kano_ibadan_shape_files', 'kano_metro_Wards_shapes', 'kano_metro_wards.shp')) #%>% filter(Urban == 'Yes')
+kano_metro <-  read_sf(file.path(DataDir2, 'kano_ibadan_shape_files', 'kano_metro_Wards_shapes', 'kano_metro_wards.shp')) 
 kano_metro <- left_join(kano_metro, ward_pop, by = 'WardName') %>% filter(duplicated(WardName) == FALSE)
 
 #ward populat
@@ -283,8 +281,8 @@ dev.off()
 
 
 #bar plots
-barplt_fun <- function(dataframe, plot_title, xlab_title, ylab_title){
-  ggplot(dataframe, aes(x=sstate, y=ski_prov, fill=sstate)) +
+barplt_fun <- function(dataframe, label_column, plot_title, xlab_title, ylab_title){
+  ggplot(dataframe, aes_string(x=label_column, y='ski_prov', fill=label_column)) +
   geom_bar(stat="identity")+theme_minimal()+
   geom_text(aes(label = sprintf("%0.2f", round(ski_prov, digits = 2), vjust=1.6, color="white", size = 6))) +
   scale_fill_manual(values=c("#E69F00", "#56B4E9")) + labs(fill = "Lacation")+
@@ -303,7 +301,8 @@ barplt_fun <- function(dataframe, plot_title, xlab_title, ylab_title){
 }
 
 #state level
-state_plot <- barplt_fun(df_state, "State level proportion of skilled antenatal care provision", "State", "Proportion of skilled antenatal care")
+state_plot <- barplt_fun(df_state, 'sstate', "State level proportion of skilled antenatal care provision", "State", "Proportion of skilled antenatal care")
+state_plot
 
 ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'State_level_barplot.pdf'), state_p, width = 14, height =9)
 
@@ -377,8 +376,8 @@ oyo_map_metro
 map_fun2 <- function(polygon_name,sec_fill, point_data, var_n, aes_names, title, label1, label2, label3, label4, label5){
   point_data[[var_n]] = cut(point_data[[var_n]], breaks=c(0.5, 0.6, 0.7, 0.8, 0.9, 1), include.lowest = TRUE)
   p= ggplot() + 
-    geom_sf(data =polygon_name, aes(fill = mean_pop, alpha = 0.2))+
-    #geom_sf(data =polygon_name2, fill= sec_fill)+
+    geom_sf(data =polygon_name, aes(fill = mean_pop, alpha = 0.1))+
+    #geom_sf(data =oyo_sampled_lga, fill= 'blue')+
     geom_text_repel(
       data = polygon_name,
       aes(label =  polygon_name[[aes_names]], geometry = geometry),color ='black',
@@ -414,9 +413,9 @@ ibadan_map
 #ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'ANC_ibadan_map.pdf'), oyo_map_metro, width = 14, height =9)
 
 #kano
-oyo_map_metro <- map_fun2(kano_metro, 'slategray2',points_within_kano_metro, 6, 3,"Prevalence of skilled ANC and ward population size in kano metro", 
+kano_map_metro <- map_fun2(kano_metro, 'slategray2',points_within_kano_metro, 6, 3,"Prevalence of skilled ANC and ward population size in kano metro", 
                           "60% - 69%", "70% - 79%", "80% - 89%", "90% - 100%","")
-oyo_map_metro
+kano_map_metro 
 
 #ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'ANC_kano_map.pdf'), oyo_map_metro, width = 14, height =9)
 
@@ -424,7 +423,7 @@ oyo_map_metro
 #State level maps
 
 #read in state shape file 
-stateshp = readOGR(file.path(DataDir, "shapefiles","Nigeria_LGAs_shapefile_191016"), layer ="gadm36_NGA_2",use_iconv=TRUE, encoding= "UTF-8")
+stateshp = readOGR(file.path(DataDir, "shapefiles","gadm36_NGA_shp"), layer ="gadm36_NGA_2",use_iconv=TRUE, encoding= "UTF-8")
 state_sf_kano = st_as_sf(stateshp) %>% filter(NAME_1 == 'Kano')
 state_sf_oyo = st_as_sf(stateshp) %>% filter(NAME_1 == 'Oyo')
 
@@ -444,9 +443,148 @@ kano_map_state
 
 ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'ANC_kano_map.pdf'), oyo_map_metro, width = 14, height =9)
 
+#sampled wards only
+oyo_sampled_lga <- state_sf_oyo %>% filter(str_detect(NAME_2, 'Ibadan'))%>% st_transform (4326)
+Ibadan_sampled <- left_join(Ibadan_metro, ward_pop, by = 'WardName') %>% filter(duplicated(WardName) == FALSE)
 
-#Scatter plots
-ggplot(df, aes(x=edu_a, y=access_prob)) + 
-  geom_point()+
-  geom_smooth(method=lm)
+#oyo
+points_within_oyo_metro <- df_18_fin_oyo %>% st_transform (4326)%>% filter(LONGNUM > 3.540555) %>% filter(LATNUM < 7.676494) 
 
+oyo_map_state <- map_fun2(oyo_sampled_lga, 'slategray2',points_within_oyo_metro, 3, 7, "Prevalence of skilled ANC in oyo state", 
+                          ".7 - .8", ".8 - .9", ".9 - 1",  '', '')
+oyo_map_state
+
+
+###############################
+# Sampled LGA level Plots 
+##################################
+
+
+#map fun
+map_fun2 <- function(polygon_name,sec_fill, point_data, var_n, aes_names, title, label1, label2, label3, label4, label5){
+  point_data[[var_n]] = cut(point_data[[var_n]], breaks=c(0.5, 0.6, 0.7, 0.8, 0.9, 1), include.lowest = TRUE)
+  p= ggplot() + 
+    geom_sf(data =polygon_name, aes(fill = mean_pop, alpha = 0.2))+
+    geom_text_repel(
+      data = polygon_name,
+      aes(label =  polygon_name[[aes_names]], geometry = geometry),color ='black',
+      stat = "sf_coordinates", min.segment.length = 0, size = 3.5, force = 1)+
+    geom_point(point_data, mapping = aes(x = LONGNUM, y = LATNUM, color = point_data[[var_n]]), size =4, alpha =0.6)+
+    theme_bw()+
+    theme(axis.text.x = ggplot2::element_blank(),
+          axis.text.y = ggplot2::element_blank(),
+          axis.ticks = ggplot2::element_blank(),
+          rect = ggplot2::element_blank(),
+          plot.background = ggplot2::element_rect(fill = "white"), 
+          legend.title.align=0.5,
+          legend.title=element_text(size=16, colour = 'black'), 
+          legend.text =element_text(size = 12, colour = 'black'),
+          legend.key.height = unit(0.65, "cm"),
+          plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank()) +
+    labs (title = title, x = "values", size=25) +
+    xlab("") +
+    ylab("")+
+    guides(color=guide_legend(title = "ANC proportion", override.aes = list(size = 5)))+
+    scale_color_manual(values = c('darkred', "#E7B800","green4"), 
+                       labels = c(label1, label2, label3, label4, label5))
+  
+}
+
+####
+#Plots for Sampled locations 
+#Sampled ibadan mpa
+Ibadan_sampled_poly <- Ibadan_metro %>% filter(LGACode == 31006 | LGACode == 31007 | 
+                                                 LGACode == 31008 | LGACode == 31009 | LGACode == 31010)%>% filter(Urban == 'Yes')
+sampled_ibadan_points <- df_18_fin_oyo %>% st_transform (4326)%>% filter(LONGNUM > 3.815983 & LONGNUM < 3.928) %>% filter(LATNUM <7.464584 & LATNUM >7.33007)
+ibadan_map <- map_fun2(Ibadan_sampled_poly, 'slategray2',sampled_ibadan_points, 6, 3, "Prevalence of skilled ANC and population size in Ibadan sampled LGAs", 
+                       "70% - 79%", "80% - 89%", "90% - 100%",  '', '')
+ibadan_map
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'ANC_ibadan_sampled_map.pdf'), oyo_map_metro, width = 14, height =9)
+
+#Sampled kano map
+kano_sampled_poly <- kano_metro %>% filter(LGACode == 20012 | LGACode == 20030 | LGACode == 20024 | LGACode == 20043 | LGACode == 20037| LGACode == 20001)
+sampled_kano_points <- df_18_fin_kano %>% st_transform (4326)%>% filter(LONGNUM > 8.444448 & LONGNUM < 8.619980) %>% filter(LATNUM >11.93313 & LATNUM <12.071351)
+kano_map <- map_fun2(kano_sampled_poly, 'slategray2',sampled_kano_points, 6, 3, "Prevalence of skilled ANC and population size in Urban Kano metro wards", 
+                     "60% - 69%", "70% - 79%", "80% - 89%", "90% - 100%","")
+kano_map
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'sampled_ANC_kano_map_sampled.pdf'), oyo_map_metro, width = 14, height =9)
+
+
+########################################
+#histogrms sampled only
+##############################################
+#define data
+
+x1 <- sampled_kano_points$ski_prov
+x2 <- sampled_ibadan_points$ski_prov
+
+#plot two histograms in same graph; The figure gets saved in  ANC folder
+pdf('Skiled ANC in sampled LGAs for Kano metro and Ibadan.pdf')
+hist(x1, col=rgb(0,0,1,0.2), xlim=c(0, 1), ylim=c(0, 10),
+     xlab='Values', ylab='Frequency', main='Skiled ANC in sampled LGAs for Kano metro and Ibadan')
+hist(x2, col=rgb(1,0,0,0.2), add=TRUE)
+legend('topleft', c('Kano metro clusters', 'Ibandan clusters'),
+       fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
+
+
+dev.off()
+
+### Bar plot
+
+#state level
+sampled_df <- dplyr::bind_rows(sampled_ibadan_points, sampled_kano_points)%>% dplyr::group_by(ADM1NAME) %>% dplyr::summarize(ski_prov = mean(ski_prov))%>%
+  mutate(ADM1NAME=str_replace(ADM1NAME, 'KANO','kano metro')) %>% mutate(ADM1NAME=str_replace(ADM1NAME, 'OYO','Ibadan metro'))
+sampled_bar <- barplt_fun(sampled_df, 'ADM1NAME', "sampled LGAs proportion of skilled antenatal care provision", "State", "Proportion of skilled antenatal care")
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), '"sampled_LGAs_barplot.pdf'), sampled_bar, width = 14, height =9)
+
+#########################################
+# Density plot - sampled only
+#########################################
+
+theme_manuscript <- function(){
+  theme_bw() + 
+    theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(size = 12, color = "black"), 
+          axis.text.y = element_text(size = 12, color = "black"),
+          axis.title.x = element_text(size = 12),
+          axis.title.y = element_text(size =12),
+          legend.title=element_text(size=12, colour = 'black'),
+          legend.text =element_text(size = 12, colour = 'black'),
+          legend.key.height = unit(1, "cm"))
+}
+
+
+den_plot.fun <- function(df, annot, plot_title){
+den_plot <- ggplot(df, aes(x= value, fill = variable, color = variable)) + theme_manuscript() + #theme(legend.position="none")+
+  geom_density(alpha = 0.2)+ 
+  scale_fill_viridis(discrete=TRUE) +
+  #scale_color_viridis(discrete=TRUE) +
+  #geom_text( data=annot, aes(x=x, y=y, label=variable, color= variable), hjust=0, size=4.5) +
+  labs (title = plot_title, x = "values", y = 'density', size=25) 
+  
+}
+
+melt_socioe <- as.data.frame(Ibadan_kano_metro)%>% dplyr::select(ski_prov, p_test, edu_a,  wealth) %>% gather(variable, value)
+
+
+#annot <- data.frame(variable= c("% of skilled ANC", "Malaria prevalance", '% of education attainment', '% of higher wealth quantile'),
+#                    x = c(0.78, 0, 0.17, 0.6),
+#                    y = c(3.6, 3.2, 2.5, 2))
+
+
+den_plot_socioe <- den_plot.fun(melt_socioe, annot,'Relationship between skilled ANC provision with socioeconomic variables')
+den_plot_socioe
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'den_plot_socioe.pdf'), den_plot_socioe, width = 14, height =9)
+
+
+melt_acc_bhv <- as.data.frame(Ibadan_kano_metro)%>% dplyr::select(ski_prov, p_test, access_prob, net_use) %>% gather(variable, value)
+
+
+den_plot_acc_bhv <- den_plot.fun(melt_acc_bhv, annot, 'Relationship between skilled ANC provision with access and behavioral variables')
+den_plot_acc_bhv
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'den_plot_socioe.pdf'), den_plot_acc_bhv, width = 14, height =9)
