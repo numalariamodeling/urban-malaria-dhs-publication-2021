@@ -63,17 +63,17 @@ CSVDir <- file.path(DataIn, 'DHS_Extract')
 DataDir2 <-file.path(NuDir, "data", "nigeria")
 setwd(DataIn)
 
-#DataDir <-file.path(Drive, "Downloads")
+DataDir <-file.path(Drive, "Downloads")
 DataDir2 <-file.path(Drive, "Downloads")
 DHSData <-file.path(Drive)
 DataIn<-file.path(Drive, "Downloads")
-
+CSVDir <-file.path(Drive, "Downloads", 'DHS_Extract')
 
 #load data IR data ANC varaible 
 dhs_ir <- read.files(DataDir2, "*NGIR.*\\.DTA", 'NGIR7AFL', read_dta)  #reads in the IR files
 
 
-look_for(dhs_ir[[1]], "assistance:")
+look_for(dhs_ir[[1]], "bidx_02")
 
 #create a variable for skilled antenatal provision, problem accessing healthcare
 dhs_ir <- dhs_ir %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
@@ -86,10 +86,8 @@ dhs_ir <- dhs_ir %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
   map(~filter(., midx_1 == 1)) %>% #filtering to the last antenatal only
   map(~filter(., v025 == 1)) #filtering to urban areas only 
 
-prob <- dhs_ir[[1]] %>% dplyr::select(bidx_1,midx_2,v467b, v467c, v467d, v467f, access_prob, any_anc_sum,any_anc, ski_prov, 
-                                  m2a_1, m2b_1, m2c_1, m2d_1, m2e_1, m2f_1, m2g_1, m2h_1, m2i_1, m2j_1, m2k_1, m2l_1, m2m_1,m2n_1)
-
-ddd <- dhs_ir[[1]]
+prob <- dhs_ir[[1]] %>% dplyr::select(midx_2,v467b, v467c, v467d, v467f, access_prob, any_anc_sum,any_anc, ski_prov, 
+                                      m2a_1, m2b_1, m2c_1, m2d_1, m2e_1, m2f_1, m2g_1, m2h_1, m2i_1, m2j_1, m2k_1, m2l_1, m2m_1,m2n_1)
 
 vars <- c('ski_prov', 'access_prob')
 
@@ -113,11 +111,11 @@ dhs_pr <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL', read_dta)  #reads in 
 
 #create a variable for skilled antenatal provision
 dhs_pr <- dhs_pr %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
-                           edu_a = ifelse(hv106 %in% c(0, 1, 2), 0,ifelse(hv106 >= 8, NA, ifelse(hv106 == 2|3, 1, NA))),
-                           p_test = ifelse(hml32 > 1, NA, hml32),
-                           net_use = ifelse(hml12 %in% c(1,2), 1,0),
-                           wt=hv005/1000000,strat=hv022,
-                           id=hv021, num_p=1)) %>%
+                                 edu_a = ifelse(hv106 %in% c(0, 1, 2), 0,ifelse(hv106 >= 8, NA, ifelse(hv106 == 2|3, 1, NA))),
+                                 p_test = ifelse(hml32 > 1, NA, hml32),
+                                 net_use = ifelse(hml12 %in% c(1,2), 1,0),
+                                 wt=hv005/1000000,strat=hv022,
+                                 id=hv021, num_p=1)) %>%
   map(~filter(., hv025 == 1)) #filtering to urban areas only 
 
 
@@ -283,21 +281,21 @@ dev.off()
 #bar plots
 barplt_fun <- function(dataframe, label_column, plot_title, xlab_title, ylab_title){
   ggplot(dataframe, aes_string(x=label_column, y='ski_prov', fill=label_column)) +
-  geom_bar(stat="identity")+theme_minimal()+
-  geom_text(aes(label = sprintf("%0.2f", round(ski_prov, digits = 2), vjust=1.6, color="white", size = 6))) +
-  scale_fill_manual(values=c("#E69F00", "#56B4E9")) + labs(fill = "Lacation")+
-  theme(legend.title.align=0.5,
-        legend.title=element_text(size=14, colour = 'black'), 
-        legend.text =element_text(size = 12, colour = 'black'),
-        legend.key.height = unit(0.65, "cm"),
-        plot.title = element_text(hjust = 0.5),
-        panel.grid.major = element_blank(),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12),
-        axis.title.x = element_text(size = 14),axis.title.y = element_text(size = 14))+
-  labs (title = plot_title, size=50) +
-  xlab(xlab_title) +
-  ylab(ylab_title)
+    geom_bar(stat="identity")+theme_minimal()+
+    geom_text(aes(label = sprintf("%0.2f", round(ski_prov, digits = 2), vjust=1.6, color="white", size = 6))) +
+    scale_fill_manual(values=c("#E69F00", "#56B4E9")) + labs(fill = "Lacation")+
+    theme(legend.title.align=0.5,
+          legend.title=element_text(size=14, colour = 'black'), 
+          legend.text =element_text(size = 12, colour = 'black'),
+          legend.key.height = unit(0.65, "cm"),
+          plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank(),
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 12),
+          axis.title.x = element_text(size = 14),axis.title.y = element_text(size = 14))+
+    labs (title = plot_title, size=50) +
+    xlab(xlab_title) +
+    ylab(ylab_title)
 }
 
 #state level
@@ -313,11 +311,9 @@ Ibadan_kano_mean <- Ibadan_kano_metro %>% dplyr::group_by(sstate) %>% dplyr::sum
   mutate(sstate=str_replace(sstate, 'kano','kano metro')) %>% mutate(sstate=str_replace(sstate, 'oyo','Ibadan'))
 
 
-metro_plot <- barplt_fun(Ibadan_kano_mean, "Ibadan and kano metro level proportion of skilled antenatal care provision", "Location", 
-                         "Proportion of skilled antenatal care")
+metro_plot <- barplt_fun(Ibadan_kano_mean, 'sstate', "Ibadan and kano metro level proportion of skilled antenatal care provision", "Location", "Proportion of skilled antenatal care")
 
-
-
+metro_plot
 
 
 
@@ -414,7 +410,7 @@ ibadan_map
 
 #kano
 kano_map_metro <- map_fun2(kano_metro, 'slategray2',points_within_kano_metro, 6, 3,"Prevalence of skilled ANC and ward population size in kano metro", 
-                          "60% - 69%", "70% - 79%", "80% - 89%", "90% - 100%","")
+                           "60% - 69%", "70% - 79%", "80% - 89%", "90% - 100%","")
 kano_map_metro 
 
 #ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'ANC_kano_map.pdf'), oyo_map_metro, width = 14, height =9)
@@ -560,16 +556,18 @@ theme_manuscript <- function(){
 
 
 den_plot.fun <- function(df, annot, plot_title){
-den_plot <- ggplot(df, aes(x= value, fill = variable, color = variable)) + theme_manuscript() + #theme(legend.position="none")+
-  geom_density(alpha = 0.2)+ 
-  scale_fill_viridis(discrete=TRUE) +
-  #scale_color_viridis(discrete=TRUE) +
-  #geom_text( data=annot, aes(x=x, y=y, label=variable, color= variable), hjust=0, size=4.5) +
-  labs (title = plot_title, x = "values", y = 'density', size=25) 
+  den_plot <- ggplot(df, aes(x= value, fill = variable, color = variable)) + theme_manuscript() + #theme(legend.position="none")+
+    bar(alpha = 0.2)+ 
+    scale_fill_viridis(discrete=TRUE) +
+    #scale_color_viridis(discrete=TRUE) +
+    #geom_text( data=annot, aes(x=x, y=y, label=variable, color= variable), hjust=0, size=4.5) +
+    labs (title = plot_title, x = "values", y = 'density', size=25) 
   
 }
 
-melt_socioe <- as.data.frame(Ibadan_kano_metro)%>% dplyr::select(ski_prov, p_test, edu_a,  wealth) %>% gather(variable, value)
+melt_socioe <- as.data.frame(Ibadan_kano_metro)%>% dplyr::select(ski_prov,  wealth, sstate) %>% tibble::rowid_to_column("Cluster")# %>% gather(variable, value)
+
+#%>% tibble::rowid_to_column("Cluster")
 
 
 #annot <- data.frame(variable= c("% of skilled ANC", "Malaria prevalance", '% of education attainment', '% of higher wealth quantile'),
@@ -588,3 +586,65 @@ melt_acc_bhv <- as.data.frame(Ibadan_kano_metro)%>% dplyr::select(ski_prov, p_te
 den_plot_acc_bhv <- den_plot.fun(melt_acc_bhv, annot, 'Relationship between skilled ANC provision with access and behavioral variables')
 den_plot_acc_bhv
 ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'den_plot_socioe.pdf'), den_plot_acc_bhv, width = 14, height =9)
+
+
+#######################
+#Bar plot
+#######################
+# Change the colors manually
+
+barplot.fun2 <- function(df, x_axis, value, plot_value, main_tiltle ){
+  bar_p <- melt(df, id.vars = x_axis) %>% 
+    ggplot(aes(y=value, x=Cluster)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "dodge", alpha = 0.8) + 
+    theme_manuscript()+ 
+    scale_fill_viridis(discrete=TRUE) +
+    labs (title = main_tiltle, x = 'Cluster points in sampled LGAs', y = "Proportion", size=25) 
+}
+
+bar_df_iba <- melt_socioe %>% filter(sstate == "oyo") %>% dplyr::select(Cluster, wealth, ski_prov)%>% 
+  transform(Cluster = reorder(Cluster, -wealth, decreasing = T))
+
+bar_ib <- barplot.fun2(bar_df_iba, 'Cluster', value, Cluster,'Ibadan proportion of high wealth quantile and skilled ANC provision in sampled LGAs')
+bar_ib 
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'ibadan_wealth_anc.pdf'), bar_ib , width = 14, height =9)
+
+bar_df_kan <- melt_socioe %>% filter(sstate == "kano") %>% dplyr::select(Cluster, wealth, ski_prov)%>% 
+  transform(Cluster = reorder(Cluster, -wealth, decreasing = T))
+
+bar_kan <- barplot.fun2(bar_df_kan, 'Cluster', value, Cluster,'Ibadan proportion of high wealth quantile and skilled ANC provision in sampled LGAs')
+bar_kan 
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'kano_wealth_anc.pdf'), bar_kan , width = 14, height =9)
+########################################################################
+#First birth ANC
+#######################################################################
+fir_birth_list <-  list(fir_birth <- dhs_ir[[1]] %>% mutate_all(funs(replace_na(.,0)))%>% 
+                          mutate(total = rowSums(dplyr::select(., starts_with('bidx_'))))  %>% filter(total ==1)) 
+
+#create a variable for skilled antenatal provision, problem accessing healthcare
+dhs_ir_frstb <- fir_birth_list %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
+                                               ski_prov = ifelse(sum_anc_prov >= 1,1, 0),
+                                               any_anc_sum = (m2a_1 + m2b_1 + m2c_1+ m2d_1 + m2g_1 + m2h_1 + m2k_1 + m2n_1),#remvoved anc vars without data 
+                                               any_anc = ifelse(any_anc_sum >= 1, 1, 0),
+                                               access_prob = ifelse((v467b== 1)| (v467c== 1)|(v467d== 1)|(v467f==1), 1,0),
+                                               wt=v005/1000000,strat=v022,
+                                               id=v021, num_p=1)) %>%
+  map(~filter(., midx_1 == 1)) %>% #filtering to the last antenatal only
+  map(~filter(., v025 == 1)) #filtering to urban areas only 
+
+
+vars <- c('ski_prov_fbirth', 'access_prob')
+
+#vars<- c('age_cat')
+for (i in 1:length(vars)) {
+  col <- list(vars[i])
+  by <- list('v001')
+  df <- dhs_ir_frstb %>% 
+    map(~drop_na(.,vars[i]))
+  df <- pmap(list(df,col,by), estim_prop)
+  df <- plyr::ldply(df)
+  df[, vars[i]]<- df[, vars[i]]
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_IR_18.csv")))
+}
