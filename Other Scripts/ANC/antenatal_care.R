@@ -593,12 +593,13 @@ ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'den_plot_socioe.pdf'), den_plot_
 #######################
 # Change the colors manually
 
-barplot.fun2 <- function(df, x_axis, value, plot_value, main_tiltle ){
+barplot.fun2 <- function(df, x_axis, value, v001, main_tiltle ){
   bar_p <- melt(df, id.vars = x_axis) %>% 
-    ggplot(aes(y=value, x=Cluster)) + 
-    geom_bar(aes(fill = variable),stat = "identity",position = "dodge", alpha = 0.8) + 
+    ggplot(aes(y=value, x=v001)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "dodge", alpha = 0.9) + 
     theme_manuscript()+ 
     scale_fill_viridis(discrete=TRUE) +
+    scale_fill_manual(values=c("#56B4E9", "#E69F00"))+
     labs (title = main_tiltle, x = 'Cluster points in sampled LGAs', y = "Proportion", size=25) 
 }
 
@@ -617,6 +618,7 @@ bar_kan <- barplot.fun2(bar_df_kan, 'Cluster', value, Cluster,'Ibadan proportion
 bar_kan 
 
 ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'kano_wealth_anc.pdf'), bar_kan , width = 14, height =9)
+
 ########################################################################
 #First birth ANC
 #######################################################################
@@ -625,7 +627,7 @@ fir_birth_list <-  list(fir_birth <- dhs_ir[[1]] %>% mutate_all(funs(replace_na(
 
 #create a variable for skilled antenatal provision, problem accessing healthcare
 dhs_ir_frstb <- fir_birth_list %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 + m2c_1),
-                                               ski_prov = ifelse(sum_anc_prov >= 1,1, 0),
+                                               ski_prov_fbirth = ifelse(sum_anc_prov >= 1,1, 0),
                                                any_anc_sum = (m2a_1 + m2b_1 + m2c_1+ m2d_1 + m2g_1 + m2h_1 + m2k_1 + m2n_1),#remvoved anc vars without data 
                                                any_anc = ifelse(any_anc_sum >= 1, 1, 0),
                                                access_prob = ifelse((v467b== 1)| (v467c== 1)|(v467d== 1)|(v467f==1), 1,0),
@@ -635,7 +637,7 @@ dhs_ir_frstb <- fir_birth_list %>% map(~mutate(., sum_anc_prov = (m2a_1 + m2b_1 
   map(~filter(., v025 == 1)) #filtering to urban areas only 
 
 
-vars <- c('ski_prov_fbirth', 'access_prob')
+vars <- c('ski_prov_fbirth')
 
 #vars<- c('age_cat')
 for (i in 1:length(vars)) {
@@ -648,3 +650,25 @@ for (i in 1:length(vars)) {
   df[, vars[i]]<- df[, vars[i]]
   write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_IR_18.csv")))
 }
+
+
+ski_prov_fbirth <- read.csv(file.path(DataIn, 'ski_prov_fbirth_all_DHS_IR_18.csv'))
+
+first_birst <- as.data.frame(Ibadan_kano_metro)%>% left_join(ski_prov_fbirth, by = 'v001') %>% dplyr::select(v001,ski_prov_fbirth, ski_prov, sstate, -geometry)
+
+#bar plots
+bar_df_iba_fb <-first_birst %>% filter(sstate == "oyo") %>% dplyr::select(v001, ski_prov_fbirth, ski_prov)%>% 
+  transform(v001 = reorder(v001, -ski_prov_fbirth, decreasing = T))
+
+bar_ib_fb <- barplot.fun2(bar_df_iba_fb, 'v001', value, v001,'Ibadan proportion of skilled ANC at first birth and skilled ANC provision at all births  in sampled LGAs')
+bar_ib_fb 
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'Ibadan_first_birth_anc.pdf'), bar_ib_fb, width = 14, height =9)
+
+bar_df_kan_fb <-first_birst %>% filter(sstate == "kano") %>% dplyr::select(v001, ski_prov_fbirth, ski_prov)%>% 
+  transform(v001 = reorder(v001, -ski_prov_fbirth, decreasing = T))
+
+bar_kan_fb <- barplot.fun2(bar_df_kan_fb, 'v001', value, v001,'Kano metro proportion of skilled ANC at first birth and skilled ANC provision at all births  in sampled LGAs')
+bar_kan_fb 
+
+ggsave(paste0(DataIn, '/Figures/', Sys.Date(), 'kano_first_birth_anc.pdf'), bar_kan_fb , width = 14, height =9)
