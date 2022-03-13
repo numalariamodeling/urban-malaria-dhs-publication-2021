@@ -43,24 +43,22 @@ To replicate the findings, we extract data from various sources, namely, Demogra
 
 1. [00_data_extraction](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/tree/main/00_data_extraction). Scripts in this folder support extraction of study data and computation of data summaries for survey clusters. Scripts in [00_era5_temperature_precipitation_download_raster_generation](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/tree/main/00_data_extraction/00_era5_temperature_precipitation_download_raster_generation) folder are used to download and transform era5 netcdf temperature and rainfall data into a usable format. The [01_data_extractor](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/00_data_extraction/01_data_extractor.R) script extracts malaria test positivity data and data for covariates and stores it several CSV files. All custom functions used are also provided within this folder.
 
-2. [data_extractor_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/00_data_extraction/data_extractor_functions/data_extractor_functions.R) This script loads functions and libraries used to extract the data used for analysis.  
-
-3. [01_file_cleaner.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/01_file_cleaner.R) This script cleans and merges the variaous extracted scripts into two CSVs. 
+2. [01_file_cleaner.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/01_file_cleaner.R) This script cleans and merges the variaous extracted scripts into two CSVs. 
 
 <!-- Descriptive analysis -->
 ### Descriptive analysis
 
-4. [02_descriptive statistics.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/02_descriptive%20statistics.R) This script loads the cleaned data and conducts descriptive analysis for both the main manuscript and the suplement publication. This script is also associated with a script containing all functions used. The script also exports a CSV file used for GLM modeling analyis.
+3. [02_descriptive statistics.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/02_descriptive%20statistics.R) This script loads the cleaned data and conducts descriptive analysis for both the main manuscript and the suplement publication. This script is also associated with a script containing all functions used. The script also exports a CSV file used for GLM modeling analyis.
 
-5. [descriptive_analysis_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/descriptive_analysis_functions.R) This script loads functions and libraries used to conduct descriptive analysis.
+4. [descriptive_analysis_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/descriptive_analysis_functions.R) This script loads functions and libraries used to conduct descriptive analysis.
 
 <!-- GLM Modeling analysis -->
 ### GLM Modeling analysis
 
-6. [03_glm_modelling.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/03_glm_modelling.R) This script loads pre-cleaned  CSV data and conducts GLM modeling analysis for both the main manuscript and the suplement publication. 
+5. [03_glm_modelling.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/03_glm_modelling.R) This script loads pre-cleaned  CSV data and conducts GLM modeling analysis for both the main manuscript and the suplement publication. 
 
 
-7. [multivariate_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/multivariate_functions.R) This script loads functions and libraries used to conduct GLM analysis.
+6. [multivariate_functions.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/multivariate_functions.R) This script loads functions and libraries used to conduct GLM analysis.
 
 <!-- CONTACT -->
 ## Contact
