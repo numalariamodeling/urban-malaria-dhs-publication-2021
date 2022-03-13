@@ -28,7 +28,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-Nigeria is one of three countries projected to have the largest absolute increase in the size of its urban population and this could intensify malaria transmission in cities. Accelerated urban population growth is out-pacing the availability of affordable housing and basic services and resulting in living conditions that foster vector breeding and heterogeneous malaria transmission. Understanding community determinants of malaria transmission in urban areas informs the targeting of interventions to population at greatest risk. This repository contains data and analysis scripts for examining factors associated with malaria in urban areas described in the associated manuscript entitled "Socioeconomic and environmental factors explain malaria transmission and inform intervention prioritization in urban Nigeria. 
+Nigeria is one of three countries projected to have the largest absolute increase in the size of its urban population and this could intensify malaria transmission in cities. Accelerated urban population growth is out-pacing the availability of affordable housing and basic services and resulting in living conditions that foster vector breeding and heterogeneous malaria transmission. Understanding community determinants of malaria transmission in urban areas informs the targeting of interventions to population at greatest risk. This repository contains data and analysis scripts for examining factors associated with malaria in urban areas described in the associated manuscript entitled "Socioeconomic, demographic and environmental factors inform intervention prioritization in urban Nigeria". 
 
 ### Built With
 All data is extracted and analyzed using [R](https://www.r-project.org/)
