@@ -3,7 +3,7 @@ rm(list=ls())
 memory.limit(size = 50000)
 
 ## -----------------------------------------
-### Paths
+### Paths - change to fit your setup
 ## -----------------------------------------
 
 user <- Sys.getenv("USERNAME")
@@ -27,9 +27,9 @@ source("00_data_extraction/data_extractor_functions/data_extractor_functions.R")
 options(survey.lonely.psu="adjust") # this option allows admin units with only one cluster to be analyzed
 
 
-## ----------------------------------------------------
-### Read in PR  data (DHS 2010, 2015, 2018)  
-## ----------------------------------------------------
+## -----------------------------------------------------------------------------------------
+### Read in PR  data (DHS 2010, 2015, 2018) - this can be downloaded from the DHS website 
+## ----------------------------------------------------------------------------------------
 
 
 dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
@@ -786,7 +786,7 @@ files <- list.files(path = file.path(RastDir, "rainfall_monthly"), pattern = "*.
 raster <- sapply(files, raster, simplify = F)
 
 
-#precip extraction
+#precipitation extraction
 
 for (i in 1:length(vars)) {
   var_name <- paste0('preci_monthly_', as.character(vars[i]), 'm')
@@ -799,8 +799,7 @@ for (i in 1:length(vars)) {
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
-#still trying to figure out why 2010 amd 2018 observations are less when the csv is generated
-#End
+
 
 #soil surface wetness
 

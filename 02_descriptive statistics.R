@@ -7,7 +7,8 @@ rm(list=ls())
 
 user = Sys.getenv("USERNAME")
 Drive = file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
-NuDir = file.path(Drive, "Box", "NU-malaria-team")
+#NuDir = file.path(Drive, "Box", "NU-malaria-team")
+NuDir <- file.path(Drive, "Library", "CloudStorage", "Box-Box", "NU-malaria-team")
 ProjectDir = file.path(NuDir, 'data', 'nigeria','nigeria_dhs' , 'data_analysis')
 DataDir = file.path(ProjectDir, "data")
 DHSData = file.path(DataDir, 'DHS')
@@ -22,6 +23,7 @@ CsvDir = file.path(DHSData, "Computed_cluster_information", 'urban_malaria_covar
 # ----------------------------------------------------
 ### Required functions and settings
 ## ----------------------------------------------------
+library(ggridges)
 source("./other_functions/descriptive_analysis_functions.R")
 
 
@@ -31,6 +33,7 @@ source("./other_functions/descriptive_analysis_functions.R")
 #read in dhs file 
 dhs = read.csv(file.path(CsvDir, "all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
 dhs$positives_prop = round(dhs$positives/dhs$child_6_59_tested_malaria, 1) %>% as.numeric
+summary(dhs$child_6_59_tested_malaria)
 
 
 #figure 1
@@ -69,6 +72,17 @@ p2 = hist_fun(df_all, df_all$values, df_all$category, 'Number of children 6 - 59
 #examine the number of children tested 
 p3 = igv.lm.point(dhs, dhs$child_6_59_tested_malaria, dhs$positives, dhs$dhs_year, 'Survey year', 'Number of children 6 - 59 months \n tested for malaria', 'Number of positive tests' )
 p3_ = p3 + geom_abline(slope=1, intercept=c(0,0), size = 0.9) +geom_smooth(method=lm, color = "black")
+
+p=ggplot(data=dhs, mapping=aes(x= positives_prop, y= factor(dhs_year), fill =factor(dhs_year), height = ..density..)) +
+  geom_density_ridges(trim = TRUE) +
+  scale_fill_manual(values = c("#5560AB",  "#FAAF43", "#EE3C96")) +
+  theme_manuscript() + 
+  theme(legend.position = "none") + 
+  ylab("") +
+  xlab("Test positivity rate")
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '2b_test_positivity_year_survey.pdf'), p, width = 3.653, height = 3.123)
+
+
 
 
 
@@ -131,6 +145,9 @@ trend_data_10 = trend_data[trend_data$first_interview_month ==10,]
 p_all_10 = gdensity_fun(trend_data_10, trend_data_10$positives_prop, trend_data_10$dhs_year, "Survey year", 
                         'Test positivity rate for clusters sampled in October', 'Density')
 
+check = trend_data_10 %>%  filter(dhs_year == '2018')
+summary(check$positives_prop)
+
 
 trend_data_11 = trend_data[trend_data$first_interview_month ==11,]
 p_all_11 = gdensity_fun(trend_data_11, trend_data_11$positives_prop, trend_data_11$dhs_year, "Survey year", 
@@ -145,6 +162,27 @@ all_plots = p_all_10 / p_all_11 / p_all_12 +  plot_annotation(tag_levels = 'A') 
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3_malaria_tests_positivity_trends.pdf'), all_plots, width = 7, height = 6)
 data = data.frame(pos =trend_data_12[trend_data_12$dhs_year == 2018,'positives_prop'])
 data_ = data %>%  filter(pos == 0)
+
+
+#regional data 
+
+df = dhs %>% mutate(group = ifelse(positives_prop > 0, 0, 1))%>%  group_by(region, group) %>% 
+  summarise(number = n()) %>%  drop_na() %>% mutate(freq = number / sum(number))
+
+df$region = factor(df$region, levels = c('north east', 'south south', 'north central', 'south east', 
+                                         'south west', 'north west'))
+
+x_label =  c('NE', 'SS', 'NC', 'SE', 'SW', "NW")
+
+p=ggplot(df, aes(fill=as.factor(group), y=number, x=region)) + 
+  geom_bar(position="fill", stat="identity", alpha = 0.7)+
+  scale_fill_manual(labels = c("> zero U5 test positivity rate", "equal to zero U5 test positivity rate"), values = c("firebrick", "darksalmon"))+
+  scale_x_discrete(labels=x_label)+
+  theme_manuscript() + 
+  theme(legend.title = element_blank())+
+    ylab('Proportion of clusters by U5 malaria test positivity rate category')
+
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_regional_difference.pdf'), p, width = 8, height = 3)
 
 
 ## ----------------------------------------------------------------
