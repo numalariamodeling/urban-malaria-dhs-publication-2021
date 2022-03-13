@@ -1,15 +1,10 @@
 ## -----------------------------------------------------------------------------------------------------------------
-# Seasonality Classification
-# 01_extract_era5_covariates.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # September 2019
 # 
 # For temperature and rainfall, this script extracts covariate-specific
-# data from ERA5 netCDF files, transforms them into a panel dataset, and saves it for further clustering analyses.  
-# 
-# For a detailed project write-up see
-# https://paper.dropbox.com/doc/Cluster-MAP-pixels-by-seasonality-zga4UM1DnBx8pc11rStOS
+# data from ERA5 netCDF files an dtransforms them into a panel dataset
 ## -----------------------------------------------------------------------------------------------------------------------
 rm(list=ls())
 library(stringr)
