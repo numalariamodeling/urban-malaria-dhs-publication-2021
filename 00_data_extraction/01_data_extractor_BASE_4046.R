@@ -3,7 +3,7 @@ rm(list=ls())
 memory.limit(size = 50000)
 
 ## -----------------------------------------
-### Paths - change to fit your setup
+### Paths
 ## -----------------------------------------
 
 user <- Sys.getenv("USERNAME")
@@ -27,9 +27,9 @@ source("00_data_extraction/data_extractor_functions/data_extractor_functions.R")
 options(survey.lonely.psu="adjust") # this option allows admin units with only one cluster to be analyzed
 
 
-## -----------------------------------------------------------------------------------------
-### Read in PR  data (DHS 2010, 2015, 2018) - this can be downloaded from the DHS website 
-## ----------------------------------------------------------------------------------------
+## ----------------------------------------------------
+### Read in PR  data (DHS 2010, 2015, 2018)  
+## ----------------------------------------------------
 
 
 dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
@@ -60,17 +60,36 @@ dhs <- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
                            p_test = ifelse(hml32 > 1, NA, hml32),
                            U5_pop = ifelse(hc1 %in% c(0:59), 1, 0),
                            region = hv024, interview_month = hv006,
-                           visitors = hv102)) %>%
+                           visitors = hv102, 
+                           #Computing net use given access
+                           potuse = hml1*2,
+                           defacto_pop = hv013,
+                           potuse_ajusted = ifelse(potuse > defacto_pop, defacto_pop, potuse)))%>%
+  map(~filter(., hv103 == 1)) %>%
+  map(~group_by(., hhid)) %>%
+  map(~dplyr::arrange(., hhid)) %>%
+  map(~mutate(., access=potuse_ajusted/defacto_pop,
+              indi = defacto_pop - potuse_ajusted,
+              net_use =ifelse(hml12 %in% c(1,2),"1", "0")))%>%
+  map(~dplyr::arrange(., hhid,net_use)) %>%
+  map(~mutate(., access2 =c(rep(0, unique(indi)),rep(1, unique(potuse_ajusted))),
+              access3 = ifelse(access2=="0" & net_use == "1", 
+                               "1", ifelse(access2 == "1" & net_use == "1", "1", 
+                                           ifelse(access2 == "0" & net_use== "0", "0", ifelse(access2=='1' & net_use == '0', '1','')))),
+              net_use_access = ifelse(net_use==1 & access3 == 1, 1,0))) %>%
   map(~filter(., hv025 == 1)) %>% #filtering to urban areas only 
   map(~dplyr::select(., -c(hv013, hv105, hv106, hv021, hv005, hv022, hml12, hc27, hv215, hv214, hv213, hv270, hv024, hv006)))
 
 
-#are we using the defacto population to compute all the wealth variables? Is that a reasonable choice
+
 
 #creating variable for computing pregnant women proportions 
 dhs[[1]]$preg_women <- ifelse(dhs[[1]]$sh09 >= 8 , NA, ifelse(dhs[[1]]$sh09 == 1, 1, 0))
 dhs[[2]]$preg_women <- ifelse(dhs[[2]]$sh09 >= 8, NA, ifelse(dhs[[2]]$sh09 == 1, 1, 0))
 dhs[[3]]$preg_women <- ifelse(dhs[[3]]$ha54 >= 8, NA, ifelse(dhs[[3]]$ha54 == 1, 1, 0))
+
+
+
 
 #
 ## -----------------------------------------------
@@ -103,6 +122,10 @@ write.csv(df_test, paste0(DataIn, "/tested_malaria_children_6_59_months.csv"), r
 visitors_num <- dhs %>% map(~dplyr::select(., hv001, visitors)) %>%  map(~filter(., visitors == 0)) %>% map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,visitors = n())) %>% 
   plyr::ldply() 
 write.csv(visitors_num, paste0(DataIn, "/num_visitors_DHS_10_15_18.csv"), row.names = FALSE)
+
+
+
+
 
 
 ## -----------------------------------------
@@ -179,6 +202,9 @@ for (i in 1:length(vars)){
   write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
   }
 }
+
+
+
 
 
 ## -----------------------------------------------------------------------------
@@ -267,6 +293,7 @@ for (i in 1:length(vars)) {
   write.csv(df, file =file.path(DataIn, paste0(vars[i], "_KR_DHS_10_15_18.csv")))
   }
 }
+
 
 
 ## ----------------------------------------------------
@@ -759,7 +786,7 @@ files <- list.files(path = file.path(RastDir, "rainfall_monthly"), pattern = "*.
 raster <- sapply(files, raster, simplify = F)
 
 
-#precipitation extraction
+#precip extraction
 
 for (i in 1:length(vars)) {
   var_name <- paste0('preci_monthly_', as.character(vars[i]), 'm')
@@ -772,7 +799,8 @@ for (i in 1:length(vars)) {
                                                 'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
 }
 
-
+#still trying to figure out why 2010 amd 2018 observations are less when the csv is generated
+#End
 
 #soil surface wetness
 

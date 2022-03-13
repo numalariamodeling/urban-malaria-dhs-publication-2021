@@ -1079,3 +1079,60 @@ printCrudeAndAdjustedModel(u_glm)[-1,]
 #                 + offset(log(child_6_59_tested_malaria)) +
 #                 mat(pos + 0 | ID) + ar1(month_year + 0 | ID2), data=map2,  ziformula=~1,family=poisson)
 # summary(m2) 
+
+
+
+# 
+# #total slept_in population
+# vars <- c('slept_in_pop')
+# 
+# for (i in 1:length(vars)) {
+#   col <- list(vars[i])
+#   by <- list('hv001')
+#   df <- dhs %>% 
+#     map(~drop_na(.,vars[i]))
+#   df <-  pmap(list(df,col,by), estim_sum)
+#   df <- plyr::ldply(df)
+#   #write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
+#   
+# }
+# 
+# slept_in_pop <- df
+# 
+# #NET use
+# vars <- c('net_use')
+# 
+# for (i in 1:length(vars)) {
+#   col <- list(vars[i])
+#   by <- list('hv001')
+#   df <- dhs %>% 
+#     map(~drop_na(.,vars[i]))
+#   df <-  pmap(list(df,col,by), estim_prop)
+#   df <- plyr::ldply(df)
+#   #write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
+#   
+# }
+# 
+# net_use <- df
+# 
+# 
+# df_all <- left_join(clust_pop, net_ownership, by= c('hv001','.id'))%>% left_join(net_use, by = c('hv001','.id')) %>%
+#   left_join(slept_in_pop, by = c('hv001','.id')) %>%  mutate(itnby2 = net_ownership*2) %>% 
+#   mutate(itn_acces =  itnby2/slept_in_pop)%>%  mutate(net_use_access =  (net_use/itn_acces)) 
+
+#Computing net use given access
+# potuse = hml1*2,
+# defacto_pop = hv013,
+# potuse_ajusted = ifelse(potuse > defacto_pop, defacto_pop, potuse)))%>%
+#   map(~filter(., hv103 == 1)) %>%
+#   map(~group_by(., hhid)) %>%
+#   map(~dplyr::arrange(., hhid)) %>%
+#   map(~mutate(., access=potuse_ajusted/defacto_pop,
+#               indi = defacto_pop - potuse_ajusted,
+#               net_use =ifelse(hml12 %in% c(1,2),"1", "0")))%>%
+#   map(~dplyr::arrange(., hhid,net_use)) %>%
+#   map(~mutate(., access2 =c(rep(0, unique(indi)),rep(1, unique(potuse_ajusted))),
+#               access3 = ifelse(access2=="0" & net_use == "1", 
+#                                "1", ifelse(access2 == "1" & net_use == "1", "1", 
+#                                            ifelse(access2 == "0" & net_use== "0", "0", ifelse(access2=='1' & net_use == '0', '1','')))),
+#               net_use_access = ifelse(net_use==1 & access3 == 1, 1,0

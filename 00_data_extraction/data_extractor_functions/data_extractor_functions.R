@@ -105,3 +105,41 @@ map_theme <- function(){
         legend.text =element_text(size = 16, colour = 'black'),
         legend.key.height = unit(0.65, "cm"))
 }
+
+
+rast_ex_fun <- function(main_dir, pri_dir, end_pattern, start_pattern, output_name_start, shp_file, col_pattern, output_name_start2,output_name_end){
+  vars <- c(0, 1000, 2000, 3000, 4000)
+  files <- list.files(path = file.path(main_dir, pri_dir) , pattern = end_pattern, full.names = TRUE, recursive = TRUE)
+  files<- files[(grep(start_pattern, files))]
+  raster<-sapply(files, raster, simplify = F)
+  
+  for (i in 1:length(vars)) {
+    var_name <- paste0(output_name_start, as.character(vars[i]), 'm')
+    df <- map2(shp_file, raster, get_crs)
+    df <- pmap(list(raster, df, vars[i]), extract_fun)
+    df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = col_pattern))
+    df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
+    write.csv(df, file =file.path(GeoDir, paste0(output_name_start, as.character(vars[i]), 
+                                                 'm_buffer', output_name_end)),row.names = FALSE)
+  }
+}
+
+
+
+rast_ex_fun_time <- function(main_dir, pri_dir, end_pattern, output_name_start, shp_file, col_pattern, output_name_start2,output_name_end){
+  vars <- c(0, 1000, 2000, 3000, 4000)
+  files <- list.files(path = file.path(main_dir, pri_dir) ,pattern = end_pattern, full.names = TRUE, recursive = TRUE)
+  raster <- sapply(files, raster, simplify = F)
+  
+  for (i in 1:length(vars)) {
+    var_name <- paste0(output_name_start, as.character(vars[i]), 'm')
+    df <- map2(shp_file, raster, get_crs)
+    df <- pmap(list(raster, df, vars[i]), extract_fun_month)
+    df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = col_pattern))
+    df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
+    df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
+    write.csv(df, file =file.path(GeoDir, paste0(output_name_start, as.character(vars[i]), 
+                                               'm_buffer', output_name_end)),row.names = FALSE)
+  }
+}
+
