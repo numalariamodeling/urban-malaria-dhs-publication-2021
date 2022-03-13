@@ -43,7 +43,7 @@ To replicate the findings, we extract data from various sources, namely, Demogra
 
 1. [00_data_extraction](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/tree/main/00_data_extraction). Scripts in this folder support extraction of study data and computation of data summaries for survey clusters. Scripts in [00_era5_temperature_precipitation_download_raster_generation](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/tree/main/00_data_extraction/00_era5_temperature_precipitation_download_raster_generation) folder are used to download and transform era5 netcdf temperature and rainfall data into a usable format. The [01_data_extractor](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/00_data_extraction/01_data_extractor.R) script extracts malaria test positivity data and data for covariates and stores it several CSV files. All custom functions used are also provided within this folder. 
 
-2. [01_file_cleaner.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/01_file_cleaner.R) This script cleans and merges the variaous extracted scripts into two CSVs. 
+2. [01_file_cleaner.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/01_file_cleaner.R) This script cleans and merges the various extracted scripts into two CSVs. 
 
 <!-- Descriptive analysis -->
 ### Descriptive analysis
@@ -54,7 +54,7 @@ To replicate the findings, we extract data from various sources, namely, Demogra
 <!-- GLM Modeling analysis -->
 ### GLM Modeling analysis
 
-4. [03_glm_modelling.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/03_glm_modelling.R) This script loads pre-cleaned [study data](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/tree/main/data_and_results) and conducts GLMM modeling analysis. Custom functions used are provided [here](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/multivariate_functions.R)
+4. [03_glm_modelling.R](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/03_glm_modelling.R) This script loads pre-cleaned [study data](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/tree/main/data) and conducts GLMM modeling analysis. Custom functions used are provided [here](https://github.com/numalariamodeling/urban-malaria-dhs-publication-2021/blob/main/other_functions/multivariate_functions.R)
 
 <!-- CONTACT -->
 ## Contact
