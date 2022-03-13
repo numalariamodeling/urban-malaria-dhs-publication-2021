@@ -70,5 +70,5 @@ For inquiries, contact Ifeoma Ozodiegwu, [ Research Assistant Professor, Northwe
 - [All NU Malaria Modeling Team](https://www.numalariamodeling.org/team.html)
 
 
-
+## DOI: <a href="https://zenodo.org/badge/latestdoi/389660281"><img src="https://zenodo.org/badge/389660281.svg" alt="DOI"></a>
 
