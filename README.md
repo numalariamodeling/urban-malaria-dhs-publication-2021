@@ -1,4 +1,4 @@
-# Socioeconomic and environmental factors explain malaria transmission and inform intervention prioritization in urban Nigeria  
+# Socioeconomic, demographic and environmental factors inform intervention prioritization in urban Nigeria 
 
 <!-- TABLE OF CONTENTS -->
 <details>
