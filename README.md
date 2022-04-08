@@ -33,7 +33,7 @@ Nigeria is one of three countries projected to have the largest absolute increas
 ### Built With
 All data is extracted and analyzed using [R](https://www.r-project.org/)
 <!-- GETTING STARTED -->
-## Getting Started With The Descriptive Modeling Framework
+## Getting Started With The Descriptive Analysis and Modeling Framework
 ### Prerequisites
 Install [R](https://www.r-project.org/) then [RStudio](https://www.rstudio.com/) an integrated development environment for R and Python, with a console, syntax-highlighting editor that supports direct code execution, and tools for plotting, history, debugging and workspace management. 
 
