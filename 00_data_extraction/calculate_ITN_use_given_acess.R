@@ -6,9 +6,10 @@ memory.limit(size = 50000)
 ### Paths
 ## -----------------------------------------
 
+
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
-NuDir <- file.path(Drive, "Box", "NU-malaria-team")
+NuDir <- file.path(Drive, "Documents","OneDrive", "urban_malaria")
 ProjectDir <- file.path(NuDir, "data", 'nigeria','nigeria_dhs' , 'data_analysis')
 DataDir <- file.path(ProjectDir, 'data')
 ResultDir =file.path(ProjectDir, "results", "research_plots")
@@ -56,7 +57,7 @@ theme_manuscript <- function(){
 ### Read in HR and PR data (DHS 2010, 2015, 2018) and compute ITN variables   
 ## -------------------------------------------------------------------------
 #data 
-dhs <- read.files(DataDir, "*NGHR.*\\.DTA", 'NGHR7AFL|NGHR71FL|NGHR61FL', read_dta)  #reads in the HR files
+dhs <- read.files(DHSData, "*NGHR.*\\.DTA", 'NGHR81FL|NGHR7AFL|NGHR71FL|NGHR61FL', read_dta)  #reads in the HR files
 
 
 #computes household-level access 
@@ -71,6 +72,7 @@ dhs <- dhs %>% map(~filter(., hv025 ==1)) %>%
       id=hv021)) %>% 
   map(~dplyr::select(., hv001, access, wt, strat, id))
   
+names(dhs) <- c("dhs_2010_ng", "dhs_2015_ng", "dhs_2018_ng", "dhs_2021_ng")
 
 #generate mean access proportion by cluster  
 vars <- c('access')
@@ -85,8 +87,9 @@ for (i in 1:length(vars)) {
   #write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
 }
 
+write.csv(df, file =file.path(DataIn, "access_all_DHS_PR_10_15_18.csv"))
 #data 
-dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
+dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR81FL|NGPR7AFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
 
 #create dataset for computing ITN use 
 dhs <- dhs %>% map(~filter(., hv025 ==1, hv103 == 1)) %>% 
@@ -96,6 +99,7 @@ dhs <- dhs %>% map(~filter(., hv025 ==1, hv103 == 1)) %>%
               wt=hv005/1000000,strat=hv022,
               id=hv021))
 
+names(dhs) <- c("dhs_2010_ng", "dhs_2015_ng", "dhs_2018_ng", "dhs_2021_ng")
 
 #compute net use
 vars <- c('net_use')
@@ -114,16 +118,19 @@ for (i in 1:length(vars)) {
 
 #compute ITN use given access 
 
-df_use <- df_use %>% mutate(dhs_year = str_split(.id, "_", simplify = T)[, 4]) %>% dplyr::select(-.id)
-df_access<- df_access %>% mutate(dhs_year = str_split(.id, "_", simplify = T)[, 4]) %>% dplyr::select(-.id)
-
-df_netU_access <- left_join(df_use,df_access, by=c('hv001', 'dhs_year'))
+df_netU_access <- left_join(df_use,df_access, by=c('.id', 'hv001'))
 
 df_netU_access$netU_access <- df_netU_access$net_use/df_netU_access$access * 100
 df_netU_access$netU_access2 <- ifelse(df_netU_access$netU_access > 100, 100,df_netU_access$netU_access)
 
+net_use_access <- df_netU_access %>% dplyr::select(.id, hv001, netU_access2) %>% 
+  rename(c(v001 = hv001, net_use_access = netU_access2)) %>% 
+  mutate(.id = str_replace(.id, "dhs_2010_ng", "C:/Users/CHZCHI003/OneDrive - University of Cape Town/Documents/OneDrive/urban_malaria/data/nigeria/nigeria_dhs/data_analysis/data/DHS/Downloads/NG_2010_MIS_06192019/NGHR61DT/NGHR61FL.DTA")) %>% 
+  mutate(.id = str_replace(.id, "dhs_2015_ng", "C:/Users/CHZCHI003/OneDrive - University of Cape Town/Documents/OneDrive/urban_malaria/data/nigeria/nigeria_dhs/data_analysis/data/DHS/Downloads/NG_2015_MIS_06192019/NGHR71DT/NGHR71FL.DTA")) %>%
+  mutate(.id = str_replace(.id, "dhs_2018_ng", "C:/Users/CHZCHI003/OneDrive - University of Cape Town/Documents/OneDrive/urban_malaria/data/nigeria/nigeria_dhs/data_analysis/data/DHS/Downloads/NG_2018_DHS_11072019_1720_86355/NGHR7ADT/NGHR7AFL.DTA")) %>%
+  mutate(.id = str_replace(.id, "dhs_2021_ng", "C:/Users/CHZCHI003/OneDrive - University of Cape Town/Documents/OneDrive/urban_malaria/data/nigeria/nigeria_dhs/data_analysis/data/DHS/Downloads/NG_2021_MIS_12052022_1735_141460/NGHR81FL/NGHR81FL.DTA"))
 
-
+write.csv(net_use_access, file =file.path(DataIn, "net_use_access_all_DHS_PR_10_15_18_21.csv"))
 
 
 #variable distribution and cumulative distribution 
