@@ -125,7 +125,7 @@ sf_all = rbind(sf21, sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  dplyr::
 
 #data wrangling
 dhs_ = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year, net_use, net_use_child.x, positives_prop)
-map = sf_all %>% left_join(dhs_, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) 
+map = sf_all %>% left_join(dhs_, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) %>% mutate(ADM1NAME = toupper(ADM1NAME))
 map$positives_cut = cut(map$positives_prop, breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
 df_count = map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
 map$net_cut = cut(map$net_use, breaks=c(0,10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100), include.lowest = TRUE)
@@ -143,7 +143,7 @@ map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Cou
 
 
 #borno
-map_borno <- state_map('Borno', 'BORNO', 'Test positivity rate')
+map_abia <- state_map('Abia', 'ABIA', 'Test positivity rate')
 
 #Lagos 
 map_lag <- state_map('Lagos', 'LAGOS', 'Test positivity rate')
@@ -154,9 +154,13 @@ map_akwa <- state_map('Akwa Ibom', 'AKWA IBOM', 'Test positivity rate')
 #rivers 
 map_riv <- state_map('Rivers', 'RIVERS', 'Test positivity rate') #+ theme(legend.position = "right")
 
-patch1 = ( map_big|(map_lag /(map_borno + map_akwa)))+ plot_layout(ncol = 2)
+patch1 = ( map_big|(map_lag /(map_abia + map_riv)))+ plot_layout(ncol = 2)
 patch2 = (p2+ p_2b)/ patch1 + plot_layout(nrow = 2) #+  plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold', size = 16))
 ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positivity_viz.pdf'), patch2, width = 7.7, height = 6.3)
+
+patch3 = ((map_lag /(map_abia + map_riv)))+ plot_layout(nrow = 2)
+patch3
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_low_positivity_viz_states.pdf'), patch3, width = 4, height = 3.7)
 
 
 map_low_values = map %>% na.omit(positives) %>%  filter(positives_prop == 0) %>%  group_by(ADM1NAME) %>%  summarise(n())
@@ -201,10 +205,10 @@ data_ = data %>%  filter(pos == 0)
 df = dhs %>% mutate(group = ifelse(positives_prop > 0, 0, 1))%>%  group_by(region, group) %>% 
   summarise(number = n()) %>%  drop_na() %>% mutate(freq = number / sum(number))
 
-df$region = factor(df$region, levels = c('north east', 'south south', 'north central', 'south east', 
+df$region = factor(df$region, levels = c('south south', 'north east', 'north central', 'south east', 
                                          'south west', 'north west'))
 
-x_label =  c('NE', 'SS', 'NC', 'SE', 'SW', "NW")
+x_label =  c('SS', 'NE', 'NC', 'SE', 'SW', "NW")
 
 p_2d=ggplot(df, aes(fill=as.factor(group), y=number, x=region)) + 
   geom_bar(position="fill", stat="identity", alpha = 0.7)+
@@ -214,7 +218,7 @@ p_2d=ggplot(df, aes(fill=as.factor(group), y=number, x=region)) +
   theme(legend.title = element_blank())+
   ylab('Proportion of clusters by U5 malaria test positivity rate category')
 
-ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_regional_difference.pdf'), p_2d, width = 8, height = 3)
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_2_regional_difference.pdf'), p_2d, width = 7.5, height = 3)
 
 
 
