@@ -139,7 +139,7 @@ map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Cou
                                            paste0('0.3 - 0.4',  ' (', df_count$Count[[2]], ')'), paste0('0.5 - 0.6',  ' (', df_count$Count[[3]], ')'), 
                                            paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
                                            'Missing data'),
-                   map$positives_cut, 'Test positivity rate (overall count)') + theme(legend.position = "none")
+                   map$positives_cut, 'Test positivity rate (overall count)') #+ theme(legend.position = "none")
 
 
 #borno
