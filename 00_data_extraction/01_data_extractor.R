@@ -8,7 +8,7 @@ memory.limit(size = 50000)
 
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
-NuDir <- file.path(Drive, "Box", "NU-malaria-team")
+NuDir <- file.path(Drive, "Documents","OneDrive", "urban_malaria")
 ProjectDir <- file.path(NuDir, "data", 'nigeria','nigeria_dhs' , 'data_analysis')
 DataDir <- file.path(ProjectDir, 'data')
 ResultDir =file.path(ProjectDir, "results", "research_plots")
@@ -28,11 +28,10 @@ options(survey.lonely.psu="adjust") # this option allows admin units with only o
 
 
 ## -----------------------------------------------------------------------------------------
-### Read in PR  data (DHS 2010, 2015, 2018) - this can be downloaded from the DHS website 
+### Read in PR  data (DHS 2010, 2015, 2018, 2021) - this can be downloaded from the DHS website 
 ## ----------------------------------------------------------------------------------------
 
-
-dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
+dhs <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR81FL|NGPR7BFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
 
 
 
@@ -51,7 +50,7 @@ dhs <- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
                            net_use = ifelse(hml12 %in% c(1,2), 1,0),
                            wt=hv005/1000000,strat=hv022,
                            id=hv021, num_p=1,
-                           edu_a = ifelse(hv106 %in% c(0, 1, 2), 0,ifelse(hv106 >= 8, NA, ifelse(hv106 == 2|3, 1, NA))),
+                           edu_a = ifelse(hc61 %in% c(0, 1, 2), 0,ifelse(hc61 >= 8, NA, ifelse(hc61 == 2|3, 1, NA))),
                            age = ifelse(hv105 >= 98, NA, hv105),
                            age_cat = ifelse(age <18, 1, 0),
                            median_age = age,
@@ -62,16 +61,16 @@ dhs <- dhs %>% map(~mutate(., wealth = ifelse(hv270 <4, 0, 1),
                            region = hv024, interview_month = hv006,
                            visitors = hv102)) %>%
   map(~filter(., hv025 == 1)) %>% #filtering to urban areas only 
-  map(~dplyr::select(., -c(hv013, hv105, hv106, hv021, hv005, hv022, hml12, hc27, hv215, hv214, hv213, hv270, hv024, hv006)))
+  map(~dplyr::select(., -c(hv013, hv105, hc61, hv021, hv005, hv022, hml12, hc27, hv215, hv214, hv213, hv270, hv024, hv006)))
 
 
 #are we using the defacto population to compute all the wealth variables? Is that a reasonable choice
 
 #creating variable for computing pregnant women proportions 
-dhs[[1]]$preg_women <- ifelse(dhs[[1]]$sh09 >= 8 , NA, ifelse(dhs[[1]]$sh09 == 1, 1, 0))
-dhs[[2]]$preg_women <- ifelse(dhs[[2]]$sh09 >= 8, NA, ifelse(dhs[[2]]$sh09 == 1, 1, 0))
-dhs[[3]]$preg_women <- ifelse(dhs[[3]]$ha54 >= 8, NA, ifelse(dhs[[3]]$ha54 == 1, 1, 0))
-
+dhs[[1]]$preg_women <- ifelse(dhs[[1]]$hml18 >= 8 , NA, ifelse(dhs[[1]]$hml18 == 1, 1, 0))
+dhs[[2]]$preg_women <- ifelse(dhs[[2]]$hml18 >= 8, NA, ifelse(dhs[[2]]$hml18 == 1, 1, 0))
+dhs[[3]]$preg_women <- ifelse(dhs[[3]]$hml18 >= 8, NA, ifelse(dhs[[3]]$hml18 == 1, 1, 0))
+dhs[[4]]$preg_women <- ifelse(dhs[[4]]$hml18 >= 8, NA, ifelse(dhs[[4]]$hml18 == 1, 1, 0))
 #
 ## -----------------------------------------------
 ### preliminary estimation with PfPR and DHS data 
@@ -87,6 +86,8 @@ df_num <- dhs %>% map(~dplyr::select(., hv001, hv009)) %>%  map(~dplyr::group_by
 #compute number of children 6 - 59 per cluster 
 df_num <- pfpr_df %>% map(~dplyr::select(., hv001, hc1)) %>%  map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,num_child_6_59 = n())) %>% 
   plyr::ldply() 
+median(df_num$num_child_6_59)
+IQR(df_num$num_child_6_59)
 write.csv(df_num, paste0(DataIn, "/num_children_6_59_months.csv"), row.names = FALSE)
 
 
@@ -95,9 +96,12 @@ write.csv(df_num, paste0(DataIn, "/num_children_6_59_months.csv"), row.names = F
 pfpr_df <- dhs %>% map(~filter(., hv042 == 1 & hv103 == 1 & hc1 %in% c(6:59) & hml32 %in% c(0, 1,6))) #& hml16 <59 & hml32 %in% c(0, 1,6)
 
 #compute number of children tested for microscopy per cluster 
-df_test <- pfpr_df %>% map(~dplyr::select(., hv001, hml32)) %>%  map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,child_6_59_tested_malaria = n())) %>% 
+df_test <- pfpr_df %>% purrr::map(~dplyr::select(., hv001, hml32)) %>%  map(~dplyr::group_by(., 'hv001')) %>% map(~dplyr::summarise(.,child_6_59_tested_malaria = n())) %>% 
   plyr::ldply() 
 write.csv(df_test, paste0(DataIn, "/tested_malaria_children_6_59_months.csv"), row.names = FALSE)
+
+pfpr_df %>% purrr::map(~dplyr::select(., hv001, hml32)) %>%  map(~dplyr::group_by(., 'hv001')) %>% map(~dplyr::summarise(.,child_6_59_tested_malaria = mean(hm))) %>% 
+  plyr::ldply() 
 
 #median number of visitors by cluster
 visitors_num <- dhs %>% map(~dplyr::select(., hv001, visitors)) %>%  map(~filter(., visitors == 0)) %>% map(~dplyr::group_by_(., 'hv001')) %>% map(~summarise(.,visitors = n())) %>% 
@@ -118,31 +122,31 @@ df <- pfpr_df %>% map(~dplyr::select(., hv001, hml32)) %>%  map(~filter(., hml32
 df_zero <- pfpr_df %>% map(~dplyr::select(., hv001, hml32)) %>%  map(~filter(., hml32 == 0)) %>%  map(~dplyr::distinct(.,)) %>% 
   plyr::ldply() %>%  mutate(year = str_split(.id, '_', simplify = TRUE)[,4])
 
-fin_df <- full_join(df, df_zero) %>%  mutate(positives = ifelse(is.na(positives), hml32, positives)) %>%  dplyr::select(-c(year, hml32))
-
 
 write.csv(fin_df, paste0(DataIn, "/positive_microscopy_test_6_59_months.csv"))
 
+
 #proportions 
 
-vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women', 'net_use_access')
+vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women')
 
 #vars<- c('age_cat')
 for (i in 1:length(vars)) {
-  col <- list(vars[1])
+  col <- list(vars[i])
   by <- list('hv001')
   df <- dhs %>% 
-    map(~drop_na(.,vars[1]))
+    map(~drop_na(.,vars[i]))
   df <- pmap(list(df,col,by), estim_prop)
   df <- plyr::ldply(df)
-  df[, vars[1]]<- df[, vars[1]]*100
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
+  df[, vars[i]]<- df[, vars[i]]*100
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18_21.csv")))
   
 }
 
 dhs[[1]]$state <- as_label(dhs[[1]]$shstate)
 dhs[[2]]$state <- as_label(dhs[[2]]$shstate)
 dhs[[3]]$state <- as_label(dhs[[3]]$shstate)
+dhs[[4]]$state <- as_label(dhs[[4]]$region)
 
 vars <- c('edu_a', 'mean_age', 'median_age', 'household_size')
 srvy_fun <- list(estim_prop, estim_mean, estim_median, estim_median)
@@ -158,25 +162,26 @@ for (i in 1:length(vars)) {
   df <- pmap(list(df,col,by), srvy_fun[[i]])
   df <- plyr::ldply(df)
   df[, vars[i]]<- df[, vars[i]]*muilt[[i]]
-  write.csv(df, file =file.path(down, paste0(vars[i], "_all_state_DHS_PR_10_15_18.csv")))
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_state_DHS_PR_10_15_18_21.csv")))
   
 }
 
 
 # month of state, region, month of survey by cluster 
-
+dhs[[4]]$shstate <- dhs[[4]]$region *10
+dhs[[4]]$region <- dhs[[4]]$shregion
 vars <- c('shstate', 'region', 'interview_month')
 
 for (i in 1:length(vars)){
   if (vars[i] == 'interview month'){
     df <- dhs %>%  map(~dplyr::select(., c(hv001, vars[i])))
     df <- plyr:: ldply(df)
-    write.csv(df, file =file.path(DataDir, 'urban_malaria_cluster_est', paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
+    write.csv(df, file =file.path(DataDir, 'urban_malaria_cluster_est', paste0(vars[i], "_all_DHS_PR_10_15_18_21.csv")))
   }else{
   df <- dhs %>%  map(~dplyr::select(., c(hv001, vars[i])))
   df <- plyr:: ldply(df) %>%  distinct() 
   df[vars[i]] <- as_label(df[vars[i]])
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18.csv")))
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_all_DHS_PR_10_15_18_21.csv")))
   }
 }
 
@@ -201,7 +206,7 @@ for (i in 1:length(vars)) {
   df <- pmap(list(df,col,by), estim_prop)
   df <- plyr::ldply(df)
   df[, vars[i]]<- df[, vars[i]]*100
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_PfPR_DHS_10_15_18.csv")))
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_PfPR_DHS_10_15_18_21.csv")))
   
 }
 
@@ -209,10 +214,10 @@ for (i in 1:length(vars)) {
 pfpr_df[[1]]$state <- as_label(pfpr_df[[1]]$shstate)
 pfpr_df[[2]]$state <- as_label(pfpr_df[[2]]$shstate)
 pfpr_df[[3]]$state <- as_label(pfpr_df[[3]]$shstate)
+pfpr_df[[4]]$state <- as_label(pfpr_df[[4]]$region)
 
 
-
-vars <- c('sex', 'net_use_child', 'p_test')
+vars <- c('female_child_sex', 'net_use_child', 'p_test')
 state <- c('lagos')
 
 for (i in 1:length(vars)) {
@@ -222,17 +227,17 @@ for (i in 1:length(vars)) {
     map(~drop_na(.,vars[i])) %>%  map(~filter(., state == state[i]))
   df <- pmap(list(df,col,by), estim_prop)
   df <- plyr::ldply(df)
-  write.csv(df, file =file.path(DataIn, paste0(vars[i],  state[i], "_PfPR_DHS_10_15_18.csv")))
+  write.csv(df, file =file.path(DataIn, paste0(vars[i],  state[i], "_PfPR_DHS_10_15_18_21.csv")))
   
 }
 
 
 
 ## ----------------------------------------------------
-### Read in KR  data (DHS 2010, 2015, 2018) 
+### Read in KR  data (DHS 2010, 2015, 2018, 2021) 
 ## ----------------------------------------------------
 
-dhs <- read.files(DataDir, "*NGKR.*\\.DTA", 'NGKR7AFL|NGKR71FL|NGKR61FL', read_dta) #reads in the KR files 
+dhs <- read.files(DataDir, "*NGKR.*\\.DTA", 'NGKR81FL|NGKR7AFL|NGKR71FL|NGKR61FL', read_dta) #reads in the KR files 
 dhs <- dhs %>%  map(~mutate(., fever =  ifelse(h22 >= 8, NA, h22), ACT_use_U5 = ifelse(ml13e >=8, NA, ml13e),
                             wt=v005/1000000,strat=v022,id=v021, num_p=1, med_treat_fever = ifelse(h32z >=8, NA, h32z),)) %>%
   map(~dplyr::select(., c(fever, ACT_use_U5, wt, strat, id, v001, b5, v025, med_treat_fever))) %>% 
@@ -254,7 +259,7 @@ for (i in 1:length(vars)) {
     df <- pmap(list(df,col,by), estim_prop)
     df <- plyr::ldply(df)
     df[, vars[i]]<- df[, vars[i]]*100
-    write.csv(df, file =file.path(DataIn, paste0(vars[i], "_KR_DHS_10_15_18.csv")))
+    write.csv(df, file =file.path(DataIn, paste0(vars[i], "_KR_DHS_10_15_18_21.csv")))
     
   }else{
   col <- list(vars[i])
@@ -264,7 +269,7 @@ for (i in 1:length(vars)) {
   df <- pmap(list(df,col,by), estim_prop)
   df <- plyr::ldply(df)
   df[, vars[i]]<- df[, vars[i]]*100
-  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_KR_DHS_10_15_18.csv")))
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_KR_DHS_10_15_18_21.csv")))
   }
 }
 
@@ -395,8 +400,8 @@ for (i in 1:length(vars)) {
 ## ----------------------------------------------------
 
 
-dhs <- read.files(DHSData, "*FL.shp$", 'NGGE61FL|NGGE71FL|NGGE7BFL', shapefile) #read in DHS clusters 
-dhs <- map(dhs, st_as_sf) %>%  map(~filter(.x, URBAN_RURA == "U")) %>% map(sf:::as_Spatial)
+dhs <- read.files(DHSData, "*FL.shp$", 'NGGE61FL|NGGE71FL|NGGE7BFL|NGGE81FL', shapefile) #read in DHS clusters 
+dhs <- map(dhs, st_as_sf) %>%  map(~filter(.x, URBAN_RURA == "U", LATNUM > 0.00000)) %>% map(sf:::as_Spatial) 
 
 
 
@@ -405,10 +410,28 @@ dhs <- map(dhs, st_as_sf) %>%  map(~filter(.x, URBAN_RURA == "U")) %>% map(sf:::
 vars <- c(0, 1000, 2000, 3000, 4000)
 
 
+#july month rainfall 
+
+
+files <- list.files(path = file.path(DataDir, "Raster_files") , pattern = "*month_07.tif$", full.names = TRUE, recursive = TRUE)
+files<- files[(grep('rainfall', files))]
+raster<-sapply(files, raster, simplify = F)
+
+
+for (i in 1:length(vars)) {
+  var_name <- c(paste0('month_07_', as.character(vars[i]), 'm'))
+  df <- map2(dhs, raster, get_crs)
+  df <- pmap(list(raster, df, vars[i]), extract_fun)
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('month_07')))
+  df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
+  write.csv(df, file =file.path(GeoDir, paste0('month_07_', as.character(vars[i]), 
+                                               'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
+}
+
 
 #pop density extraction with just columbia data 
 
-files <- list.files(path = file.path(DataDir, "Raster_files") , pattern = "*deg.tif$", full.names = TRUE, recursive = TRUE)
+files <- list.files(path = file.path(DataDir, "Raster_files") , pattern = "*sec.tif$", full.names = TRUE, recursive = TRUE)
 files<- files[(grep('gpw_v4', files))]
 raster<-sapply(files, raster, simplify = F)
 
@@ -420,13 +443,11 @@ for (i in 1:length(vars)) {
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('gpw_v4')))
   df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
   write.csv(df, file =file.path(GeoDir, paste0('pop_density_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                               'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
-
-
-#pop density extraction with general FB data 
+#pop density extraction with general FB data: Rename raster files in acceding order for R to load them in same order the surveys.  
 
 raster_3 <- raster(file.path(RastDir, "facebook_pop_density/nga_general_2020.tif"))
 raster <- list(raster_3)
@@ -442,7 +463,7 @@ for (i in 1:length(vars)) {
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('nga')))
   df <- plyr::ldply(df) %>% select(-c(ID))
   write.csv(df, file =file.path(GeoDir, paste0('pop_density_FB_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                               'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -452,6 +473,9 @@ for (i in 1:length(vars)) {
 raster <- raster(file.path(RastDir, "facebook_pop_density/nga_children_under_five_2020.tif"))
 raster <- list(raster)
 
+files <- list.files(path = file.path(RastDir , "facebook_pop_density") ,pattern = "*five_2020.tif$", full.names = TRUE, recursive = TRUE)
+files<- files[(grep('child', files))]
+raster<-sapply(files, raster, simplify = F)
 
 
 
@@ -461,8 +485,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('nga')))
   df <- plyr::ldply(df) %>% select(-c(ID))
-  write.csv(df, file =file.path(GeoDir, paste0('pop_density_U5_FB_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file =file.path(GeoDir, paste0('popd_U5_F_', as.character(vars[i]), 
+                                               'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -477,15 +501,15 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = starts_with('distance')))
   df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
-  write.csv(df, file =file.path(GeoDir, paste0('dist_water_bodies_', as.character(vars[i]), 
-                                               'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file =file.path(GeoDir, paste0('dist_water_bod_', as.character(vars[i]), 
+                                               'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
 #Housing 2000
 #loading raster files
 
-files <- list.files(path = file.path(RastDir , "housing_nature") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
+files <- list.files(path = file.path(RastDir , "housing") ,pattern = "*GA.tiff$", full.names = TRUE, recursive = TRUE)
 files<- files[(grep('2000', files))]
 raster<-sapply(files, raster, simplify = F)
 
@@ -497,7 +521,7 @@ for (i in 1:length(vars)) {
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Nature')))
   df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
   write.csv(df, file = file.path(GeoDir, paste0('housing_2000_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -505,7 +529,7 @@ for (i in 1:length(vars)) {
 #Housing 2015
 #loading raster files
 
-files <- list.files(path = file.path(RastDir , "housing_nature") ,pattern = "*GA.tiff$",full.names = TRUE, recursive = TRUE)
+files <- list.files(path = file.path(RastDir , "housing") ,pattern = "*GA.tiff$",full.names = TRUE, recursive = TRUE)
 files<- files[(grep('2015', files))]
 raster<-sapply(files, raster, simplify = F)
 
@@ -517,7 +541,7 @@ for (i in 1:length(vars)) {
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Nature')))
   df <- plyr::ldply(df) %>% dplyr::select(-c(ID))
   write.csv(df, file = file.path(GeoDir, paste0('housing_2015_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -526,8 +550,8 @@ for (i in 1:length(vars)) {
 #elevation - World Bank  
 #loading raster files
 
-files <- list.files(path = file.path(RastDir, "elevation") ,pattern = "*ELE.tif$", full.names = TRUE, recursive = TRUE)
-files<- files[(grep('ELE', files))]
+files <- list.files(path = file.path(RastDir, "elevation") ,pattern = "*1km.tif$", full.names = TRUE, recursive = TRUE)
+files<- files[(grep('MERIT', files))]
 raster<-sapply(files, raster, simplify = F)
 
 
@@ -535,10 +559,10 @@ for (i in 1:length(vars)) {
   var_name <- paste0('elevation_', as.character(vars[[i]]), 'm')
   df <- map2(dhs, raster, get_crs)
   df <- pmap(list(raster, df, vars[[i]]), extract_fun)
-  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('ELE')))
+  df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('MERIT')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
   write.csv(df, file = file.path(GeoDir, paste0('elevation_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -557,8 +581,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, 2000), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('2015_accessibility')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('access_to_cities_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('access_to_cit_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 hist(df$access_to_cities_2000m)
@@ -577,8 +601,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('Decompressed')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('friction_decompressed_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('friction_decomp_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -599,8 +623,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('motorized_friction')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('motorized_friction_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('motorized_frict_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -619,8 +643,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('motorized_travel_')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('motorized_travel_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('motorized_trav_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -640,8 +664,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('walking_only_friction_')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('walking_only_friction_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('walk_only_fric_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -659,8 +683,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('only_travel')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('walking_travel_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('walking_trav_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -678,8 +702,8 @@ for (i in 1:length(vars)) {
   df <- pmap(list(raster, df, vars[i]), extract_fun)
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('buildings')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
-  write.csv(df, file = file.path(GeoDir, paste0('building_density_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('building_dens_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -690,7 +714,7 @@ for (i in 1:length(vars)) {
 #dhs clusters by year and month of sampling 
 
 
-dhs_hh <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR7AFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
+dhs_hh <- read.files(DataDir, "*NGPR.*\\.DTA", 'NGPR81FL|NGPR7BFL|NGPR71FL|NGPR61FL', read_dta)  #reads in the PR files
 
 dhs_hh <- dhs_hh %>% map(~filter(., hv025 == 1)) %>%  map(~dplyr::select(., hv001, hv006, hv007)) %>%  map(~distinct(.,)) 
 
@@ -707,7 +731,13 @@ dhs_2018 <- left_join(st_as_sf(dhs[[3]]), dhs_hh[[3]], by = c("DHSCLUST"="hv001"
   group_split(hv006) 
 for(i in seq_along(dhs_2018)) {names(dhs_2018)[[i]] <- paste0(unique(dhs_2018[[i]]$hv006), '_', unique(dhs_2018[[i]]$hv007))}
 
-dhs <- sapply(c(dhs_2010, dhs_2015, dhs_2018), sf:::as_Spatial, simplify = F)
+
+dhs_2021 <- left_join(st_as_sf(dhs[[4]]), dhs_hh[[4]], by = c("DHSCLUST"="hv001")) %>% 
+  group_split(hv006) 
+for(i in seq_along(dhs_2021)) {names(dhs_2021)[[i]] <- paste0(unique(dhs_2021[[i]]$hv006), '_', unique(dhs_2021[[i]]$hv007))}
+
+dhs <- sapply(c(dhs_2010, dhs_2015, dhs_2018, dhs_2021), sf:::as_Spatial, simplify = F)
+
 names(dhs)
 
 
@@ -724,7 +754,7 @@ for (i in 1:length(vars)) {
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
   df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1) #use descending to get data for the second month for sensitivity analysis 
   write.csv(df, file = file.path(GeoDir, paste0('EVI_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -746,8 +776,8 @@ for (i in 1:length(vars)) {
   df <- df %>%  map(~rename_with(., .fn=~paste0(var_name), .cols = contains('temp')))
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID)) 
   df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
-  write.csv(df, file = file.path(GeoDir, paste0('temp_survey_month_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+  write.csv(df, file = file.path(GeoDir, paste0('temp_surv_month_', as.character(vars[i]), 
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -769,7 +799,7 @@ for (i in 1:length(vars)) {
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
   df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
   write.csv(df, file = file.path(GeoDir, paste0('precip_monthly_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 
 
@@ -789,6 +819,6 @@ for (i in 1:length(vars)) {
   df <- plyr::ldply(df)%>% dplyr::select(-c(ID))
   df <- df %>% arrange(month) %>%  group_by(dhs_year, hv001) %>%  slice(1)
   write.csv(df, file = file.path(GeoDir, paste0('soil_wetness_', as.character(vars[i]), 
-                                                'm_buffer', "_DHS_10_15_18.csv")),row.names = FALSE)
+                                                'm_buffer', "_DHS_10_15_18_21.csv")),row.names = FALSE)
 }
 

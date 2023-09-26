@@ -20,7 +20,7 @@ library(ncdf4)
 
 root_dir <- Sys.getenv("HOME")
 in_dir <- file.path(root_dir, 
-                      "temp_rainfall")
+                      "temp_rainfall_2")
 #in_dir <- file.path(base_dir, "era5_raw_data")
 #template <- raster(file.path(in_dir, "MAP_Regions_Pf_5k.tif"))
 input_files <- list.files(in_dir)[list.files(in_dir) %like% paste0("\\.nc$")]

@@ -120,11 +120,11 @@ hist_fun <-function(df, x,fill, xlab, ylab,labels){
 
 gdensity_fun <- function(df, x, fill,legend_title, xlab, ylab){
   ggplot(df, aes(x=x, fill=as.factor(fill))) +
-    geom_density(alpha = 0.7, stat = "density", trim = TRUE) + 
+    geom_density(alpha = 0.7, stat = "density", trim = F) + 
     scale_x_continuous(expand = c(0.03, 0)) +
     scale_y_continuous(expand = c(0.03, 0)) +
     theme_bw() + 
-    scale_fill_manual(values = c("#5560AB",  "#FAAF43", "#EE3C96")) +
+    scale_fill_manual(values = c("#5560AB",  "#FAAF43", "#EE3C96", "lightseagreen")) +
     theme_manuscript()+
     guides(fill=guide_legend(title=legend_title))+
     xlab(xlab)+
