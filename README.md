@@ -64,7 +64,7 @@ For inquiries, contact Ifeoma Ozodiegwu, [ Research Assistant Professor, Northwe
 ## Acknowledgments
 - [Jaline Gerardin - Principal Investigator @ NU Malaria Modeling Team](https://www.feinberg.northwestern.edu/faculty-profiles/az/profile.html?xid=44305)
 - [Ousmane Diallo @ NU Malaria Modeling Team](https://www.numalariamodeling.org/team.html)
-- [Amelia Bertozzi-Villa @ Institute for Disease Modeling](https://www.idmod.org/user/146)
+- [Amelia Bertozzi-Villa @ Institute for Disease Modeling](https://ameliabv.com)
 - [Dan Weiss @ Faculty of Health Sciences, Curtin University](https://staffportal.curtin.edu.au/staff/profile/view/dan-weiss-0ef1c9d2/)
 - [Laina Mercer @ PATH](https://www.path.org/)
 - [All NU Malaria Modeling Team](https://www.numalariamodeling.org/team.html)
