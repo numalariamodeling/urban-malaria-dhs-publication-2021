@@ -1,6 +1,7 @@
 # # Reading in the necessary packages 
-list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "rgdal", "raster",
-                      "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'rgeos', 'ggpubr',
+
+list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "raster",
+                      "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'ggpubr', #, 'rgeos'
                       'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot', 'pscl', 'visreg', 'viridis', 'splines', 'shades')
 
 
@@ -99,6 +100,21 @@ gmap_fun <- function(polygon_name, point_data, labels, fill, legend_title){
     viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,0.2]', '(0.2,0.4]', '(0.4,0.6]', '(0.6,0.8]', '(0.8,1]', NA)) +
     map_theme() + 
     guides(fill = guide_legend(title=legend_title, override.aes = list(size = 5)))+
+    xlab("")+
+    ylab("")
+}
+
+
+#cluisters over time map plot function
+gmap_fun2 <- function(polygon_name, point_data, labels, fill, legend_title){
+  ggplot(polygon_name) +
+    geom_sf(color='lightgrey')+
+    geom_point(data = point_data,
+               aes(fill=fill,  geometry = geometry),
+               stat = "sf_coordinates", alpha = 0.45, size=3, shape=21) +
+    scale_fill_manual(values = c("#5560AB",  "#FAAF43", "#EE3C96", "lightseagreen")) +
+    map_theme() + 
+    guides(fill = guide_legend(title=legend_title, override.aes = list(size = 4)))+
     xlab("")+
     ylab("")
 }
@@ -225,6 +241,8 @@ state_map <- function(state, STATE_NAME, title){
   
   
 }
+
+
 
 #x <- c("tidyverse","INLA", "ggplot2", "ggpubr",  "rgdal", "sp", "sf", "tmap", 
 #'paletteer', 'cowplot', 'gridExtra', 'lme4', 'reshape2', "patchwork", "gdata",'cowplot', 'mmtable2', 'ggsci') #"inlabru","rebus"

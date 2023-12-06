@@ -7,7 +7,7 @@ rm(list=ls())
 
 user = Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
-NuDir <- file.path(Drive, "Documents","OneDrive", "urban_malaria")
+NuDir <- file.path(Drive,"OneDrive", "urban_malaria")
 ExDir <- file.path(NuDir, "extracted_data")
 ProjectDir = file.path(NuDir, 'data', 'nigeria','nigeria_dhs' , 'data_analysis')
 DataDir = file.path(ProjectDir, "data")
@@ -34,6 +34,11 @@ source("./other_functions/descriptive_analysis_functions.R")
 dhs = read.csv(file.path(ExDir, "cleaned_datasets","all_DHS_variables_urban_malaria.csv"), header = T, sep = ',') %>% dplyr::select(-X)
 dhs$positives_prop = round(dhs$positives/dhs$child_6_59_tested_malaria, 1) %>% as.numeric
 summary(dhs$child_6_59_tested_malaria)
+
+
+reg_month <- dhs %>%drop_na(positives) %>% group_by(dhs_year, region,first_interview_month) %>% 
+  summarise(prop = sum(positives)/sum(child_6_59_tested_malaria), clusters = n())
+
 
 
 #figure 1a
@@ -124,7 +129,8 @@ sf_all = rbind(sf21, sf18, sf15, sf10) %>%filter(URBAN_RURA == "U") %>%  dplyr::
 
 
 #data wrangling
-dhs_ = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year, net_use, net_use_child.x, positives_prop)
+dhs_ = dhs %>%  dplyr::select(v001, positives, child_6_59_tested_malaria, DHSYEAR=dhs_year, net_use, net_use_child.x, positives_prop, 
+                              first_interview_month)
 map = sf_all %>% left_join(dhs_, by=c('v001', 'DHSYEAR'))  %>%  filter(LATNUM != 0) %>% mutate(ADM1NAME = toupper(ADM1NAME))
 map$positives_cut = cut(map$positives_prop, breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1), include.lowest = TRUE)
 df_count = map %>% dplyr::select(positives_cut) %>%  group_by(positives_cut) %>%  summarize(`Count` = n())
@@ -140,6 +146,7 @@ map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Cou
                                            paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
                                            'Missing data'),
                    map$positives_cut, 'Test positivity rate (overall count)') #+ theme(legend.position = "none")
+
 
 
 #borno
@@ -200,9 +207,57 @@ data = data.frame(pos =trend_data_12[trend_data_12$dhs_year == 2018,'positives_p
 data_ = data %>%  filter(pos == 0)
 
 
+
+#figure 3d-e
+#Year big map
+map$DHSYEAR_cut = cut(map$DHSYEAR, breaks=c(0, 2010, 2015, 2018, 2021), include.lowest = TRUE) 
+
+df_year = map %>% dplyr::select(DHSYEAR) %>%  group_by(DHSYEAR) %>%  summarize(`Count` = n())
+
+
+map_big_year = gmap_fun2(state_sf, map, labels=c(paste0('2010',  ' (', df_year$Count[[1]], ')'), 
+                                                 paste0('2015',  ' (', df_year$Count[[2]], ')'), 
+                                                 paste0('2018',  ' (', df_year$Count[[3]], ')'), paste0('2021',  ' (', df_year$Count[[4]], ')')),
+                         map$DHSYEAR_cut, 'Clusters (overall count)') + theme(legend.position = "bottom") #+ facet_wrap(~ DHSYEAR_cut)
+
+map_big_year
+
+#Year big map
+map_months <- map %>% filter(!is.na(first_interview_month))
+map_months$month_cut = cut(map_months$first_interview_month, breaks=c(0, 8, 9, 10, 11, 12), include.lowest = TRUE) 
+
+df_month = map_months %>% dplyr::select(first_interview_month) %>%  group_by(first_interview_month) %>%  summarize(`Count` = n())
+
+
+map_big_month = gmap_fun2(state_sf, map_months, labels=c(paste0('8',  ' (', df_month$Count[[1]], ')'), 
+                                                         paste0('9',  ' (', df_month$Count[[2]], ')'), 
+                                                         paste0('10',  ' (', df_month$Count[[3]], ')'), 
+                                                         paste0('11',  ' (', df_month$Count[[4]], ')'), 
+                                                         paste0('12',  ' (', df_month$Count[[5]], ')')),
+                          map_months$month_cut, 'Clusters (overall count)') + theme(legend.position = "bottom") + 
+  scale_fill_manual(values = c('darkred',"darkseagreen", "#8971B3", "royalblue","yellow1")) #+ facet_wrap(~ first_interview_month)
+
+map_big_month
+
+over_years_months <- map_big_year  + map_big_month
+over_years_months
+ggsave(paste0(ResultDir, '/updated_figures/', Sys.Date(), '_Figure_3d_clusters.pdf'), over_years_months,width = 7.6, height = 3.8)
 #regional data 
 
-df = dhs %>% mutate(group = ifelse(positives_prop > 0, 0, 1))%>%  group_by(region, group) %>% 
+#month and region 
+reg_month <- as.data.frame(table(map_months$DHSREGNA, map_months$DHSYEAR,map_months$first_interview_month))
+
+reg_month <- map_months %>% group_by(DHSYEAR, DHSREGNA,first_interview_month) %>% 
+  summarise(prop = sum(positives)/sum(child_6_59_tested_malaria), clusters = n())
+
+
+  
+  
+  
+reg_ <- as.data.frame(table(map_months$first_interview_month))
+
+#
+df = dhs %>% mutate(group = ifelsemap_months(positives_prop > 0, 0, 1))%>%  group_by(region, group) %>% 
   summarise(number = n()) %>%  drop_na() %>% mutate(freq = number / sum(number))
 
 df$region = factor(df$region, levels = c('south south', 'north east', 'north central', 'south east', 
