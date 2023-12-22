@@ -1,8 +1,8 @@
 
 # # Reading in the necessary packages 
-list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr",  "stringr", "sp", "rgdal", "raster",
+list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr",  "stringr", "sp", "raster",
        "lubridate", "RColorBrewer","sf",   "labelled", "plotrix", "arules", "foreign",
-       "fuzzyjoin", "splitstackshape", "magrittr", "caTools", "sjlabelled", "raster", "rlist", 'rgeos',  'ggpubr',
+       "fuzzyjoin", "splitstackshape", "magrittr", "caTools", "sjlabelled", "raster", "rlist", 'ggpubr',
        'cowplot', 'gridExtra', 'lme4', "patchwork", 'ggsci', 'glue')
 
 

@@ -1,5 +1,5 @@
 # # Reading in the necessary packages 
-list.of.packages <- c("tidyverse","ggplot2", "purrr", "stringr", "sp", "rgdal", "raster",
+list.of.packages <- c("tidyverse","ggplot2", "purrr", "stringr", "sp", "raster",
                       "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'rgeos', 
                       'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot', 'pscl', 'visreg', 
                       'viridis', 'splines', 'shades', 'glmmTMB', 'ape', 'DHARMa', 'AICcmodavg', 'plyr',

@@ -1,6 +1,6 @@
 ## These scripts are used to extract cluster level data and variables for urban settings in Nigeria 
 rm(list=ls())
-memory.limit(size = 50000)
+#memory.limit(size = 50000)
 
 ## -----------------------------------------
 ### Paths - change to fit your setup
@@ -8,7 +8,7 @@ memory.limit(size = 50000)
 
 user <- Sys.getenv("USERNAME")
 Drive <- file.path(gsub("[\\]", "/", gsub("Documents", "", Sys.getenv("HOME"))))
-NuDir <- file.path(Drive, "Documents","OneDrive", "urban_malaria")
+NuDir <- file.path(Drive, "OneDrive", "urban_malaria")
 ProjectDir <- file.path(NuDir, "data", 'nigeria','nigeria_dhs' , 'data_analysis')
 DataDir <- file.path(ProjectDir, 'data')
 ResultDir =file.path(ProjectDir, "results", "research_plots")
@@ -130,7 +130,7 @@ write.csv(fin_df, paste0(DataIn, "/positive_microscopy_test_6_59_months.csv"))
 
 vars <- c('net_use', 'edu_a', 'wealth', 'housing_q', 'floor_type', 'wall_type', 'roof_type', 'all_female_sex', 'U5_pop', 'preg_women')
 
-#vars<- c('age_cat')
+#vars<- c('U5_pop')
 for (i in 1:length(vars)) {
   col <- list(vars[i])
   by <- list('hv001')
@@ -231,8 +231,49 @@ for (i in 1:length(vars)) {
   
 }
 
+#number of children tested and positives per state, year and survey month.
+dhs[[4]]$state <- as_label(dhs[[4]]$region)
+dhs[[4]]$region <- as_label(dhs[[4]]$shregion)
+dhs2 <- dhs  %>% map(~mutate(., yr_reg_imon = paste0(hv007, "_", as_label(region), "_", interview_month))) %>% plyr::ldply() %>%
+ dplyr::select(wt, id, strat, yr_reg_imon) %>% 
+  mutate(across(where(is.character), str_remove_all, pattern = fixed(" ")))
 
+ pos_region <- dhs %>% map(~ mutate(., test_sum = ifelse(hv042 == 1 & hv103 == 1 & hc1 %in% c(6:59) & hml32 %in% c(0, 1,6), 1, 0))) %>% 
+   map(~mutate(., yr_reg_imon = paste0(hv007, "_", as_label(region), "_", interview_month))) %>%  map(~filter(., hml32 == 1)) %>%  
+  map(~dplyr::group_by_(., 'yr_reg_imon')) %>% map(~summarise(.,positives = sum(test_sum))) %>% plyr::ldply() %>% 
+   mutate(across(where(is.character), str_remove_all, pattern = fixed(" "))) 
 
+ tested <- dhs %>% map(~filter(., hv042 == 1 & hv103 == 1 & hc1 %in% c(6:59) & hml32 %in% c(0, 1,6))) %>% 
+   map(~mutate(., yr_reg_imon = paste0(hv007, "_", as_label(region), "_", interview_month))) %>% 
+   map(~dplyr::group_by_(., 'yr_reg_imon')) %>% map(~summarise(.,children_tested = n())) %>% plyr::ldply() %>% 
+   mutate(across(where(is.character), str_remove_all, pattern = fixed(" "))) %>%
+   left_join(dhs2, by = c("yr_reg_imon")) %>% left_join(pos_region, by = c("yr_reg_imon"))
+ 
+dhs_list <- list(tested)
+
+vars<- c('children_tested', "positives")
+
+for (i in 1:length(vars)) {
+  col <- list(vars[i])
+  by <- list('yr_reg_imon')
+  df <- dhs_list %>% 
+    map(~drop_na(.,vars[i]))
+  df <- pmap(list(df,col,by), estim_sum)
+  df <- plyr::ldply(df)
+  df[, vars[i]]<- df[, vars[i]]
+  write.csv(df, file =file.path(DataIn, paste0(vars[i], "_region_year_month.csv")))
+  
+}
+
+df_pos <- read.csv(file.path(DataIn, "positives_region_year_month.csv")) %>%
+  rename(ci_l_positives = ci_l, ci_u_positives = ci_u) 
+
+dd <- read.csv(file.path(DataIn, "children_tested_region_year_month.csv")) %>%
+  rename(ci_l_tested = ci_l, ci_u_tested = ci_u) %>% left_join(df_pos, by = "yr_reg_imon") %>% dplyr::select(-X.x, -X.y) %>%
+  mutate_all(~replace(., is.na(.), 0))
+
+write.csv(dd, file =file.path(DataIn, "region_year_month_tests.csv"))
+          
 ## ----------------------------------------------------
 ### Read in KR  data (DHS 2010, 2015, 2018, 2021) 
 ## ----------------------------------------------------
