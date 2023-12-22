@@ -1,7 +1,7 @@
 # # Reading in the necessary packages 
 
 list.of.packages <- c("tidyverse", "survey", "haven", "ggplot2", "purrr", "summarytools", "stringr", "sp", "raster",
-                      "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'ggpubr', #, 'rgeos'
+                      "lubridate", "sf", "labelled","scales",  "raster", "rlist", 'ggpubr', "ggspatial", #, 'rgeos'
                       'cowplot', 'gridExtra', 'lme4', 'ggsci', 'patchwork', 'ggcorrplot', 'pscl', 'visreg', 'viridis', 'splines', 'shades')
 
 
@@ -89,6 +89,18 @@ map_theme <- function(){
         legend.key.height = unit(0.65, "cm"))
 }
 
+map_theme2 <- function(){
+  theme(#axis.text.x = ggplot2::element_blank(),
+    #axis.text.y = ggplot2::element_blank(),
+    axis.ticks = ggplot2::element_blank(),
+    rect = ggplot2::element_blank(),
+    plot.background = ggplot2::element_rect(fill = "white", colour = NA), 
+    legend.title.align=0.5,
+    legend.title=element_text(size=16, colour = 'black'), 
+    legend.text =element_text(size = 16, colour = 'black'),
+    legend.key.height = unit(0.65, "cm"))
+}
+
 
 gmap_fun <- function(polygon_name, point_data, labels, fill, legend_title){
   ggplot(polygon_name) +
@@ -97,11 +109,21 @@ gmap_fun <- function(polygon_name, point_data, labels, fill, legend_title){
                aes(fill=fill,  geometry = geometry),
                stat = "sf_coordinates", alpha = 0.45, size=3, shape=21
     ) +
-    viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='grey', limits=c('[0,0.2]', '(0.2,0.4]', '(0.4,0.6]', '(0.6,0.8]', '(0.8,1]', NA)) +
+    viridis::scale_fill_viridis(option='C', discrete=TRUE, labels=labels, na.value ='white', limits=c('[0,0.2]', '(0.2,0.4]', '(0.4,0.6]', '(0.6,0.8]', '(0.8,1]', NA)) +
+    scale_fill_manual(values = c("#0044ff","#2e1504", '#40b488', "yellow1","#ff0044")) +
     map_theme() + 
     guides(fill = guide_legend(title=legend_title, override.aes = list(size = 5)))+
     xlab("")+
-    ylab("")
+    ylab("") +  
+    ggspatial::annotation_scale(
+      location = "tl",
+      bar_cols = c("grey60", "white")) +
+    ggspatial::annotation_north_arrow(
+      location = "tl", which_north = "true",
+      pad_x = unit(0.4, "in"), pad_y = unit(0.4, "in"),
+      style = ggspatial::north_arrow_nautical(
+        fill = c("grey40", "white"),
+        line_col = "grey20")) + theme(legend.position = "none")
 }
 
 
@@ -112,8 +134,8 @@ gmap_fun2 <- function(polygon_name, point_data, labels, fill, legend_title){
     geom_point(data = point_data,
                aes(fill=fill,  geometry = geometry),
                stat = "sf_coordinates", alpha = 0.45, size=3, shape=21) +
-    scale_fill_manual(values = c("#5560AB",  "#FAAF43", "#EE3C96", "lightseagreen")) +
-    map_theme() + 
+    scale_fill_manual(values = c("black",  "darkorange", "#EE3C96", "lightseagreen")) +
+    map_theme2() + 
     guides(fill = guide_legend(title=legend_title, override.aes = list(size = 4)))+
     xlab("")+
     ylab("")

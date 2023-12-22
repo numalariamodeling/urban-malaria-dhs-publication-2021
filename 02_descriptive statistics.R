@@ -145,12 +145,21 @@ map_big = gmap_fun(state_sf, map, labels=c(paste0('0 - 0.2',  ' (', df_count$Cou
                                            paste0('0.3 - 0.4',  ' (', df_count$Count[[2]], ')'), paste0('0.5 - 0.6',  ' (', df_count$Count[[3]], ')'), 
                                            paste0('0.7 - 0.8',  ' (', df_count$Count[[4]], ')'), paste0('0.9 - 1.0',  ' (', df_count$Count[[5]], ')'), 
                                            'Missing data'),
-                   map$positives_cut, 'Test positivity rate (overall count)') #+ theme(legend.position = "none")
+                   map$positives_cut, 'Test positivity rate (overall count)') +  
+  ggspatial::annotation_scale(
+    location = "tl",
+    bar_cols = c("grey60", "white")) +
+  ggspatial::annotation_north_arrow(
+    location = "tl", which_north = "true",
+    pad_x = unit(0.4, "in"), pad_y = unit(0.4, "in"),
+    style = ggspatial::north_arrow_nautical(
+      fill = c("grey40", "white"),
+      line_col = "grey20")) + theme(legend.position = "none")
 
-
+map_big
 
 #borno
-map_abia <- state_map('Abia', 'ABIA', 'Test positivity rate')
+map_abia <- state_map('Abia', 'ABIA', 'Test positivity rate')  
 
 #Lagos 
 map_lag <- state_map('Lagos', 'LAGOS', 'Test positivity rate')
@@ -235,9 +244,18 @@ map_big_month = gmap_fun2(state_sf, map_months, labels=c(paste0('8',  ' (', df_m
                                                          paste0('11',  ' (', df_month$Count[[4]], ')'), 
                                                          paste0('12',  ' (', df_month$Count[[5]], ')')),
                           map_months$month_cut, 'Clusters (overall count)') + theme(legend.position = "bottom") + 
-  scale_fill_manual(values = c('darkred',"darkseagreen", "#8971B3", "royalblue","yellow1")) #+ facet_wrap(~ first_interview_month)
+  scale_fill_manual(values = c("#ff0044", '#40b488',"#331800", "#0044ff","yellow1")) + 
+  ggspatial::annotation_scale(
+    location = "tl",
+    bar_cols = c("grey60", "white")) +
+  ggspatial::annotation_north_arrow(
+    location = "tl", which_north = "true",
+    pad_x = unit(0.4, "in"), pad_y = unit(0.4, "in"),
+    style = ggspatial::north_arrow_nautical(
+      fill = c("grey40", "white"),
+      line_col = "grey20"))  #+ facet_wrap(~ first_interview_month)
 
-map_big_month
+map_big_month 
 
 over_years_months <- map_big_year  + map_big_month
 over_years_months
